@@ -1,17 +1,18 @@
-# Sprint 22: 前端体验优化
+# Sprint 23: AI 输出 Markdown 渲染
 
 **状态**: 已完成
-**目标**: 消除前端重复代码、添加错误处理
+**目标**: AI 教练页面的输出内容从纯文本改为 Markdown 渲染
 
 ## 任务清单
 
-- [x] S22-1: 提取 typeNames 到 base.html 全局变量（消除 3 处重复）
-- [x] S22-2: Dashboard 页面添加 API 错误处理（.catch）
-- [x] S22-3: 活动详情页添加 API 错误处理
+- [x] S23-1: 引入 marked.js 库
+- [x] S23-2: AI 周报和建议输出改为 Markdown 渲染
+- [x] S23-3: 添加 Markdown 内容样式
 
 ## 评估小结
 
-Sprint 22 完成了前端体验优化：
-- `TYPE_NAMES` 映射集中到 base.html，3 个子模板改用全局变量
-- Dashboard 和活动详情页添加错误处理，避免 API 失败时页面卡在 loading 状态
+Sprint 23 完成了 AI 输出的 Markdown 渲染：
+- 引入 marked.js CDN
+- AI 周报和建议内容从 `textContent` 改为 `marked.parse()` + innerHTML 渲染
+- 添加 `.md-content` CSS 样式（标题/列表/代码块/引用等）
 - 123 个测试全部通过

@@ -284,3 +284,12 @@ Dashboard 空状态引导 + 错误页面：
 - Dashboard 页面添加 API 错误处理（.catch），避免加载失败时页面卡住
 - 活动详情页添加 API 错误处理，失败时显示错误信息和返回按钮
 - 123 个测试全部通过
+
+---
+
+### Sprint 23 完成 — 2026-04-28
+
+AI 输出 Markdown 渲染：
+- 引入 marked.js CDN，AI 周报和建议内容从纯文本改为 Markdown 渲染
+- 添加 `.md-content` CSS 样式（标题/列表/代码块/引用等）
+- 123 个测试全部通过

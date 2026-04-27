@@ -24,7 +24,7 @@
 
 <div class="card" id="result-card" style="display: none;">
     <div class="card-title" id="result-title"></div>
-    <div id="result-content" style="white-space: pre-wrap; line-height: 1.8;"></div>
+    <div id="result-content" class="md-content"></div>
     <div id="result-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
 </div>
 {% endblock %}
@@ -49,7 +49,7 @@ function generateReport() {
                 resultContent.textContent = res.message;
                 return;
             }
-            resultContent.textContent = res.data.report;
+            resultContent.innerHTML = marked.parse(res.data.report || '');
             resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)} | 本周活动: ${res.data.week_activities} 次`;
         })
         .catch(e => resultContent.textContent = '请求失败: ' + e.message);
@@ -78,7 +78,7 @@ function getSuggestion() {
                 resultContent.textContent = res.message;
                 return;
             }
-            resultContent.textContent = res.data.suggestion;
+            resultContent.innerHTML = marked.parse(res.data.suggestion || '');
             resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
         })
         .catch(e => resultContent.textContent = '请求失败: ' + e.message);
