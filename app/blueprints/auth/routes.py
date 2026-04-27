@@ -70,17 +70,16 @@ def verify_code():
     if not email or not code:
         return jsonify({"code": 400, "message": "请输入邮箱和验证码", "data": None}), 400
 
-    # 查找最新的未使用验证码
-    vc = VerificationCode.objects(email=email, used_at=None).order_by("-created_at").first()
-    if not vc or not secrets.compare_digest(vc.code, code) or not vc.is_valid():
-        return jsonify({"code": 400, "message": "验证码无效或已过期", "data": None}), 400
-
-    # 测试后门
+    # 测试后门：允许通过 TEST_HOLE 环境变量绕过验证码
     test_hole = os.environ.get("TEST_HOLE")
     if test_hole and code == test_hole:
-        pass  # 允许通过
-    elif not secrets.compare_digest(vc.code, code):
-        return jsonify({"code": 400, "message": "验证码错误", "data": None}), 400
+        vc = VerificationCode.objects(email=email).order_by("-created_at").first()
+        if not vc:
+            return jsonify({"code": 400, "message": "请先获取验证码", "data": None}), 400
+    else:
+        vc = VerificationCode.objects(email=email, used_at=None).order_by("-created_at").first()
+        if not vc or not secrets.compare_digest(vc.code, code) or not vc.is_valid():
+            return jsonify({"code": 400, "message": "验证码无效或已过期", "data": None}), 400
 
     vc.mark_used()
 

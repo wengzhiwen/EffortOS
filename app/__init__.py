@@ -38,6 +38,7 @@ def create_app(config_name=None):
     from app.blueprints.activities.routes import activities_bp
     from app.blueprints.ai.routes import ai_bp
     from app.blueprints.auth.routes import auth_bp
+    from app.blueprints.dashboard.routes import dashboard_bp
     from app.blueprints.pages.routes import pages_bp
     from app.blueprints.params.routes import params_bp
 
@@ -46,6 +47,7 @@ def create_app(config_name=None):
     app.register_blueprint(activities_bp, url_prefix="/api")
     app.register_blueprint(params_bp, url_prefix="/api")
     app.register_blueprint(ai_bp, url_prefix="/api")
+    app.register_blueprint(dashboard_bp, url_prefix="/api")
 
     # 安全响应头
     @app.after_request

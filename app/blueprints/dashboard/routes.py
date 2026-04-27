@@ -1,0 +1,120 @@
+from collections import defaultdict
+from datetime import datetime as dt
+from datetime import timedelta
+
+from flask import Blueprint, jsonify, request
+
+from app.models.activity import Activity
+from app.services.metrics_service import calc_daily_tss, calc_pmc
+
+dashboard_bp = Blueprint("dashboard", __name__)
+
+
+def _get_authenticated_user():
+    """从请求中获取已认证的用户。"""
+    from flask import request
+
+    from app.models.user import User
+
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    if not token:
+        token = request.cookies.get("session_token", "").strip()
+    if not token:
+        return None
+    return User.objects(session_token=token).first()
+
+
+def _filter_user(qs):
+    """按当前用户过滤查询集。"""
+    current_user = _get_authenticated_user()
+    return qs.filter(user=current_user) if current_user else qs
+
+
+@dashboard_bp.route("/pmc", methods=["GET"])
+def get_pmc():
+    """获取 PMC（CTL/ATL/TSB）时间序列。
+
+    查询参数:
+    - start_date: 起始日期 "YYYY-MM-DD"（默认 60 天前）
+    - end_date: 结束日期 "YYYY-MM-DD"（默认今天）
+    """
+    end_date = request.args.get("end_date", dt.now().strftime("%Y-%m-%d"))
+    start_date = request.args.get(
+        "start_date",
+        (dt.now() - timedelta(days=60)).strftime("%Y-%m-%d"),
+    )
+
+    activities = _filter_user(Activity.objects(start_time__gte=start_date, start_time__lte=end_date + "T23:59:59"))
+    daily = calc_daily_tss(list(activities))
+    pmc_data = calc_pmc(daily, start_date, end_date)
+
+    return jsonify({"code": 200, "message": "ok", "data": pmc_data})
+
+
+@dashboard_bp.route("/dashboard", methods=["GET"])
+def get_dashboard():
+    """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动 + 日历 + 统计。"""
+    today = dt.now()
+    start = (today - timedelta(days=90)).strftime("%Y-%m-%d")
+    end = today.strftime("%Y-%m-%d")
+
+    activities_all = _filter_user(Activity.objects(start_time__gte=start, start_time__lte=end + "T23:59:59"))
+    daily = calc_daily_tss(list(activities_all))
+    pmc_data = calc_pmc(daily, start, end)
+
+    latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
+
+    # 最近 5 条活动
+    from app.blueprints.activities.routes import _serialize_activity
+
+    recent_list = [_serialize_activity(a) for a in _filter_user(Activity.objects()).order_by("-start_time").limit(5)]
+
+    # 本周/本月统计
+    week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    month_start = today.strftime("%Y-%m-01")
+
+    week_activities = list(
+        _filter_user(Activity.objects(start_time__gte=week_start, start_time__lte=end + "T23:59:59"))
+    )
+    month_activities = list(
+        _filter_user(Activity.objects(start_time__gte=month_start, start_time__lte=end + "T23:59:59"))
+    )
+
+    def _calc_stats(activities):
+        total_tss = sum(a.computed_metrics.tss for a in activities if a.computed_metrics and a.computed_metrics.tss)
+        total_duration = sum(
+            a.data_summary.duration_seconds for a in activities if a.data_summary and a.data_summary.duration_seconds
+        )
+        total_distance = sum(
+            a.data_summary.total_distance for a in activities if a.data_summary and a.data_summary.total_distance
+        )
+        return {
+            "count": len(activities),
+            "total_tss": round(total_tss, 1),
+            "total_duration_minutes": round(total_duration / 60),
+            "total_distance_km": round(total_distance / 1000, 1),
+        }
+
+    # 运动类型分布（本月）
+    type_breakdown = defaultdict(int)
+    for a in month_activities:
+        type_breakdown[a.activity_type] += 1
+
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "ctl": latest_pmc["ctl"],
+                "atl": latest_pmc["atl"],
+                "tsb": latest_pmc["tsb"],
+                "today_tss": daily.get(end, 0),
+                "recent_activities": recent_list,
+                "pmc": pmc_data[-30:],
+                "calendar": daily,
+                "weekly_stats": _calc_stats(week_activities),
+                "monthly_stats": _calc_stats(month_activities),
+                "type_breakdown": dict(type_breakdown),
+            },
+        }
+    )

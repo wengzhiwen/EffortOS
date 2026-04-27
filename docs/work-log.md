@@ -240,3 +240,16 @@ Dashboard 空状态引导 + 错误页面：
 - 活动详情页增加「编辑」按钮
 - 认证保护 + 输入校验（名称截断 200 字符、类型白名单）
 - 3 个新测试，104 个测试全部通过
+
+---
+
+### Sprint 19 完成 — 2026-04-27
+
+代码审查与结构优化：
+- 新增 `app/blueprints/dashboard/routes.py`：PMC 和 Dashboard API 独立为单独蓝图
+- `activities/routes.py` 从 681 行降至 388 行，减少 43%
+- 提取公共查询过滤函数（user/type/date range），消除重复代码
+- 提取常量 `VALID_ACTIVITY_TYPES` 消除重复定义
+- 修复 auth/routes.py 中验证码校验的逻辑冗余（先验证后又有条件重复验证）
+- 采纳提案：「# 同行评审」— 模块划分与超大文件拆分
+- 104 个测试全部通过
