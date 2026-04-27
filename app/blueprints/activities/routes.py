@@ -73,6 +73,10 @@ def upload_activity():
         data_summary=data_summary,
         raw_data_path=file_path,
     )
+
+    # 计算运动指标
+    _compute_metrics(activity, parsed["trackpoints"])
+
     activity.save()
 
     return jsonify({
@@ -84,6 +88,7 @@ def upload_activity():
             "name": activity.name,
             "start_time": activity.start_time.isoformat(),
             "data_summary": _serialize_summary(data_summary),
+            "computed_metrics": _serialize_metrics(activity.computed_metrics),
             "trackpoint_count": len(trackpoints),
         },
     })
@@ -156,8 +161,62 @@ def _serialize_activity(activity):
         "start_time": activity.start_time.isoformat(),
         "source_format": activity.source_format,
         "data_summary": _serialize_summary(activity.data_summary),
+        "computed_metrics": _serialize_metrics(activity.computed_metrics),
         "created_at": activity.created_at.isoformat() if activity.created_at else None,
     }
+
+
+def _serialize_metrics(metrics):
+    """将 ComputedMetrics 序列化为字典。"""
+    if not metrics or metrics.tss is None:
+        return None
+    return {
+        "tss": metrics.tss,
+        "tss_method": metrics.tss_method,
+        "hr_tss": metrics.hr_tss,
+        "intensity_factor": metrics.intensity_factor,
+        "hr_intensity_factor": metrics.hr_intensity_factor,
+        "normalized_power": metrics.normalized_power,
+        "variability_index": metrics.variability_index,
+        "efficiency_factor": metrics.efficiency_factor,
+        "work_kj": metrics.work_kj,
+        "hr_zones_time": metrics.hr_zones_time,
+        "power_zones_time": metrics.power_zones_time,
+    }
+
+
+def _compute_metrics(activity, trackpoints):
+    """计算并填充 Activity 的 ComputedMetrics。"""
+    from app.services.metrics_service import compute_activity_metrics
+    from app.models.athlete_settings import AthleteParams
+
+    # 查找生效的用户参数（当前无用户认证，取最新参数）
+    params = AthleteParams.objects().order_by("-effective_date").first()
+    if not params or not trackpoints:
+        return
+
+    activity_type = activity.activity_type
+    hr_zones = params.get_hr_zones(activity_type)
+    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling") else []
+
+    # 获取对应运动类型的 LTHR
+    lthr_map = {
+        "cycling": params.cycling_lthr,
+        "indoor_cycling": params.cycling_lthr,
+        "running": params.running_lthr,
+        "indoor_running": params.running_lthr,
+        "walking": params.walking_lthr,
+    }
+    lthr = lthr_map.get(activity_type)
+
+    activity.computed_metrics = compute_activity_metrics(
+        trackpoints=trackpoints,
+        activity_type=activity_type,
+        hr_zones=hr_zones,
+        power_zones=power_zones,
+        ftp=params.ftp,
+        lthr=lthr,
+    )
 
 
 @activities_bp.route("/activities", methods=["GET"])
@@ -218,3 +277,35 @@ def delete_activity(activity_id):
 
     activity.delete()
     return jsonify({"code": 200, "message": "已删除", "data": None})
+
+
+@activities_bp.route("/pmc", methods=["GET"])
+def get_pmc():
+    """获取 PMC（CTL/ATL/TSB）时间序列。
+
+    查询参数:
+    - start_date: 起始日期 "YYYY-MM-DD"（默认 60 天前）
+    - end_date: 结束日期 "YYYY-MM-DD"（默认今天）
+    """
+    from datetime import datetime as dt, timedelta
+
+    from app.services.metrics_service import calc_daily_tss, calc_pmc
+
+    end_date = request.args.get("end_date", dt.now().strftime("%Y-%m-%d"))
+    start_date = request.args.get(
+        "start_date",
+        (dt.now() - timedelta(days=60)).strftime("%Y-%m-%d"),
+    )
+
+    activities = Activity.objects(
+        start_time__gte=start_date,
+        start_time__lte=end_date + "T23:59:59",
+    )
+    daily = calc_daily_tss(list(activities))
+    pmc_data = calc_pmc(daily, start_date, end_date)
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": pmc_data,
+    })
