@@ -1,18 +1,16 @@
-# Sprint 23: AI 输出 Markdown 渲染
+# Sprint 24: 清理 gitignore 和项目文件
 
 **状态**: 已完成
-**目标**: AI 教练页面的输出内容从纯文本改为 Markdown 渲染
+**目标**: 更新 .gitignore，清理项目中的临时文件
 
 ## 任务清单
 
-- [x] S23-1: 引入 marked.js 库
-- [x] S23-2: AI 周报和建议输出改为 Markdown 渲染
-- [x] S23-3: 添加 Markdown 内容样式
+- [x] S24-1: 更新 .gitignore（忽略截图、page-review、playwright-mcp、uploads）
+- [x] S24-2: 处理用户提案（同行评审 v2 — gitignore 更新）
 
 ## 评估小结
 
-Sprint 23 完成了 AI 输出的 Markdown 渲染：
-- 引入 marked.js CDN
-- AI 周报和建议内容从 `textContent` 改为 `marked.parse()` + innerHTML 渲染
-- 添加 `.md-content` CSS 样式（标题/列表/代码块/引用等）
+Sprint 24 完成了项目清理：
+- .gitignore 新增：*.png、*.jpeg、page-review/、.playwright-mcp/、uploads/
+- 采纳提案「同行评审 v2」
 - 123 个测试全部通过

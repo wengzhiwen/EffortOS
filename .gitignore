@@ -220,3 +220,12 @@ __marimo__/
 # 本地分析用的运动数据文件
 samples/
 .DS_Store
+
+# 截图和临时文件
+*.png
+*.jpeg
+page-review/
+.playwright-mcp/
+
+# 上传文件目录
+uploads/

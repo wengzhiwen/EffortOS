@@ -293,3 +293,12 @@ AI 输出 Markdown 渲染：
 - 引入 marked.js CDN，AI 周报和建议内容从纯文本改为 Markdown 渲染
 - 添加 `.md-content` CSS 样式（标题/列表/代码块/引用等）
 - 123 个测试全部通过
+
+---
+
+### Sprint 24 完成 — 2026-04-28
+
+清理 gitignore 和项目文件：
+- .gitignore 新增忽略项：截图文件(*.png, *.jpeg)、page-review/、.playwright-mcp/、uploads/
+- 采纳提案「同行评审 v2」— gitignore 更新
+- 123 个测试全部通过
