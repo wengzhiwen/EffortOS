@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}活动记录 - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">
+    活动记录
+    <a href="#upload" class="btn btn-primary" style="float: right; font-size: 0.85rem;">上传文件</a>
+</h2>
+
+<div class="card" id="upload" style="display: none;">
+    <div class="card-title">上传运动数据</div>
+    <form id="upload-form" enctype="multipart/form-data">
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>运动类型</label>
+                <select name="activity_type" required>
+                    <option value="cycling">骑行</option>
+                    <option value="indoor_cycling">室内骑行</option>
+                    <option value="running">跑步</option>
+                    <option value="indoor_running">室内跑步</option>
+                    <option value="walking">步行</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>名称（可选）</label>
+                <input type="text" name="name" placeholder="例：晨间骑行">
+            </div>
+            <div class="form-group">
+                <label>文件（TCX/GPX）</label>
+                <input type="file" name="file" accept=".tcx,.gpx" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">上传</button>
+    </form>
+    <div id="upload-status" style="margin-top: 0.5rem;"></div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>类型</th>
+                <th>名称</th>
+                <th>时长</th>
+                <th>距离</th>
+                <th>平均心率</th>
+                <th>TSS</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="activity-list">
+            <tr><td colspan="8">加载中...</td></tr>
+        </tbody>
+    </table>
+    <div id="pagination" style="margin-top: 1rem; text-align: center;"></div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+let currentOffset = 0;
+const limit = 20;
+
+function loadActivities(offset = 0) {
+    fetch(`/api/activities?limit=${limit}&offset=${offset}`)
+        .then(r => r.json())
+        .then(res => {
+            const tbody = document.getElementById('activity-list');
+            const items = res.data.items;
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8">暂无活动记录</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(a => {
+                const s = a.data_summary || {};
+                const m = a.computed_metrics || {};
+                const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 60) + '分' : '—';
+                const dist = s.total_distance ? (s.total_distance / 1000).toFixed(1) + ' km' : '—';
+                const hr = s.avg_heart_rate || '—';
+                const tss = m.tss != null ? m.tss.toFixed(1) : '—';
+                return `<tr>
+                    <td>${a.start_time.slice(0, 10)}</td>
+                    <td><span class="badge badge-${a.activity_type}">${a.activity_type}</span></td>
+                    <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
+                    <td>${duration}</td>
+                    <td>${dist}</td>
+                    <td>${hr}</td>
+                    <td>${tss}</td>
+                    <td><button onclick="deleteActivity('${a.id}')" style="color: var(--danger); background: none; border: none; cursor: pointer;">删除</button></td>
+                </tr>`;
+            }).join('');
+
+            const total = res.data.total;
+            const pag = document.getElementById('pagination');
+            if (total > limit) {
+                const pages = Math.ceil(total / limit);
+                const current = Math.floor(offset / limit);
+                let html = '';
+                for (let i = 0; i < pages; i++) {
+                    html += `<a href="#" onclick="loadActivities(${i * limit}); return false;" class="btn" style="${i === current ? 'background: var(--primary); color: white;' : ''}">${i + 1}</a> `;
+                }
+                pag.innerHTML = html;
+            } else {
+                pag.innerHTML = '';
+            }
+        });
+}
+
+function deleteActivity(id) {
+    if (!confirm('确定删除此活动？')) return;
+    fetch(`/api/activities/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(() => loadActivities(currentOffset));
+}
+
+// 上传表单
+const uploadSection = document.querySelector('#upload');
+document.querySelector('a[href="#upload"]').addEventListener('click', e => {
+    e.preventDefault();
+    uploadSection.style.display = uploadSection.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('upload-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const status = document.getElementById('upload-status');
+    status.textContent = '上传中...';
+    const formData = new FormData(e.target);
+    fetch('/api/activities/upload', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) {
+                status.textContent = '上传成功！';
+                status.style.color = 'var(--success)';
+                e.target.reset();
+                loadActivities(0);
+            } else {
+                status.textContent = res.message;
+                status.style.color = 'var(--danger)';
+            }
+        });
+});
+
+loadActivities(0);
+</script>
+{% endblock %}

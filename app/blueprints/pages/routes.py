@@ -8,6 +8,16 @@ def index():
     return render_template("index.html")
 
 
-@pages_bp.route("/about")
-def about():
-    return render_template("about.html")
+@pages_bp.route("/activities")
+def activities():
+    return render_template("activities.html")
+
+
+@pages_bp.route("/activities/<activity_id>")
+def activity_detail(activity_id):
+    return render_template("activity_detail.html", activity_id=activity_id)
+
+
+@pages_bp.route("/settings")
+def settings():
+    return render_template("settings.html")

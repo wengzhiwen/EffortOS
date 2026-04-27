@@ -1,8 +1,104 @@
 {% extends "base.html" %}
 
-{% block title %}EffortOS - 运动数据追踪与分析{% endblock %}
+{% block title %}EffortOS - 仪表盘{% endblock %}
 
 {% block content %}
-<h1>EffortOS</h1>
-<p>运动数据追踪与分析平台</p>
+<h2 style="margin-bottom: 1rem;">仪表盘</h2>
+
+<div class="grid grid-4">
+    <div class="card">
+        <div class="card-title">今日 TSS</div>
+        <div class="metric-value" id="today-tss">—</div>
+    </div>
+    <div class="card">
+        <div class="card-title">Fitness (CTL)</div>
+        <div class="metric-value" id="ctl">—</div>
+    </div>
+    <div class="card">
+        <div class="card-title">Fatigue (ATL)</div>
+        <div class="metric-value" id="atl">—</div>
+    </div>
+    <div class="card">
+        <div class="card-title">Form (TSB)</div>
+        <div class="metric-value" id="tsb">—</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">PMC 趋势（最近 30 天）</div>
+    <canvas id="pmc-chart" height="200"></canvas>
+</div>
+
+<div class="card">
+    <div class="card-title">最近活动</div>
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>类型</th>
+                <th>名称</th>
+                <th>时长</th>
+                <th>TSS</th>
+            </tr>
+        </thead>
+        <tbody id="recent-activities">
+            <tr><td colspan="5">加载中...</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+fetch('/api/dashboard')
+    .then(r => r.json())
+    .then(res => {
+        const d = res.data;
+        document.getElementById('today-tss').textContent = d.today_tss.toFixed(1);
+        document.getElementById('ctl').textContent = d.ctl.toFixed(1);
+        document.getElementById('atl').textContent = d.atl.toFixed(1);
+
+        const tsbEl = document.getElementById('tsb');
+        tsbEl.textContent = d.tsb.toFixed(1);
+        tsbEl.className = 'metric-value ' + (d.tsb > 0 ? 'metric-positive' : d.tsb < -30 ? 'metric-negative' : 'metric-neutral');
+
+        // PMC 图表
+        const labels = d.pmc.map(p => p.date);
+        new Chart(document.getElementById('pmc-chart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'CTL (Fitness)', data: d.pmc.map(p => p.ctl), borderColor: '#2563eb', fill: false, tension: 0.3 },
+                    { label: 'ATL (Fatigue)', data: d.pmc.map(p => p.atl), borderColor: '#dc2626', fill: false, tension: 0.3 },
+                    { label: 'TSB (Form)', data: d.pmc.map(p => p.tsb), borderColor: '#16a34a', fill: false, tension: 0.3, borderDash: [5, 5] },
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: false } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 最近活动列表
+        const tbody = document.getElementById('recent-activities');
+        if (d.recent_activities.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">暂无活动记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.recent_activities.map(a => {
+            const duration = a.data_summary?.duration_seconds;
+            const durationStr = duration ? Math.floor(duration / 60) + '分钟' : '—';
+            const tss = a.computed_metrics?.tss;
+            return `<tr>
+                <td>${a.start_time.slice(0, 10)}</td>
+                <td><span class="badge badge-${a.activity_type}">${a.activity_type}</span></td>
+                <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
+                <td>${durationStr}</td>
+                <td>${tss != null ? tss.toFixed(1) : '—'}</td>
+            </tr>`;
+        }).join('');
+    });
+</script>
 {% endblock %}

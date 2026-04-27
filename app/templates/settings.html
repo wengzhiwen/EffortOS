@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}参数设置 - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">参数设置</h2>
+
+<div class="card">
+    <div class="card-title">运动参数配置</div>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+        参数按日期生效，修改后从该日期起的运动指标将重新计算。
+    </p>
+    <form id="params-form">
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>生效日期</label>
+                <input type="date" name="effective_date" required id="effective-date">
+            </div>
+            <div class="form-group">
+                <label>FTP（瓦特）— 骑行</label>
+                <input type="number" name="ftp" placeholder="例：250">
+            </div>
+            <div class="form-group">
+                <label>最大心率（bpm）</label>
+                <input type="number" name="max_heart_rate" placeholder="例：190">
+            </div>
+        </div>
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>骑行阈值心率 LTHR（bpm）</label>
+                <input type="number" name="cycling_lthr" placeholder="例：160">
+            </div>
+            <div class="form-group">
+                <label>跑步阈值心率 LTHR（bpm）</label>
+                <input type="number" name="running_lthr" placeholder="例：170">
+            </div>
+            <div class="form-group">
+                <label>步行阈值心率 LTHR（bpm）</label>
+                <input type="number" name="walking_lthr" placeholder="例：140">
+            </div>
+        </div>
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>体重（kg）</label>
+                <input type="number" step="0.1" name="weight" placeholder="例：70.0">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">保存参数</button>
+        <span id="save-status" style="margin-left: 1rem;"></span>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-title">当前生效参数</div>
+    <div id="current-params">加载中...</div>
+</div>
+
+<div class="card">
+    <div class="card-title">分区预览</div>
+    <div class="grid grid-2">
+        <div>
+            <h4 style="margin-bottom: 0.5rem;">心率分区（骑行）</h4>
+            <div id="hr-zones-preview">—</div>
+        </div>
+        <div>
+            <h4 style="margin-bottom: 0.5rem;">功率分区</h4>
+            <div id="power-zones-preview">—</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">历史参数变更</div>
+    <table>
+        <thead><tr><th>生效日期</th><th>FTP</th><th>骑行 LTHR</th><th>跑步 LTHR</th><th>最大心率</th><th>体重</th></tr></thead>
+        <tbody id="params-history"><tr><td colspan="6">加载中...</td></tr></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+document.getElementById('effective-date').valueAsDate = new Date();
+
+function loadParams() {
+    fetch('/api/params/latest')
+        .then(r => r.json())
+        .then(res => {
+            const d = res.data;
+            if (!d) {
+                document.getElementById('current-params').innerHTML = '<p style="color: var(--text-secondary);">尚未设置参数</p>';
+                return;
+            }
+            document.getElementById('current-params').innerHTML = `
+                <div class="grid grid-3">
+                    <div><strong>FTP:</strong> ${d.ftp || '—'} W</div>
+                    <div><strong>骑行 LTHR:</strong> ${d.cycling_lthr || '—'} bpm</div>
+                    <div><strong>跑步 LTHR:</strong> ${d.running_lthr || '—'} bpm</div>
+                    <div><strong>步行 LTHR:</strong> ${d.walking_lthr || '—'} bpm</div>
+                    <div><strong>最大心率:</strong> ${d.max_heart_rate || '—'} bpm</div>
+                    <div><strong>体重:</strong> ${d.weight || '—'} kg</div>
+                </div>`;
+
+            // 分区预览
+            if (d.hr_zones && d.hr_zones.length > 0) {
+                document.getElementById('hr-zones-preview').innerHTML = d.hr_zones.map(z =>
+                    `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border);">
+                        <span>${z.name}</span><span>${z.min} - ${z.max} bpm</span>
+                    </div>`
+                ).join('');
+            }
+            if (d.power_zones && d.power_zones.length > 0) {
+                document.getElementById('power-zones-preview').innerHTML = d.power_zones.map(z =>
+                    `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border);">
+                        <span>${z.name}</span><span>${z.min} - ${z.max} W</span>
+                    </div>`
+                ).join('');
+            }
+        });
+
+    fetch('/api/params/history')
+        .then(r => r.json())
+        .then(res => {
+            const tbody = document.getElementById('params-history');
+            if (!res.data || res.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">暂无历史记录</td></tr>';
+                return;
+            }
+            tbody.innerHTML = res.data.map(p => `<tr>
+                <td>${p.effective_date}</td>
+                <td>${p.ftp || '—'}</td>
+                <td>${p.cycling_lthr || '—'}</td>
+                <td>${p.running_lthr || '—'}</td>
+                <td>${p.max_heart_rate || '—'}</td>
+                <td>${p.weight || '—'}</td>
+            </tr>`).join('');
+        });
+}
+
+document.getElementById('params-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const status = document.getElementById('save-status');
+    const formData = new FormData(e.target);
+    const data = {};
+    for (const [key, val] of formData.entries()) {
+        if (val) data[key] = key === 'effective_date' ? val : Number(val);
+    }
+    data.effective_date = data.effective_date + 'T00:00:00Z';
+
+    fetch('/api/params', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) {
+                status.textContent = '保存成功';
+                status.style.color = 'var(--success)';
+                loadParams();
+            } else {
+                status.textContent = res.message;
+                status.style.color = 'var(--danger)';
+            }
+            setTimeout(() => status.textContent = '', 3000);
+        });
+});
+
+loadParams();
+</script>
+{% endblock %}

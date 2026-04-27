@@ -49,7 +49,7 @@
 - 功率区间时间分布统计
 - 运动摘要计算（总时长、总距离、平均心率、NP、IF 等）
 
-### M5: 数据可视化 `[~]` — Sprint 4
+### M5: 数据可视化 `[x]` — Sprint 4 ✓
 > Dashboard + 训练日历 + 趋势图表
 
 - Dashboard 首页（今日 TSS、CTL/ATL/TSB 曲线、最近活动）
@@ -58,7 +58,7 @@
 - Fitness/Fatigue/Form 趋势图
 - 心率/功率区间分布图
 
-### M6: LLM 运动建议 `[ ]`（后期）
+### M6: LLM 运动建议 `[~]` — Sprint 5
 > OpenAI GPT-5.4 集成
 
 - OpenAI API 集成

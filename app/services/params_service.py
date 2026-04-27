@@ -4,14 +4,21 @@ from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
 
 
+def _build_query(user, **extra_filters):
+    """构建查询条件，user 为 None 时不过滤 user 字段。"""
+    filters = dict(extra_filters)
+    if user is not None:
+        filters["user"] = user
+    return filters
+
+
 def get_effective_params(user, date: datetime) -> AthleteParams:
     """获取指定日期生效的运动员参数。
 
     返回 effective_date <= date 的最新一条记录。
     """
     return AthleteParams.objects(
-        user=user,
-        effective_date__lte=date,
+        **_build_query(user, effective_date__lte=date),
     ).order_by("-effective_date").first()
 
 
@@ -60,12 +67,10 @@ def get_affected_activities(user, effective_date: datetime) -> list:
     """获取受参数变更影响的活动列表。
 
     返回 start_time >= effective_date 的所有活动。
-    这些活动的 TSS 等指标可能需要重算。
     """
     return list(
         Activity.objects(
-            user=user,
-            start_time__gte=effective_date,
+            **_build_query(user, start_time__gte=effective_date),
         ).order_by("start_time")
     )
 
@@ -77,8 +82,7 @@ def mark_activities_for_recalc(user, effective_date: datetime) -> int:
     返回受影响的活动数量。
     """
     affected = Activity.objects(
-        user=user,
-        start_time__gte=effective_date,
+        **_build_query(user, start_time__gte=effective_date),
     )
     count = affected.count()
     affected.update(unset__computed_metrics=1)

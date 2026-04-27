@@ -13,5 +13,5 @@ def test_index_page(client):
 
 
 def test_about_page(client):
-    response = client.get("/about")
+    response = client.get("/settings")
     assert response.status_code == 200

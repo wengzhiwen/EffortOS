@@ -309,3 +309,42 @@ def get_pmc():
         "message": "ok",
         "data": pmc_data,
     })
+
+
+@activities_bp.route("/dashboard", methods=["GET"])
+def get_dashboard():
+    """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动。"""
+    from datetime import datetime as dt, timedelta
+
+    from app.services.metrics_service import calc_daily_tss, calc_pmc
+
+    today = dt.now()
+    start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+    end = today.strftime("%Y-%m-%d")
+
+    activities_all = Activity.objects(
+        start_time__gte=start,
+        start_time__lte=end + "T23:59:59",
+    )
+    daily = calc_daily_tss(list(activities_all))
+    pmc_data = calc_pmc(daily, start, end)
+
+    # 取最新一天的 PMC 值
+    latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
+
+    # 最近 5 条活动
+    recent = Activity.objects().order_by("-start_time").limit(5)
+    recent_list = [_serialize_activity(a) for a in recent]
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "ctl": latest_pmc["ctl"],
+            "atl": latest_pmc["atl"],
+            "tsb": latest_pmc["tsb"],
+            "today_tss": daily.get(end, 0),
+            "recent_activities": recent_list,
+            "pmc": pmc_data[-30:],  # 最近 30 天 PMC 数据
+        },
+    })

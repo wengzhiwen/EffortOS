@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}活动详情 - EffortOS{% endblock %}
+
+{% block content %}
+<div id="activity-detail">
+    <p>加载中...</p>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+const activityId = "{{ activity_id }}";
+
+fetch(`/api/activities/${activityId}`)
+    .then(r => r.json())
+    .then(res => {
+        const a = res.data;
+        const s = a.data_summary || {};
+        const m = a.computed_metrics || {};
+        const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 3600) + '时' + Math.floor((s.duration_seconds % 3600) / 60) + '分' : '—';
+        const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
+
+        document.getElementById('activity-detail').innerHTML = `
+            <h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                ${a.start_time.slice(0, 19).replace('T', ' ')}
+                <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${a.activity_type}</span>
+            </p>
+
+            <div class="grid grid-4" style="margin-bottom: 1rem;">
+                <div class="card">
+                    <div class="card-title">时长</div>
+                    <div class="metric-value">${duration}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">距离</div>
+                    <div class="metric-value">${dist}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">TSS</div>
+                    <div class="metric-value">${m.tss != null ? m.tss.toFixed(1) : '—'}</div>
+                    <div class="metric-unit">${m.tss_method === 'power' ? '基于功率' : m.tss_method === 'hr' ? '基于心率' : ''}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">NP / IF</div>
+                    <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
+                    <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
+                </div>
+            </div>
+
+            <div class="grid grid-3" style="margin-bottom: 1rem;">
+                <div class="card">
+                    <div class="card-title">平均/最大心率</div>
+                    <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">平均/最大功率</div>
+                    <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">做功 / VI / EF</div>
+                    <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
+                    <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
+                </div>
+            </div>
+
+            ${m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0 ? `
+            <div class="card">
+                <div class="card-title">心率分区时间</div>
+                <canvas id="hr-zones-chart" height="150"></canvas>
+            </div>` : ''}
+
+            ${m.power_zones_time && Object.keys(m.power_zones_time).length > 0 ? `
+            <div class="card">
+                <div class="card-title">功率分区时间</div>
+                <canvas id="power-zones-chart" height="150"></canvas>
+            </div>` : ''}
+
+            <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
+        `;
+
+        // 心率分区图
+        if (m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0) {
+            const hrLabels = Object.keys(m.hr_zones_time);
+            const hrValues = Object.values(m.hr_zones_time).map(v => (v / 60).toFixed(1));
+            new Chart(document.getElementById('hr-zones-chart'), {
+                type: 'bar',
+                data: {
+                    labels: hrLabels,
+                    datasets: [{ label: '时间（分钟）', data: hrValues, backgroundColor: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'] }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // 功率分区图
+        if (m.power_zones_time && Object.keys(m.power_zones_time).length > 0) {
+            const pwLabels = Object.keys(m.power_zones_time);
+            const pwValues = Object.values(m.power_zones_time).map(v => (v / 60).toFixed(1));
+            new Chart(document.getElementById('power-zones-chart'), {
+                type: 'bar',
+                data: {
+                    labels: pwLabels,
+                    datasets: [{ label: '时间（分钟）', data: pwValues, backgroundColor: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+    });
+</script>
+{% endblock %}

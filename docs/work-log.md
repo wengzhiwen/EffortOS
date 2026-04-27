@@ -54,3 +54,18 @@
 - 调研报告保存至 docs/metrics-research.md
 - 采纳用户提案：计算维度调研
 - 68 个测试全部通过
+
+---
+
+### Sprint 4 完成 — 2026-04-27
+
+完成了数据可视化（M5），包括：
+- 自定义 CSS 样式系统（卡片、网格、标签、表单等组件）
+- Dashboard 首页：TSS/CTL/ATL/TSB 四宫格 + Chart.js PMC 30 天趋势图 + 最近活动列表
+- 活动列表页：文件上传、删除、分页
+- 活动详情页：完整指标展示 + 心率/功率分区柱状图
+- 参数设置页：参数保存 + 分区预览 + 历史变更记录
+- Dashboard API（GET /api/dashboard）+ Params API（CRUD + 历史）
+- params_service 支持 user=None（认证前）
+- 68 个测试全部通过
+- 调整自循环机制：无提案时自动继续迭代
