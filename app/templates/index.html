@@ -24,6 +24,8 @@
     </div>
 </div>
 
+<div id="onboarding-hint" style="display: none;"></div>
+
 <div class="grid grid-2">
     <div class="card">
         <div class="card-title">本周统计</div>
@@ -72,10 +74,15 @@
 
 {% block script %}
 <script>
+const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
+
 authFetch('/api/dashboard')
     .then(r => r.json())
     .then(res => {
         const d = res.data;
+        const hasActivities = d.recent_activities && d.recent_activities.length > 0;
+        const hasMetrics = d.weekly_stats && d.weekly_stats.count > 0;
+
         document.getElementById('today-tss').textContent = d.today_tss.toFixed(1);
         document.getElementById('ctl').textContent = d.ctl.toFixed(1);
         document.getElementById('atl').textContent = d.atl.toFixed(1);
@@ -83,6 +90,31 @@ authFetch('/api/dashboard')
         const tsbEl = document.getElementById('tsb');
         tsbEl.textContent = d.tsb.toFixed(1);
         tsbEl.className = 'metric-value ' + (d.tsb > 0 ? 'metric-positive' : d.tsb < -30 ? 'metric-negative' : 'metric-neutral');
+
+        // 引导提示
+        const hint = document.getElementById('onboarding-hint');
+        if (!hasActivities) {
+            hint.style.display = 'block';
+            hint.innerHTML = `<div class="card" style="background: var(--primary-light); border-color: var(--primary);">
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">开始使用 EffortOS</div>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
+                    上传运动数据文件并设置运动员参数，即可查看训练指标和分析。
+                </p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/settings" class="btn btn-primary btn-sm">设置运动参数</a>
+                    <a href="/activities" class="btn btn-secondary btn-sm">上传运动数据</a>
+                </div>
+            </div>`;
+        } else if (!hasMetrics) {
+            hint.style.display = 'block';
+            hint.innerHTML = `<div class="card" style="background: var(--primary-light); border-color: var(--primary);">
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">设置运动员参数以计算训练指标</div>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
+                    已有活动数据，但尚未设置 FTP 和阈值心率（LTHR）。设置后可计算 TSS、分区时间等指标。
+                </p>
+                <a href="/settings" class="btn btn-primary btn-sm">前往设置</a>
+            </div>`;
+        }
 
         // 本周/本月统计
         renderStats('weekly-stats', d.weekly_stats);
@@ -115,15 +147,14 @@ authFetch('/api/dashboard')
 
         // 最近活动列表
         const tbody = document.getElementById('recent-activities');
-        if (d.recent_activities.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">暂无活动记录</td></tr>';
+        if (!hasActivities) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">暂无活动记录，<a href="/activities">去上传</a></td></tr>';
             return;
         }
         tbody.innerHTML = d.recent_activities.map(a => {
             const duration = a.data_summary?.duration_seconds;
             const durationStr = duration ? Math.floor(duration / 60) + '分钟' : '—';
             const tss = a.computed_metrics?.tss;
-            const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
             return `<tr>
                 <td>${a.start_time.slice(0, 10)}</td>
                 <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
@@ -149,7 +180,6 @@ function renderCalendar(calendarData) {
     const today = new Date();
     const days = [];
 
-    // 生成最近 91 天（13 周）
     for (let i = 90; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
@@ -157,7 +187,6 @@ function renderCalendar(calendarData) {
         days.push({ date: key, tss: calendarData[key] || 0, dow: d.getDay() });
     }
 
-    // 按周分行（7 列 = 周日到周六）
     const weeks = [];
     let week = new Array(7).fill(null);
     for (const day of days) {
@@ -172,7 +201,6 @@ function renderCalendar(calendarData) {
     const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
     let html = '<div class="cal-months">';
-    // 月份标签
     const firstDays = weeks.map(w => w.find(d => d)).filter(Boolean);
     const seenMonths = new Set();
     for (const fd of firstDays) {
@@ -184,7 +212,6 @@ function renderCalendar(calendarData) {
     }
     html += '</div><div class="cal-grid">';
 
-    // 日期标签
     const dayLabels = ['日','一','二','三','四','五','六'];
     html += '<div class="cal-dow">' + dayLabels.map(l => `<span>${l}</span>`).join('') + '</div>';
 
@@ -202,7 +229,6 @@ function renderCalendar(calendarData) {
     }
     html += '</div>';
 
-    // 图例
     html += '<div class="cal-legend"><span>少</span>';
     for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;"></div>`;
     html += '<span>多</span></div>';
@@ -217,10 +243,6 @@ function renderTypeChart(breakdown) {
         document.getElementById('type-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary);">暂无活动数据</p>';
         return;
     }
-    const typeNames = {
-        cycling: '骑行', indoor_cycling: '室内骑行',
-        running: '跑步', indoor_running: '室内跑步', walking: '步行'
-    };
     const colors = ['#2563eb', '#4338ca', '#16a34a', '#065f46', '#d97706'];
     new Chart(document.getElementById('type-chart'), {
         type: 'doughnut',

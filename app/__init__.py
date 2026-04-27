@@ -1,7 +1,7 @@
 import logging
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, request
 
 from app.config import config_by_name
 
@@ -56,15 +56,17 @@ def create_app(config_name=None):
         return response
 
     # 统一错误处理
-    @app.errorhandler(400)
     @app.errorhandler(404)
-    @app.errorhandler(422)
-    def handle_client_error(error):
-        return jsonify({"code": error.code, "message": error.description, "data": None}), error.code
+    def handle_404(error):
+        if request.path.startswith("/api/"):
+            return jsonify({"code": 404, "message": "资源不存在", "data": None}), 404
+        return render_template("error.html", code=404, message="页面不存在"), 404
 
     @app.errorhandler(500)
-    def handle_server_error(error):
+    def handle_500(error):
         logger.error("内部错误: %s", error, exc_info=True)
-        return jsonify({"code": 500, "message": "服务器内部错误", "data": None}), 500
+        if request.path.startswith("/api/"):
+            return jsonify({"code": 500, "message": "服务器内部错误", "data": None}), 500
+        return render_template("error.html", code=500, message="服务器内部错误"), 500
 
     return app
