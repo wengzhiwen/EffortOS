@@ -2,11 +2,11 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
-from app.blueprints.auth.routes import require_user
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
 from app.services.llm_service import generate_suggestion, generate_weekly_report
 from app.services.metrics_service import calc_daily_tss, calc_pmc
+from app.utils.auth import require_user
 
 ai_bp = Blueprint("ai", __name__)
 
@@ -57,7 +57,6 @@ def weekly_report():
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 
-    # 获取本周活动
     today = datetime.now(timezone.utc)
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
     week_activities = Activity.objects(
@@ -117,7 +116,6 @@ def suggestion():
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 
-    # 最近 7 天 TSS
     today = datetime.now(timezone.utc)
     recent_tss = []
     for i in range(6, -1, -1):

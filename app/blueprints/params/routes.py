@@ -2,9 +2,9 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
-from app.blueprints.auth.routes import require_user
 from app.models.athlete_settings import AthleteParams
 from app.services.params_service import mark_activities_for_recalc, save_params
+from app.utils.auth import require_user, user_filter
 
 params_bp = Blueprint("params", __name__)
 
@@ -53,10 +53,8 @@ def create_params():
         "weight": data.get("weight"),
     }
 
-    # 绑定用户
     params = save_params(user, params_data)
 
-    # 标记受影响的活动需要重算
     if params.effective_date:
         mark_activities_for_recalc(user, params.effective_date)
 
@@ -72,12 +70,7 @@ def create_params():
 @params_bp.route("/params/latest", methods=["GET"])
 def get_latest_params():
     """获取当前生效的参数。"""
-    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
-
-    current_user = _get_user()
-    qs = AthleteParams.objects()
-    if current_user:
-        qs = qs.filter(user=current_user)
+    qs = user_filter(AthleteParams.objects())
     params = qs.order_by("-effective_date").first()
     return jsonify(
         {
@@ -91,12 +84,7 @@ def get_latest_params():
 @params_bp.route("/params/history", methods=["GET"])
 def get_params_history():
     """获取参数变更历史。"""
-    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
-
-    current_user = _get_user()
-    qs = AthleteParams.objects()
-    if current_user:
-        qs = qs.filter(user=current_user)
+    qs = user_filter(AthleteParams.objects())
     params_list = qs.order_by("-effective_date").limit(20)
     return jsonify(
         {

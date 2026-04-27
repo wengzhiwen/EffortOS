@@ -5,26 +5,20 @@ from flask import Blueprint, jsonify, request
 
 from app.models.user import User
 from app.models.verification_code import VerificationCode
+from app.utils.auth import get_authenticated_user
+from app.utils.auth import require_user as _require_user
 
 auth_bp = Blueprint("auth", __name__)
 
 
 def _get_authenticated_user():
-    """从请求中获取已认证的用户。支持 Bearer token 和 cookie。"""
-    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-    if not token:
-        token = request.cookies.get("session_token", "").strip()
-    if not token:
-        return None
-    return User.objects(session_token=token).first()
+    """兼容旧调用方的委托函数。"""
+    return get_authenticated_user()
 
 
 def require_user():
-    """要求用户已认证，返回 (user, error_response)。"""
-    user = _get_authenticated_user()
-    if not user:
-        return None, (jsonify({"code": 401, "message": "请先登录", "data": None}), 401)
-    return user, None
+    """兼容旧调用方的委托函数。"""
+    return _require_user()
 
 
 @auth_bp.route("/auth/request-code", methods=["POST"])
@@ -36,16 +30,12 @@ def request_code():
     if not email or "@" not in email:
         return jsonify({"code": 400, "message": "请输入有效的邮箱地址", "data": None}), 400
 
-    # 生成验证码
     vc = VerificationCode.create_for_email(email)
 
-    # 开发环境：在日志中显示验证码
     test_hole = os.environ.get("TEST_HOLE")
     if test_hole:
         print(f"[DEV] 验证码 for {email}: {vc.code}")
 
-    # TODO: 生产环境发送邮件
-    # 目前开发阶段直接返回验证码（仅开发/测试环境）
     is_dev = os.environ.get("FLASK_ENV") == "development"
     from flask import current_app
 
@@ -70,7 +60,6 @@ def verify_code():
     if not email or not code:
         return jsonify({"code": 400, "message": "请输入邮箱和验证码", "data": None}), 400
 
-    # 测试后门：允许通过 TEST_HOLE 环境变量绕过验证码
     test_hole = os.environ.get("TEST_HOLE")
     if test_hole and code == test_hole:
         vc = VerificationCode.objects(email=email).order_by("-created_at").first()
@@ -83,7 +72,6 @@ def verify_code():
 
     vc.mark_used()
 
-    # 查找或创建用户
     user = User.objects(email=email).first()
     if not user:
         nickname = email.split("@")[0]
@@ -112,7 +100,7 @@ def verify_code():
 @auth_bp.route("/auth/logout", methods=["POST"])
 def logout():
     """登出。"""
-    user = _get_authenticated_user()
+    user = get_authenticated_user()
     if user:
         user.clear_session_token()
 
@@ -124,7 +112,7 @@ def logout():
 @auth_bp.route("/auth/me", methods=["GET"])
 def me():
     """获取当前用户信息。"""
-    user, err = require_user()
+    user, err = _require_user()
     if err:
         return err
 
@@ -146,7 +134,7 @@ def me():
 @auth_bp.route("/auth/profile", methods=["PUT"])
 def update_profile():
     """更新用户资料。"""
-    user, err = require_user()
+    user, err = _require_user()
     if err:
         return err
 

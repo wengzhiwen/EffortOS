@@ -6,10 +6,10 @@ import uuid
 
 from flask import Blueprint, Response, current_app, jsonify, request
 
-from app.blueprints.auth.routes import require_user
 from app.models.activity import Activity, DataSummary, Trackpoint
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import validate_activity_file
+from app.utils.auth import require_user, user_filter
 
 activities_bp = Blueprint("activities", __name__)
 
@@ -26,22 +26,9 @@ SPORT_DISPLAY = {
 }
 
 
-def _get_authenticated_user():
-    """从请求中获取已认证的用户。"""
-    from app.models.user import User
-
-    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-    if not token:
-        token = request.cookies.get("session_token", "").strip()
-    if not token:
-        return None
-    return User.objects(session_token=token).first()
-
-
 def _user_filter(qs):
     """按当前用户过滤查询集（无用户时返回全集）。"""
-    user = _get_authenticated_user()
-    return qs.filter(user=user) if user else qs
+    return user_filter(qs)
 
 
 def _activity_type_filter(qs):
@@ -169,8 +156,9 @@ def _compute_metrics(activity, trackpoints):
     """计算并填充 Activity 的 ComputedMetrics。"""
     from app.models.athlete_settings import AthleteParams
     from app.services.metrics_service import compute_activity_metrics
+    from app.utils.auth import get_authenticated_user
 
-    current_user = _get_authenticated_user()
+    current_user = get_authenticated_user()
     qs = AthleteParams.objects()
     if current_user:
         qs = qs.filter(user=current_user)

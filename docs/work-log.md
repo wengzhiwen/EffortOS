@@ -264,3 +264,13 @@ Dashboard 空状态引导 + 错误页面：
 - 改用 `_end_of_day()` 函数将日期字符串转为 datetime 对象进行比较
 - activities 和 dashboard 蓝图均已修复
 - 123 个测试全部通过
+
+---
+
+### Sprint 21 完成 — 2026-04-28
+
+公共认证模块 + DRY 优化：
+- 新增 `app/utils/auth.py`：集中管理 get_authenticated_user、require_user、user_filter
+- 5 个蓝图全部改用公共模块，消除 4 处重复的认证逻辑定义
+- auth/routes.py 保留兼容函数供现有 import 使用
+- 123 个测试全部通过

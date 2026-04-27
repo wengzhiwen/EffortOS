@@ -6,26 +6,14 @@ from flask import Blueprint, jsonify, request
 
 from app.models.activity import Activity
 from app.services.metrics_service import calc_daily_tss, calc_pmc
+from app.utils.auth import user_filter
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
-def _get_authenticated_user():
-    """从请求中获取已认证的用户。"""
-    from app.models.user import User
-
-    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-    if not token:
-        token = request.cookies.get("session_token", "").strip()
-    if not token:
-        return None
-    return User.objects(session_token=token).first()
-
-
 def _filter_user(qs):
     """按当前用户过滤查询集。"""
-    current_user = _get_authenticated_user()
-    return qs.filter(user=current_user) if current_user else qs
+    return user_filter(qs)
 
 
 def _end_of_day(date_str):
