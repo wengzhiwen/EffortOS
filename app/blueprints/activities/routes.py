@@ -145,3 +145,76 @@ def _serialize_summary(summary):
         "avg_cadence": summary.avg_cadence,
         "max_cadence": summary.max_cadence,
     }
+
+
+def _serialize_activity(activity):
+    """将 Activity 序列化为字典。"""
+    return {
+        "id": str(activity.id),
+        "activity_type": activity.activity_type,
+        "name": activity.name,
+        "start_time": activity.start_time.isoformat(),
+        "source_format": activity.source_format,
+        "data_summary": _serialize_summary(activity.data_summary),
+        "created_at": activity.created_at.isoformat() if activity.created_at else None,
+    }
+
+
+@activities_bp.route("/activities", methods=["GET"])
+def list_activities():
+    """获取运动记录列表。
+
+    查询参数:
+    - activity_type: 按运动类型过滤（可选）
+    - limit: 返回数量，默认 20
+    - offset: 偏移量，默认 0
+    """
+    limit = request.args.get("limit", 20, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    limit = min(limit, 100)
+
+    qs = Activity.objects()
+    activity_type = request.args.get("activity_type")
+    if activity_type:
+        qs = qs.filter(activity_type=activity_type)
+
+    activities = qs.order_by("-start_time").skip(offset).limit(limit)
+    total = qs.count()
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "total": total,
+            "items": [_serialize_activity(a) for a in activities],
+        },
+    })
+
+
+@activities_bp.route("/activities/<activity_id>", methods=["GET"])
+def get_activity(activity_id):
+    """获取单次运动记录详情。"""
+    activity = Activity.objects(id=activity_id).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": _serialize_activity(activity),
+    })
+
+
+@activities_bp.route("/activities/<activity_id>", methods=["DELETE"])
+def delete_activity(activity_id):
+    """删除运动记录。"""
+    activity = Activity.objects(id=activity_id).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    # 删除关联的源文件
+    if activity.raw_data_path and os.path.exists(activity.raw_data_path):
+        os.remove(activity.raw_data_path)
+
+    activity.delete()
+    return jsonify({"code": 200, "message": "已删除", "data": None})
