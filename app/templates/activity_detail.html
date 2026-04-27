@@ -18,6 +18,7 @@ Promise.all([
     authFetch(`/api/activities/${activityId}/trackpoints`).then(r => r.json()),
 ]).then(([activityRes, tpRes]) => {
     const a = activityRes.data;
+    window._activityData = a;
     const s = a.data_summary || {};
     const m = a.computed_metrics || {};
     const tpData = tpRes.data || {};
@@ -28,7 +29,7 @@ Promise.all([
     const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
 
     document.getElementById('activity-detail').innerHTML = `
-        <h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
             <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>
@@ -207,5 +208,22 @@ Promise.all([
         });
     }
 });
+
+function editActivity() {
+    const a = window._activityData;
+    if (!a) return;
+    const newName = prompt('修改活动名称：', a.name || '');
+    if (newName === null) return;
+    authFetch(`/api/activities/${activityId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) location.reload();
+            else alert(res.message);
+        });
+}
 </script>
 {% endblock %}

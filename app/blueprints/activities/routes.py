@@ -514,6 +514,34 @@ def get_trackpoints(activity_id):
     )
 
 
+@activities_bp.route("/activities/<activity_id>", methods=["PUT"])
+def update_activity(activity_id):
+    """更新运动记录（名称/类型）。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    activity = Activity.objects(id=activity_id, user=user).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"code": 400, "message": "缺少请求体", "data": None}), 400
+
+    if "name" in data:
+        activity.name = data["name"][:200] if data["name"] else None
+
+    if "activity_type" in data:
+        valid_types = ["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"]
+        if data["activity_type"] not in valid_types:
+            return jsonify({"code": 400, "message": f"不支持的运动类型: {data['activity_type']}", "data": None}), 400
+        activity.activity_type = data["activity_type"]
+
+    activity.save()
+    return jsonify({"code": 200, "message": "已更新", "data": _serialize_activity(activity)})
+
+
 @activities_bp.route("/activities/<activity_id>", methods=["DELETE"])
 def delete_activity(activity_id):
     """删除运动记录。"""

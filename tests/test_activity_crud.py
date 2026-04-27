@@ -92,3 +92,51 @@ def test_delete_activity_not_found(client, auth_headers):
 def test_delete_no_auth(client, auth_headers):
     resp = client.delete("/api/activities/000000000000000000000000")
     assert resp.status_code == 401
+
+
+def test_update_activity(client, auth_headers):
+    from tests.test_upload_api import MINIMAL_TCX
+    """测试更新活动名称。"""
+    # 先上传一个活动
+    data = {
+        "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
+        "activity_type": "cycling",
+        "name": "原始名称",
+    }
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
+    activity_id = resp.get_json()["data"]["id"]
+
+    # 更新名称
+    resp = client.put(
+        f"/api/activities/{activity_id}",
+        json={"name": "更新后名称"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    result = resp.get_json()
+    assert result["data"]["name"] == "更新后名称"
+
+
+def test_update_activity_no_auth(client, auth_headers):
+    from tests.test_upload_api import MINIMAL_TCX
+    """测试未认证更新。"""
+    resp = client.put("/api/activities/000000000000000000000000", json={"name": "test"})
+    assert resp.status_code == 401
+
+
+def test_update_activity_invalid_type(client, auth_headers):
+    from tests.test_upload_api import MINIMAL_TCX
+    """测试更新无效运动类型。"""
+    data = {
+        "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
+        "activity_type": "cycling",
+    }
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
+    activity_id = resp.get_json()["data"]["id"]
+
+    resp = client.put(
+        f"/api/activities/{activity_id}",
+        json={"activity_type": "skydiving"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
