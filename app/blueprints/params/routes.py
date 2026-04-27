@@ -93,3 +93,17 @@ def get_params_history():
             "data": [_serialize_params(p) for p in params_list],
         }
     )
+
+
+@params_bp.route("/params/recalc-status", methods=["GET"])
+def get_recalc_status():
+    """获取数据重算进度。"""
+    from app.services.params_service import get_recalc_status as _get_status
+    from app.utils.auth import get_authenticated_user
+
+    user = get_authenticated_user()
+    if not user:
+        return jsonify({"code": 200, "message": "ok", "data": {"total": 0, "done": 0, "running": False}})
+
+    status = _get_status(user.id)
+    return jsonify({"code": 200, "message": "ok", "data": status})

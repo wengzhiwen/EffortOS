@@ -154,16 +154,17 @@ def _build_data_summary(laps, trackpoints):
 
 def _compute_metrics(activity, trackpoints):
     """计算并填充 Activity 的 ComputedMetrics。"""
-    from app.models.athlete_settings import AthleteParams
     from app.services.metrics_service import compute_activity_metrics
+    from app.services.params_service import get_effective_params
     from app.utils.auth import get_authenticated_user
 
     current_user = get_authenticated_user()
-    qs = AthleteParams.objects()
-    if current_user:
-        qs = qs.filter(user=current_user)
-    params = qs.order_by("-effective_date").first()
-    if not params or not trackpoints:
+    if not trackpoints:
+        return
+
+    # 使用活动日期对应的参数
+    params = get_effective_params(current_user, activity.start_time)
+    if not params:
         return
 
     activity_type = activity.activity_type

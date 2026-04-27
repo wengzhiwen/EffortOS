@@ -169,9 +169,10 @@ document.getElementById('params-form').addEventListener('submit', e => {
             btn.disabled = false;
             btn.textContent = '保存参数';
             if (res.code === 200) {
-                status.textContent = '保存成功！分区和指标已更新。';
+                status.textContent = '保存成功！数据重算中...';
                 status.style.color = 'var(--success)';
                 loadParams();
+                pollRecalcStatus();
             } else {
                 status.textContent = res.message;
                 status.style.color = 'var(--danger)';
@@ -185,6 +186,27 @@ document.getElementById('params-form').addEventListener('submit', e => {
             status.style.color = 'var(--danger)';
         });
 });
+
+function pollRecalcStatus() {
+    const status = document.getElementById('save-status');
+    const poll = () => {
+        authFetch('/api/params/recalc-status')
+            .then(r => r.json())
+            .then(res => {
+                const d = res.data;
+                if (d.running) {
+                    status.textContent = `数据重算中 (${d.done}/${d.total})...`;
+                    status.style.color = 'var(--primary)';
+                    setTimeout(poll, 1000);
+                } else if (d.total > 0 && d.done === d.total) {
+                    status.textContent = `重算完成！已更新 ${d.total} 条活动。`;
+                    status.style.color = 'var(--success)';
+                    setTimeout(() => status.textContent = '', 5000);
+                }
+            });
+    };
+    setTimeout(poll, 500);
+}
 
 loadParams();
 </script>

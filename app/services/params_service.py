@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 
 from app.models.activity import Activity
@@ -13,10 +14,7 @@ def _build_query(user, **extra_filters):
 
 
 def get_effective_params(user, date: datetime) -> AthleteParams:
-    """获取指定日期生效的运动员参数。
-
-    返回 effective_date <= date 的最新一条记录。
-    """
+    """获取指定日期生效的运动员参数。"""
     return (
         AthleteParams.objects(
             **_build_query(user, effective_date__lte=date),
@@ -27,16 +25,10 @@ def get_effective_params(user, date: datetime) -> AthleteParams:
 
 
 def save_params(user, params_data: dict) -> AthleteParams:
-    """保存运动员参数，返回新创建的记录。
-
-    检测参数是否有实质性变更，如无变更则不创建新记录。
-    """
+    """保存运动员参数，返回新创建的记录。"""
     effective_date = params_data["effective_date"]
-
-    # 查看当前生效的参数
     current = get_effective_params(user, effective_date)
 
-    # 检查是否有实质性变更
     tracked_fields = ["ftp", "cycling_lthr", "running_lthr", "walking_lthr", "max_heart_rate", "weight"]
     has_change = False
 
@@ -68,10 +60,7 @@ def save_params(user, params_data: dict) -> AthleteParams:
 
 
 def get_affected_activities(user, effective_date: datetime) -> list:
-    """获取受参数变更影响的活动列表。
-
-    返回 start_time >= effective_date 的所有活动。
-    """
+    """获取受参数变更影响的活动列表。"""
     return list(
         Activity.objects(
             **_build_query(user, start_time__gte=effective_date),
@@ -79,15 +68,110 @@ def get_affected_activities(user, effective_date: datetime) -> list:
     )
 
 
-def mark_activities_for_recalc(user, effective_date: datetime) -> int:
-    """标记需要重算的活动。
+def recalc_activity(activity):
+    """重算单个活动的指标。"""
+    from app.services.metrics_service import compute_activity_metrics
 
-    将 computed_metrics 清空，表示需要重新计算。
-    返回受影响的活动数量。
-    """
-    affected = Activity.objects(
-        **_build_query(user, start_time__gte=effective_date),
+    user = activity.user
+    params = get_effective_params(user, activity.start_time)
+    if not params:
+        return
+
+    # 重建 trackpoints 字典列表（从嵌入文档）
+    if not activity.trackpoints:
+        return
+
+    trackpoints = []
+    for tp in activity.trackpoints:
+        d = {}
+        if tp.hr is not None:
+            d["heart_rate"] = tp.hr
+        if tp.power is not None:
+            d["power"] = tp.power
+        if tp.speed is not None:
+            d["speed"] = tp.speed
+        if tp.cadence is not None:
+            d["cadence"] = tp.cadence
+        if tp.altitude is not None:
+            d["altitude"] = tp.altitude
+        if tp.distance is not None:
+            d["distance"] = tp.distance
+        # time 字段用于 duration 计算 — 使用 elapsed
+        from datetime import timedelta, timezone
+
+        d["time"] = datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=tp.elapsed)
+        trackpoints.append(d)
+
+    activity_type = activity.activity_type
+    hr_zones = params.get_hr_zones(activity_type)
+    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling") else []
+
+    lthr_map = {
+        "cycling": params.cycling_lthr,
+        "indoor_cycling": params.cycling_lthr,
+        "running": params.running_lthr,
+        "indoor_running": params.running_lthr,
+        "walking": params.walking_lthr,
+    }
+    lthr = lthr_map.get(activity_type)
+
+    activity.computed_metrics = compute_activity_metrics(
+        trackpoints=trackpoints,
+        activity_type=activity_type,
+        hr_zones=hr_zones,
+        power_zones=power_zones,
+        ftp=params.ftp,
+        lthr=lthr,
     )
-    count = affected.count()
-    affected.update(unset__computed_metrics=1)
+    activity.save()
+
+
+# ============================================================
+# 后台重算机制
+# ============================================================
+
+_recalc_status = {}  # user_id -> {"total": N, "done": N, "running": bool}
+
+
+def get_recalc_status(user_id: str) -> dict:
+    """获取当前用户重算进度。"""
+    return _recalc_status.get(str(user_id), {"total": 0, "done": 0, "running": False})
+
+
+def mark_activities_for_recalc(user, effective_date: datetime) -> int:
+    """标记需要重算的活动并启动后台重算。"""
+    affected = list(
+        Activity.objects(
+            **_build_query(user, start_time__gte=effective_date),
+        ).order_by("start_time")
+    )
+    count = len(affected)
+    if count == 0:
+        return 0
+
+    # 初始化进度
+    user_id = str(user.id)
+    _recalc_status[user_id] = {"total": count, "done": 0, "running": True}
+
+    # 测试环境中同步执行，避免数据库连接问题
+    import os
+
+    if os.environ.get("FLASK_ENV") == "testing":
+        _do_recalc(user_id, affected)
+    else:
+        thread = threading.Thread(target=_do_recalc, args=(user_id, affected), daemon=True)
+        thread.start()
+
     return count
+
+
+def _do_recalc(user_id: str, activities: list):
+    """后台线程：逐个重算活动指标。"""
+    try:
+        for activity in activities:
+            recalc_activity(activity)
+            if user_id in _recalc_status:
+                _recalc_status[user_id]["done"] += 1
+    finally:
+        if user_id in _recalc_status:
+            _recalc_status[user_id]["running"] = False

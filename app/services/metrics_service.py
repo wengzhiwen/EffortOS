@@ -170,21 +170,23 @@ def compute_activity_metrics(
     if not trackpoints:
         return metrics
 
-    # 提取时间序列
+    total_points = len(trackpoints)
     power_values = [tp["power"] for tp in trackpoints if tp.get("power") is not None]
     hr_values = [tp["heart_rate"] for tp in trackpoints if tp.get("heart_rate") is not None]
-    speed_values = [tp["speed"] for tp in trackpoints if tp.get("speed") is not None]
 
     duration = (trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds()
     avg_hr = sum(hr_values) // len(hr_values) if hr_values else None
-    avg_speed = sum(speed_values) / len(speed_values) if speed_values else None
 
     has_power = len(power_values) > 0
     has_hr = len(hr_values) > 0
     is_cycling = activity_type in ("cycling", "indoor_cycling")
 
-    # 功率衍生指标（仅骑行有功率时）
-    if has_power and is_cycling:
+    # 判断功率数据质量：覆盖率低于 50% 视为不可靠
+    power_coverage = len(power_values) / total_points if total_points > 0 else 0
+    power_reliable = has_power and power_coverage >= 0.5
+
+    # 功率衍生指标（仅骑行且有可靠功率数据时）
+    if power_reliable and is_cycling:
         metrics.normalized_power = calc_normalized_power(power_values)
         avg_power = sum(power_values) / len(power_values)
         metrics.work_kj = calc_work_kj(power_values)
@@ -205,14 +207,10 @@ def compute_activity_metrics(
         metrics.hr_intensity_factor = calc_hr_intensity_factor(avg_hr, lthr)
         metrics.hr_tss = calc_hr_tss(duration, avg_hr, lthr)
 
-        # 如果没有用功率算出 TSS，用心率 TSS 作为主 TSS
+        # TSS 策略：功率未算出 或 功率数据不可靠 → 心率兜底
         if metrics.tss is None and metrics.hr_tss is not None:
             metrics.tss = metrics.hr_tss
             metrics.tss_method = "hr"
-
-    # 心率效率因子（无功率数据时）
-    if has_hr and avg_hr and avg_speed and not (has_power and is_cycling):
-        metrics.efficiency_factor = calc_hr_efficiency_factor(avg_speed, avg_hr)
 
     # 分区时间统计
     if has_hr and hr_zones:
