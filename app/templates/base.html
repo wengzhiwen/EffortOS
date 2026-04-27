@@ -117,6 +117,7 @@
             <a href="{{ url_for('pages.activities') }}" class="{{ 'active' if request.endpoint == 'pages.activities' }}">活动</a>
             <a href="{{ url_for('pages.settings') }}" class="{{ 'active' if request.endpoint == 'pages.settings' }}">设置</a>
             <a href="{{ url_for('pages.ai') }}" class="{{ 'active' if request.endpoint == 'pages.ai' }}">AI 教练</a>
+            <a href="/help" class="{{ 'active' if request.endpoint == 'pages.help_page' }}">帮助</a>
         </div>
         <div class="navbar-right">
             <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">🌙</button>

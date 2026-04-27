@@ -36,3 +36,8 @@ def login():
 @pages_bp.route("/profile")
 def profile():
     return render_template("profile.html")
+
+
+@pages_bp.route("/help")
+def help_page():
+    return render_template("help.html")

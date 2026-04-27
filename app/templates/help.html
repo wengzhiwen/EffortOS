@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}帮助 - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">使用指南</h2>
+
+<div class="card">
+    <div class="card-title">快速开始</div>
+    <ol style="padding-left: 1.5rem; line-height: 2;">
+        <li><strong>设置运动参数</strong> — 前往 <a href="/settings">设置页面</a>，填写 FTP（骑行）、阈值心率（LTHR）和最大心率</li>
+        <li><strong>上传运动数据</strong> — 在 <a href="/activities">活动页面</a> 上传 TCX/GPX 文件，系统自动识别运动类型</li>
+        <li><strong>查看训练指标</strong> — 仪表盘和活动详情页自动展示训练负荷分析</li>
+        <li><strong>获取 AI 建议</strong> — <a href="/ai">AI 教练</a>基于你的训练数据生成个性化建议</li>
+    </ol>
+</div>
+
+<div class="card">
+    <div class="card-title">核心指标说明</div>
+    <table>
+        <thead><tr><th style="width: 140px;">指标</th><th>全称</th><th>含义</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>TSS</strong></td>
+                <td>Training Stress Score</td>
+                <td>训练压力分数。衡量单次训练对身体造成的负荷量。100 TSS 约等于 1 小时的阈值强度训练。基于功率（有 FTP 时）或心率计算。</td>
+            </tr>
+            <tr>
+                <td><strong>CTL / Fitness</strong></td>
+                <td>Chronic Training Load</td>
+                <td>慢性训练负荷。42 天 TSS 的指数加权移动平均，反映长期体能水平。CTL 越高，说明近期训练量越大，体能基础越扎实。</td>
+            </tr>
+            <tr>
+                <td><strong>ATL / Fatigue</strong></td>
+                <td>Acute Training Load</td>
+                <td>急性训练负荷。7 天 TSS 的指数加权移动平均，反映短期疲劳程度。训练后 ATL 会快速上升。</td>
+            </tr>
+            <tr>
+                <td><strong>TSB / Form</strong></td>
+                <td>Training Stress Balance</td>
+                <td>训练压力平衡 = CTL - ATL。正值表示恢复充分、状态好（适合比赛）；负值表示疲劳累积（适合训练期）。一般 -10 到 +10 之间为最佳比赛状态。</td>
+            </tr>
+            <tr>
+                <td><strong>NP</strong></td>
+                <td>Normalized Power</td>
+                <td>标准化功率。考虑了骑行中加减速、间歇等因素后的等效持续功率。比平均功率更能反映真实强度。</td>
+            </tr>
+            <tr>
+                <td><strong>IF</strong></td>
+                <td>Intensity Factor</td>
+                <td>强度因子 = NP / FTP。反映本次训练相对于个人阈值功率的强度。IF > 1.0 表示超过阈值强度。</td>
+            </tr>
+            <tr>
+                <td><strong>VI</strong></td>
+                <td>Variability Index</td>
+                <td>变异性指数 = NP / 平均功率。VI = 1.0 表示完美匀速（如计时赛），值越大表示骑行节奏变化越大。</td>
+            </tr>
+            <tr>
+                <td><strong>EF</strong></td>
+                <td>Efficiency Factor</td>
+                <td>效率因子 = NP / 平均心率。衡量在给定心率下产生的功率效率。EF 随训练提升，是衡量体能进步的好指标。</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-title">分区说明</div>
+    <h3 style="margin: 0.5rem 0; font-size: 1rem;">心率分区（Joe Friel 5 区）</h3>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
+        基于阈值心率（LTHR）自动推算。需要在设置页面配置各运动类型的 LTHR。
+    </p>
+    <table>
+        <thead><tr><th>分区</th><th>范围</th><th>用途</th></tr></thead>
+        <tbody>
+            <tr><td>Z1 恢复</td><td>&lt; 81% LTHR</td><td>积极恢复、热身/冷身</td></tr>
+            <tr><td>Z2 有氧</td><td>81-89% LTHR</td><td>长时间有氧耐力训练</td></tr>
+            <tr><td>Z3 节奏</td><td>90-93% LTHR</td><td>节奏骑/跑，提升乳酸阈值</td></tr>
+            <tr><td>Z4 次阈值</td><td>94-99% LTHR</td><td>阈值间歇，提升 FTP/LTHR</td></tr>
+            <tr><td>Z5 阈值以上</td><td>&ge; 100% LTHR</td><td>VO2max 间歇，高强度训练</td></tr>
+        </tbody>
+    </table>
+
+    <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem;">功率分区（Coggan 7 区）</h3>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
+        基于 FTP 自动推算。需要在设置页面配置骑行 FTP。
+    </p>
+    <table>
+        <thead><tr><th>分区</th><th>范围</th><th>用途</th></tr></thead>
+        <tbody>
+            <tr><td>Z1 恢复</td><td>&lt; 55% FTP</td><td>积极恢复</td></tr>
+            <tr><td>Z2 有氧耐力</td><td>55-74% FTP</td><td>长时间有氧训练</td></tr>
+            <tr><td>Z3 节奏</td><td>75-89% FTP</td><td>节奏骑行</td></tr>
+            <tr><td>Z4 乳酸阈值</td><td>90-104% FTP</td><td>阈值训练</td></tr>
+            <tr><td>Z5 VO2max</td><td>105-119% FTP</td><td>最大摄氧量训练</td></tr>
+            <tr><td>Z6 无氧</td><td>120-149% FTP</td><td>无氧能力训练</td></tr>
+            <tr><td>Z7 冲刺</td><td>&ge; 150% FTP</td><td>神经肌肉功率</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-title">支持的文件格式</div>
+    <div class="grid grid-2">
+        <div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">TCX (Garmin)</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                Garmin Training Center XML 格式。包含心率、功率、速度、踏频、海拔等完整时间序列数据。
+            </p>
+        </div>
+        <div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">GPX</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                GPS Exchange Format。支持 Garmin 扩展数据（心率、功率、踏频）。GPS 轨迹 + 扩展指标。
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
