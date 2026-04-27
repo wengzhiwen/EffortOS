@@ -8,7 +8,7 @@
 <div class="card">
     <div class="card-title">运动参数配置</div>
     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
-        参数按日期生效，修改后从该日期起的运动指标将重新计算。
+        设置 FTP、阈值心率和最大心率，用于计算 TSS、分区等训练指标。修改后从生效日期起的运动指标将自动重算。
     </p>
     <form id="params-form">
         <div class="grid grid-3">
@@ -18,35 +18,35 @@
             </div>
             <div class="form-group">
                 <label>FTP（瓦特）— 骑行</label>
-                <input type="number" name="ftp" placeholder="例：250">
+                <input type="number" name="ftp" placeholder="例：250" min="0">
             </div>
             <div class="form-group">
                 <label>最大心率（bpm）</label>
-                <input type="number" name="max_heart_rate" placeholder="例：190">
+                <input type="number" name="max_heart_rate" placeholder="例：190" min="0">
             </div>
         </div>
         <div class="grid grid-3">
             <div class="form-group">
                 <label>骑行阈值心率 LTHR（bpm）</label>
-                <input type="number" name="cycling_lthr" placeholder="例：160">
+                <input type="number" name="cycling_lthr" placeholder="例：160" min="0">
             </div>
             <div class="form-group">
                 <label>跑步阈值心率 LTHR（bpm）</label>
-                <input type="number" name="running_lthr" placeholder="例：170">
+                <input type="number" name="running_lthr" placeholder="例：170" min="0">
             </div>
             <div class="form-group">
                 <label>步行阈值心率 LTHR（bpm）</label>
-                <input type="number" name="walking_lthr" placeholder="例：140">
+                <input type="number" name="walking_lthr" placeholder="例：140" min="0">
             </div>
         </div>
         <div class="grid grid-3">
             <div class="form-group">
                 <label>体重（kg）</label>
-                <input type="number" step="0.1" name="weight" placeholder="例：70.0">
+                <input type="number" step="0.1" name="weight" placeholder="例：70.0" min="0">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">保存参数</button>
-        <span id="save-status" style="margin-left: 1rem;"></span>
+        <button type="submit" class="btn btn-primary" id="save-btn">保存参数</button>
+        <span id="save-status" class="status-msg"></span>
     </form>
 </div>
 
@@ -60,11 +60,11 @@
     <div class="grid grid-2">
         <div>
             <h4 style="margin-bottom: 0.5rem;">心率分区（骑行）</h4>
-            <div id="hr-zones-preview">—</div>
+            <div id="hr-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">保存参数后显示预览</div>
         </div>
         <div>
             <h4 style="margin-bottom: 0.5rem;">功率分区</h4>
-            <div id="power-zones-preview">—</div>
+            <div id="power-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">保存 FTP 后显示预览</div>
         </div>
     </div>
 </div>
@@ -88,7 +88,7 @@ function loadParams() {
         .then(res => {
             const d = res.data;
             if (!d) {
-                document.getElementById('current-params').innerHTML = '<p style="color: var(--text-secondary);">尚未设置参数</p>';
+                document.getElementById('current-params').innerHTML = '<p style="color: var(--text-secondary);">尚未设置参数，请填写上方表单并保存。</p>';
                 return;
             }
             document.getElementById('current-params').innerHTML = `
@@ -100,6 +100,15 @@ function loadParams() {
                     <div><strong>最大心率:</strong> ${d.max_heart_rate || '—'} bpm</div>
                     <div><strong>体重:</strong> ${d.weight || '—'} kg</div>
                 </div>`;
+
+            // 预填表单（仅当表单字段为空时）
+            const form = document.getElementById('params-form');
+            if (d.ftp && !form.ftp.value) form.ftp.value = d.ftp;
+            if (d.max_heart_rate && !form.max_heart_rate.value) form.max_heart_rate.value = d.max_heart_rate;
+            if (d.cycling_lthr && !form.cycling_lthr.value) form.cycling_lthr.value = d.cycling_lthr;
+            if (d.running_lthr && !form.running_lthr.value) form.running_lthr.value = d.running_lthr;
+            if (d.walking_lthr && !form.walking_lthr.value) form.walking_lthr.value = d.walking_lthr;
+            if (d.weight && !form.weight.value) form.weight.value = d.weight;
 
             // 分区预览
             if (d.hr_zones && d.hr_zones.length > 0) {
@@ -140,6 +149,9 @@ function loadParams() {
 document.getElementById('params-form').addEventListener('submit', e => {
     e.preventDefault();
     const status = document.getElementById('save-status');
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
     const formData = new FormData(e.target);
     const data = {};
     for (const [key, val] of formData.entries()) {
@@ -154,15 +166,23 @@ document.getElementById('params-form').addEventListener('submit', e => {
     })
         .then(r => r.json())
         .then(res => {
+            btn.disabled = false;
+            btn.textContent = '保存参数';
             if (res.code === 200) {
-                status.textContent = '保存成功';
+                status.textContent = '保存成功！分区和指标已更新。';
                 status.style.color = 'var(--success)';
                 loadParams();
             } else {
                 status.textContent = res.message;
                 status.style.color = 'var(--danger)';
             }
-            setTimeout(() => status.textContent = '', 3000);
+            setTimeout(() => status.textContent = '', 4000);
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '保存参数';
+            status.textContent = '网络错误';
+            status.style.color = 'var(--danger)';
         });
 });
 

@@ -123,9 +123,10 @@ authFetch('/api/dashboard')
             const duration = a.data_summary?.duration_seconds;
             const durationStr = duration ? Math.floor(duration / 60) + '分钟' : '—';
             const tss = a.computed_metrics?.tss;
+            const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
             return `<tr>
                 <td>${a.start_time.slice(0, 10)}</td>
-                <td><span class="badge badge-${a.activity_type}">${a.activity_type}</span></td>
+                <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
                 <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
                 <td>${durationStr}</td>
                 <td>${tss != null ? tss.toFixed(1) : '—'}</td>

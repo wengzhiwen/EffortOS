@@ -11,6 +11,7 @@
 {% block script %}
 <script>
 const activityId = "{{ activity_id }}";
+const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
 
 Promise.all([
     authFetch(`/api/activities/${activityId}`).then(r => r.json()),
@@ -22,14 +23,15 @@ Promise.all([
     const tpData = tpRes.data || {};
     const hasTP = tpData.points && tpData.points.length > 0;
 
-    const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 3600) + '时' + Math.floor((s.duration_seconds % 3600) / 60) + '分' : '—';
+    const durSec = s.duration_seconds || 0;
+    const duration = durSec ? Math.floor(durSec / 3600) + '时' + Math.floor((durSec % 3600) / 60) + '分' : '—';
     const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
 
     document.getElementById('activity-detail').innerHTML = `
         <h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2>
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
-            <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${a.activity_type}</span>
+            <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>
         </p>
 
         <div class="grid grid-4" style="margin-bottom: 1rem;">
@@ -151,7 +153,7 @@ Promise.all([
         }
 
         // 速度
-        const speedData = points.map(p => p.speed ? (p.speed * 3.6) : null); // m/s → km/h
+        const speedData = points.map(p => p.speed ? (p.speed * 3.6) : null);
         if (speedData.some(v => v != null)) {
             const el = document.getElementById('speed-chart');
             if (el) {
