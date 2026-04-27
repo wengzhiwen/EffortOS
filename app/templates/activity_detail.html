@@ -12,7 +12,7 @@
 <script>
 const activityId = "{{ activity_id }}";
 
-fetch(`/api/activities/${activityId}`)
+authFetch(`/api/activities/${activityId}`)
     .then(r => r.json())
     .then(res => {
         const a = res.data;

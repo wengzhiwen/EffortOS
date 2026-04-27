@@ -132,5 +132,33 @@ def me():
             "email": user.email,
             "nickname": user.nickname,
             "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+        },
+    })
+
+
+@auth_bp.route("/auth/profile", methods=["PUT"])
+def update_profile():
+    """更新用户资料。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    data = request.get_json() or {}
+    nickname = (data.get("nickname") or "").strip()
+
+    if not nickname:
+        return jsonify({"code": 400, "message": "昵称不能为空", "data": None}), 400
+
+    user.nickname = nickname[:50]
+    user.save()
+
+    return jsonify({
+        "code": 200,
+        "message": "更新成功",
+        "data": {
+            "id": str(user.id),
+            "email": user.email,
+            "nickname": user.nickname,
         },
     })

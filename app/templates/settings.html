@@ -83,7 +83,7 @@
 document.getElementById('effective-date').valueAsDate = new Date();
 
 function loadParams() {
-    fetch('/api/params/latest')
+    authFetch('/api/params/latest')
         .then(r => r.json())
         .then(res => {
             const d = res.data;
@@ -118,7 +118,7 @@ function loadParams() {
             }
         });
 
-    fetch('/api/params/history')
+    authFetch('/api/params/history')
         .then(r => r.json())
         .then(res => {
             const tbody = document.getElementById('params-history');
@@ -147,7 +147,7 @@ document.getElementById('params-form').addEventListener('submit', e => {
     }
     data.effective_date = data.effective_date + 'T00:00:00Z';
 
-    fetch('/api/params', {
+    authFetch('/api/params', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

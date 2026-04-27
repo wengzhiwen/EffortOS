@@ -26,3 +26,13 @@ def settings():
 @pages_bp.route("/ai")
 def ai():
     return render_template("ai.html")
+
+
+@pages_bp.route("/login")
+def login():
+    return render_template("login.html")
+
+
+@pages_bp.route("/profile")
+def profile():
+    return render_template("profile.html")

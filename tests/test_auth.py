@@ -89,3 +89,40 @@ def test_logout(client):
     # 验证 token 已失效
     resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 401
+
+
+def _login(client):
+    """辅助：登录并返回 token。"""
+    resp = client.post("/api/auth/request-code",
+                       data=json.dumps({"email": "test@example.com"}),
+                       content_type="application/json")
+    code = resp.get_json()["data"]["code"]
+    resp = client.post("/api/auth/verify",
+                       data=json.dumps({"email": "test@example.com", "code": code}),
+                       content_type="application/json")
+    return resp.get_json()["data"]["token"]
+
+
+def test_update_profile(client):
+    token = _login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.put("/api/auth/profile",
+                      data=json.dumps({"nickname": "新昵称"}),
+                      content_type="application/json",
+                      headers=headers)
+    assert resp.status_code == 200
+    assert resp.get_json()["data"]["nickname"] == "新昵称"
+
+    # 验证已更新
+    resp = client.get("/api/auth/me", headers=headers)
+    assert resp.get_json()["data"]["nickname"] == "新昵称"
+
+
+def test_update_profile_empty_nickname(client):
+    token = _login(client)
+    resp = client.put("/api/auth/profile",
+                      data=json.dumps({"nickname": ""}),
+                      content_type="application/json",
+                      headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 400

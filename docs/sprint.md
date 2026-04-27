@@ -1,18 +1,21 @@
-# Sprint 7: 用户认证（M7）
+# Sprint 8: 前端认证集成 + 用户资料
 
 **状态**: 已完成
-**目标**: 实现邮箱验证码无密码登录，为 API 添加认证保护
+**目标**: 将认证系统集成到前端，实现完整的登录体验
 
 ## 任务清单
 
-- [x] S7-1: VerificationCode 模型（6 位验证码、10 分钟过期、旧码失效）
-- [x] S7-2: 认证 API 路由（request-code、verify、logout、me）
-- [x] S7-3: API 认证保护（activities/params/ai 写操作需认证，读操作按用户过滤）
+- [x] S8-1: 登录页面（邮箱输入 → 验证码 → 登录）
+- [x] S8-2: 导航栏认证状态（登录/登出/用户名显示）
+- [x] S8-3: 前端 API 调用携带 token（authFetch 全局工具）
+- [x] S8-4: 用户资料页面（基本信息 + 修改昵称）
 
 ## 评估小结
 
-Sprint 7 完成了用户认证系统：
-- 验证码模型：6 位数字码、10 分钟过期、自动失效旧码
-- 认证路由：request-code → verify → 登录，Bearer token + httponly cookie 双模式
-- API 保护：上传/删除/参数保存/AI 需认证，列表/详情按用户过滤
-- 92 个测试全部通过（含 7 个认证测试、2 个认证保护测试）
+Sprint 8 完成了前端认证集成：
+- 登录页面：两步验证码流程，开发环境自动填入
+- 导航栏：根据 localStorage token 显示登录/用户状态
+- authFetch：全局 fetch 封装，自动携带 token，401 自动跳转登录
+- 所有模板（dashboard/activities/settings/ai/detail）改用 authFetch
+- 用户资料页：查看基本信息、修改昵称
+- 94 个测试全部通过（含 9 个认证测试）

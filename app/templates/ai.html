@@ -42,7 +42,7 @@ function generateReport() {
     resultContent.textContent = '正在生成...';
     resultMeta.textContent = '';
 
-    fetch('/api/ai/weekly-report', { method: 'POST' })
+    authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
         .then(res => {
             if (res.code !== 200) {
@@ -67,7 +67,7 @@ function getSuggestion() {
     resultContent.textContent = '正在生成...';
     resultMeta.textContent = '';
 
-    fetch('/api/ai/suggestion', {
+    authFetch('/api/ai/suggestion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question }),

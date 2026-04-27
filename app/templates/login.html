@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - EffortOS{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="card" style="max-width: 400px; margin: 4rem auto;">
+        <h2 style="margin-bottom: 1.5rem; text-align: center;">登录 EffortOS</h2>
+
+        <div id="step-email">
+            <div class="form-group">
+                <label for="email">邮箱地址</label>
+                <input type="email" id="email" class="form-input" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <button id="btn-send-code" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">发送验证码</button>
+            <p id="email-error" class="error-text" style="display: none;"></p>
+        </div>
+
+        <div id="step-code" style="display: none;">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                验证码已发送至 <strong id="sent-email"></strong>（开发环境可在控制台查看）
+            </p>
+            <div class="form-group">
+                <label for="code">验证码</label>
+                <input type="text" id="code" class="form-input" placeholder="6 位数字验证码" maxlength="6" inputmode="numeric">
+            </div>
+            <button id="btn-verify" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">登录</button>
+            <p id="code-error" class="error-text" style="display: none;"></p>
+            <button id="btn-back" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;">返回</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function() {
+    const stepEmail = document.getElementById('step-email');
+    const stepCode = document.getElementById('step-code');
+    const emailInput = document.getElementById('email');
+    const codeInput = document.getElementById('code');
+    const btnSendCode = document.getElementById('btn-send-code');
+    const btnVerify = document.getElementById('btn-verify');
+    const btnBack = document.getElementById('btn-back');
+    const sentEmail = document.getElementById('sent-email');
+    const emailError = document.getElementById('email-error');
+    const codeError = document.getElementById('code-error');
+
+    let currentEmail = '';
+
+    function showError(el, msg) {
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+    function hideError(el) {
+        el.style.display = 'none';
+    }
+
+    btnSendCode.addEventListener('click', async function() {
+        hideError(emailError);
+        const email = emailInput.value.trim();
+        if (!email || !email.includes('@')) {
+            showError(emailError, '请输入有效的邮箱地址');
+            return;
+        }
+        btnSendCode.disabled = true;
+        btnSendCode.textContent = '发送中...';
+
+        try {
+            const resp = await fetch('/api/auth/request-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email}),
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                currentEmail = email;
+                sentEmail.textContent = email;
+                stepEmail.style.display = 'none';
+                stepCode.style.display = 'block';
+                codeInput.focus();
+                // 开发环境自动填入验证码
+                if (data.data && data.data.code) {
+                    codeInput.value = data.data.code;
+                }
+            } else {
+                showError(emailError, data.message || '发送失败');
+            }
+        } catch (e) {
+            showError(emailError, '网络错误，请重试');
+        } finally {
+            btnSendCode.disabled = false;
+            btnSendCode.textContent = '发送验证码';
+        }
+    });
+
+    btnVerify.addEventListener('click', async function() {
+        hideError(codeError);
+        const code = codeInput.value.trim();
+        if (!code || code.length !== 6) {
+            showError(codeError, '请输入 6 位验证码');
+            return;
+        }
+        btnVerify.disabled = true;
+        btnVerify.textContent = '登录中...';
+
+        try {
+            const resp = await fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: currentEmail, code: code}),
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                localStorage.setItem('token', data.data.token);
+                localStorage.setItem('user', JSON.stringify(data.data.user));
+                const redirect = new URLSearchParams(window.location.search).get('next') || '/';
+                window.location.href = redirect;
+            } else {
+                showError(codeError, data.message || '验证失败');
+            }
+        } catch (e) {
+            showError(codeError, '网络错误，请重试');
+        } finally {
+            btnVerify.disabled = false;
+            btnVerify.textContent = '登录';
+        }
+    });
+
+    btnBack.addEventListener('click', function() {
+        stepCode.style.display = 'none';
+        stepEmail.style.display = 'block';
+        emailInput.focus();
+    });
+
+    emailInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') btnSendCode.click();
+    });
+    codeInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') btnVerify.click();
+    });
+})();
+</script>
+{% endblock %}

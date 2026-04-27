@@ -64,7 +64,7 @@ let currentOffset = 0;
 const limit = 20;
 
 function loadActivities(offset = 0) {
-    fetch(`/api/activities?limit=${limit}&offset=${offset}`)
+    authFetch(`/api/activities?limit=${limit}&offset=${offset}`)
         .then(r => r.json())
         .then(res => {
             const tbody = document.getElementById('activity-list');
@@ -110,7 +110,7 @@ function loadActivities(offset = 0) {
 
 function deleteActivity(id) {
     if (!confirm('确定删除此活动？')) return;
-    fetch(`/api/activities/${id}`, { method: 'DELETE' })
+    authFetch(`/api/activities/${id}`, { method: 'DELETE' })
         .then(r => r.json())
         .then(() => loadActivities(currentOffset));
 }
@@ -127,7 +127,7 @@ document.getElementById('upload-form').addEventListener('submit', e => {
     const status = document.getElementById('upload-status');
     status.textContent = '上传中...';
     const formData = new FormData(e.target);
-    fetch('/api/activities/upload', { method: 'POST', body: formData })
+    authFetch('/api/activities/upload', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(res => {
             if (res.code === 200) {

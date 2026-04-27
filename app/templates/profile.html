@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}个人资料 - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">个人资料</h2>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-title">基本信息</div>
+    <table>
+        <tr><td style="width: 120px; color: var(--text-secondary);">邮箱</td><td id="user-email">—</td></tr>
+        <tr><td style="color: var(--text-secondary);">昵称</td><td id="user-nickname-cell">—</td></tr>
+        <tr><td style="color: var(--text-secondary);">注册时间</td><td id="user-joined">—</td></tr>
+        <tr><td style="color: var(--text-secondary);">上次登录</td><td id="user-last-login">—</td></tr>
+    </table>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-title">修改昵称</div>
+    <form id="nickname-form">
+        <div class="form-group">
+            <input type="text" id="nickname-input" class="form-input" placeholder="输入新昵称" maxlength="50" style="max-width: 300px;">
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <span id="nickname-status" style="margin-left: 0.5rem;"></span>
+    </form>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function() {
+    function loadProfile() {
+        authFetch('/api/auth/me')
+            .then(r => r.json())
+            .then(res => {
+                if (res.code !== 200) {
+                    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+                const d = res.data;
+                document.getElementById('user-email').textContent = d.email;
+                document.getElementById('user-nickname-cell').textContent = d.nickname;
+                document.getElementById('nickname-input').value = d.nickname;
+                document.getElementById('user-joined').textContent = d.created_at ? d.created_at.slice(0, 10) : '—';
+                document.getElementById('user-last-login').textContent = d.last_login_at ? d.last_login_at.slice(0, 16).replace('T', ' ') : '—';
+            });
+    }
+
+    document.getElementById('nickname-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const nickname = document.getElementById('nickname-input').value.trim();
+        const status = document.getElementById('nickname-status');
+        if (!nickname) {
+            status.textContent = '昵称不能为空';
+            status.style.color = 'var(--danger)';
+            return;
+        }
+        authFetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: nickname }),
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.code === 200) {
+                    status.textContent = '已更新';
+                    status.style.color = 'var(--success)';
+                    document.getElementById('user-nickname-cell').textContent = nickname;
+                    // 更新 localStorage
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    user.nickname = nickname;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    // 更新导航栏
+                    const navNickname = document.getElementById('user-nickname');
+                    if (navNickname) navNickname.textContent = nickname;
+                } else {
+                    status.textContent = res.message;
+                    status.style.color = 'var(--danger)';
+                }
+                setTimeout(() => status.textContent = '', 3000);
+            });
+    });
+
+    loadProfile();
+})();
+</script>
+{% endblock %}
