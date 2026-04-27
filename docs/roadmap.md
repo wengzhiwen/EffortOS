@@ -6,7 +6,7 @@
 
 ## Milestones
 
-### M1: 项目骨架 `[~]` — Sprint 1
+### M1: 项目骨架 `[x]` — Sprint 1 ✓
 > Flask 应用框架 + MongoDB 连接 + 核心数据模型 + 基础路由
 
 - [ ] Flask 应用工厂 + config 配置
@@ -19,7 +19,7 @@
 - [ ] .env 模板 + requirements.txt
 - [ ] pytest 测试框架配置
 
-### M2: 数据导入 `[ ]`
+### M2: 数据导入 `[~]` — Sprint 2
 > TCX/GPX 文件解析 + 文件上传 API + 数据存储
 
 - TCX 文件解析器（提取心率、功率、速度、海拔、踏频时间序列）

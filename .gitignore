@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# 本地分析用的运动数据文件
+samples/
+.DS_Store
