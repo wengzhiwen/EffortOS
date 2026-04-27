@@ -8,6 +8,25 @@ NS = {
     "ns3": "http://www.garmin.com/xmlschemas/ActivityExtension/v2",
 }
 
+GPX_NS = {
+    "gpx": "http://www.topografix.com/GPX/1/1",
+    "ns3": "http://www.garmin.com/xmlschemas/TrackPointExtension/v1",
+}
+
+GPX_SPORT_MAP = {
+    "cycling": "cycling",
+    "indoor_cycling": "indoor_cycling",
+    "running": "running",
+    "indoor_running": "indoor_running",
+    "walking": "walking",
+    "swimming": "swimming",
+    "biking": "cycling",
+    "ride": "cycling",
+    "run": "running",
+    "walk": "walking",
+    "hiking": "walking",
+}
+
 
 def _parse_time(time_str: str) -> datetime:
     """解析 TCX 时间字符串为 UTC datetime。"""
@@ -140,3 +159,103 @@ def parse_tcx(file_path: str) -> dict:
         "trackpoints": trackpoints,
         "laps": laps,
     }
+
+
+def parse_gpx(file_path: str) -> dict:
+    """解析 GPX 文件，返回运动数据字典。
+
+    返回格式与 parse_tcx 一致（无 laps 字段）。
+    """
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    track = root.find(".//gpx:trk", GPX_NS)
+    if track is None:
+        raise ValueError("GPX 文件中未找到 trk 元素")
+
+    # 运动类型：优先从 <type> 标签获取
+    sport = "other"
+    type_elem = track.find("gpx:type", GPX_NS)
+    if type_elem is not None and type_elem.text:
+        sport_raw = type_elem.text.strip().lower()
+        sport = GPX_SPORT_MAP.get(sport_raw, "other")
+
+    # 解析 trackpoint
+    trackpoints = []
+    start_time = None
+    cumulative_distance = 0.0
+    prev_tp = None
+
+    for trkpt in track.findall(".//gpx:trkpt", GPX_NS):
+        time_val = trkpt.find("gpx:time", GPX_NS)
+        if time_val is None:
+            continue
+        time_dt = _parse_time(time_val.text)
+        if start_time is None:
+            start_time = time_dt
+
+        # GPX 的 lat/lon 是 trkpt 元素的属性
+        lat_attr = trkpt.get("lat")
+        lon_attr = trkpt.get("lon")
+        lat = float(lat_attr) if lat_attr else None
+        lon = float(lon_attr) if lon_attr else None
+
+        alt = _safe_float(trkpt, "gpx:ele", GPX_NS)
+
+        # Garmin 扩展数据：心率、功率、踏频
+        hr = _safe_int(trkpt, ".//ns3:hr", GPX_NS)
+        power = _safe_int(trkpt, ".//ns3:power", GPX_NS)
+        cadence = _safe_int(trkpt, ".//ns3:cadence", GPX_NS)
+
+        # 距离：从扩展数据获取，或根据 GPS 坐标累加
+        distance = _safe_float(trkpt, ".//ns3:DistanceMeters", GPX_NS)
+        if distance is None and prev_tp and lat is not None and prev_tp.get("latitude") is not None:
+            from math import sqrt, cos, radians
+
+            dlat = lat - prev_tp["latitude"]
+            dlon = (lon - prev_tp["longitude"]) * cos(radians(lat))
+            cumulative_distance += sqrt(dlat ** 2 + (dlon * 111320) ** 2) * 111320
+            distance = cumulative_distance
+
+        # 速度：从扩展数据获取，或根据时间差和距离差推算
+        speed = _safe_float(trkpt, ".//ns3:Speed", GPX_NS)
+
+        tp_data = {
+            "time": time_dt,
+            "heart_rate": hr,
+            "power": power,
+            "speed": speed,
+            "cadence": cadence,
+            "distance": distance,
+            "latitude": lat,
+            "longitude": lon,
+            "altitude": alt,
+        }
+        trackpoints.append(tp_data)
+        prev_tp = tp_data
+
+    # 如果没有 trackpoint，尝试从 metadata 获取时间
+    if start_time is None:
+        meta_time = root.find(".//gpx:metadata/gpx:time", GPX_NS)
+        if meta_time is not None and meta_time.text:
+            start_time = _parse_time(meta_time.text)
+
+    if start_time is None:
+        raise ValueError("GPX 文件中未找到有效的时间数据")
+
+    return {
+        "sport": sport,
+        "start_time": start_time,
+        "trackpoints": trackpoints,
+        "laps": [],
+    }
+
+
+def parse_activity_file(file_path: str) -> dict:
+    """根据文件扩展名自动选择解析器。"""
+    if file_path.lower().endswith(".tcx"):
+        return parse_tcx(file_path)
+    elif file_path.lower().endswith(".gpx"):
+        return parse_gpx(file_path)
+    else:
+        raise ValueError(f"不支持的文件格式: {file_path}")
