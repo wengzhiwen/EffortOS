@@ -42,4 +42,12 @@ def create_app(config_name=None):
     app.register_blueprint(params_bp, url_prefix="/api")
     app.register_blueprint(ai_bp, url_prefix="/api")
 
+    # 安全响应头
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
     return app

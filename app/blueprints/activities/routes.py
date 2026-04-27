@@ -1,3 +1,4 @@
+import html
 import os
 import uuid
 
@@ -89,7 +90,7 @@ def upload_activity():
         "data": {
             "id": str(activity.id),
             "activity_type": activity.activity_type,
-            "name": activity.name,
+            "name": html.escape(activity.name or ""),
             "start_time": activity.start_time.isoformat(),
             "data_summary": _serialize_summary(data_summary),
             "computed_metrics": _serialize_metrics(activity.computed_metrics),
@@ -161,7 +162,7 @@ def _serialize_activity(activity):
     return {
         "id": str(activity.id),
         "activity_type": activity.activity_type,
-        "name": activity.name,
+        "name": html.escape(activity.name or ""),
         "start_time": activity.start_time.isoformat(),
         "source_format": activity.source_format,
         "data_summary": _serialize_summary(activity.data_summary),
