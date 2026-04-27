@@ -4,6 +4,7 @@ import uuid
 
 from flask import Blueprint, current_app, jsonify, request
 
+from app.blueprints.auth.routes import require_user
 from app.models.activity import Activity, ComputedMetrics, DataSummary
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import validate_activity_file
@@ -20,6 +21,10 @@ def upload_activity():
     - activity_type: 运动类型（cycling/indoor_cycling/running/indoor_running/walking）
     - name: 运动名称（可选）
     """
+    user, err = require_user()
+    if err:
+        return err
+
     if "file" not in request.files:
         return jsonify({"code": 400, "message": "未找到上传文件", "data": None}), 400
 
@@ -68,7 +73,7 @@ def upload_activity():
     # 计算运动名称
     name = request.form.get("name") or file.filename
 
-    # 创建 Activity 记录（暂不绑定 user，后续加认证后再关联）
+    # 创建 Activity 记录
     activity = Activity(
         activity_type=activity_type,
         name=name,
@@ -77,6 +82,7 @@ def upload_activity():
         source_format=ext,
         data_summary=data_summary,
         raw_data_path=file_path,
+        user=user,
     )
 
     # 计算运动指标
@@ -195,8 +201,14 @@ def _compute_metrics(activity, trackpoints):
     from app.services.metrics_service import compute_activity_metrics
     from app.models.athlete_settings import AthleteParams
 
-    # 查找生效的用户参数（当前无用户认证，取最新参数）
-    params = AthleteParams.objects().order_by("-effective_date").first()
+    # 查找生效的用户参数
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    if current_user:
+        params = AthleteParams.objects(user=current_user).order_by("-effective_date").first()
+    else:
+        params = AthleteParams.objects().order_by("-effective_date").first()
     if not params or not trackpoints:
         return
 
@@ -238,6 +250,12 @@ def list_activities():
     limit = min(limit, 100)
 
     qs = Activity.objects()
+    # 已认证用户只看自己的活动
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    if current_user:
+        qs = qs.filter(user=current_user)
     activity_type = request.args.get("activity_type")
     if activity_type:
         qs = qs.filter(activity_type=activity_type)
@@ -272,7 +290,11 @@ def get_activity(activity_id):
 @activities_bp.route("/activities/<activity_id>", methods=["DELETE"])
 def delete_activity(activity_id):
     """删除运动记录。"""
-    activity = Activity.objects(id=activity_id).first()
+    user, err = require_user()
+    if err:
+        return err
+
+    activity = Activity.objects(id=activity_id, user=user).first()
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
 
@@ -306,6 +328,11 @@ def get_pmc():
         start_time__gte=start_date,
         start_time__lte=end_date + "T23:59:59",
     )
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    if current_user:
+        activities = activities.filter(user=current_user)
     daily = calc_daily_tss(list(activities))
     pmc_data = calc_pmc(daily, start_date, end_date)
 
@@ -331,6 +358,11 @@ def get_dashboard():
         start_time__gte=start,
         start_time__lte=end + "T23:59:59",
     )
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    if current_user:
+        activities_all = activities_all.filter(user=current_user)
     daily = calc_daily_tss(list(activities_all))
     pmc_data = calc_pmc(daily, start, end)
 
@@ -338,7 +370,10 @@ def get_dashboard():
     latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
 
     # 最近 5 条活动
-    recent = Activity.objects().order_by("-start_time").limit(5)
+    recent_qs = Activity.objects()
+    if current_user:
+        recent_qs = recent_qs.filter(user=current_user)
+    recent = recent_qs.order_by("-start_time").limit(5)
     recent_list = [_serialize_activity(a) for a in recent]
 
     return jsonify({

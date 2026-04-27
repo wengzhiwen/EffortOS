@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 
+from app.blueprints.auth.routes import require_user
 from app.models.athlete_settings import AthleteParams
 from app.services.params_service import get_effective_params, mark_activities_for_recalc, save_params
 
@@ -29,6 +30,10 @@ def _serialize_params(params):
 @params_bp.route("/params", methods=["POST"])
 def create_params():
     """保存运动员参数。"""
+    user, err = require_user()
+    if err:
+        return err
+
     data = request.get_json()
     if not data or "effective_date" not in data:
         return jsonify({"code": 400, "message": "缺少 effective_date", "data": None}), 400
@@ -48,12 +53,12 @@ def create_params():
         "weight": data.get("weight"),
     }
 
-    # 暂无用户认证，user 传 None
-    params = save_params(None, params_data)
+    # 绑定用户
+    params = save_params(user, params_data)
 
     # 标记受影响的活动需要重算
     if params.effective_date:
-        mark_activities_for_recalc(None, params.effective_date)
+        mark_activities_for_recalc(user, params.effective_date)
 
     return jsonify({
         "code": 200,
@@ -65,7 +70,13 @@ def create_params():
 @params_bp.route("/params/latest", methods=["GET"])
 def get_latest_params():
     """获取当前生效的参数。"""
-    params = AthleteParams.objects().order_by("-effective_date").first()
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    qs = AthleteParams.objects()
+    if current_user:
+        qs = qs.filter(user=current_user)
+    params = qs.order_by("-effective_date").first()
     return jsonify({
         "code": 200,
         "message": "ok",
@@ -76,7 +87,13 @@ def get_latest_params():
 @params_bp.route("/params/history", methods=["GET"])
 def get_params_history():
     """获取参数变更历史。"""
-    params_list = AthleteParams.objects().order_by("-effective_date").limit(20)
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    qs = AthleteParams.objects()
+    if current_user:
+        qs = qs.filter(user=current_user)
+    params_list = qs.order_by("-effective_date").limit(20)
     return jsonify({
         "code": 200,
         "message": "ok",

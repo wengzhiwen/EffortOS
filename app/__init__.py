@@ -39,8 +39,10 @@ def create_app(config_name=None):
     from app.blueprints.activities.routes import activities_bp
     from app.blueprints.params.routes import params_bp
     from app.blueprints.ai.routes import ai_bp
+    from app.blueprints.auth.routes import auth_bp
 
     app.register_blueprint(pages_bp)
+    app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(activities_bp, url_prefix="/api")
     app.register_blueprint(params_bp, url_prefix="/api")
     app.register_blueprint(ai_bp, url_prefix="/api")

@@ -95,3 +95,14 @@
 - 采纳用户提案：LLM 建议理论先行、开发服务器、预发布说明
 - LLM 重构：运动科学分析引擎 + 模型配置化
 - 83 个测试全部通过
+
+---
+
+### Sprint 7 完成 — 2026-04-27
+
+用户认证系统（M7）：
+- VerificationCode 模型：6 位验证码、10 分钟过期、旧码自动失效
+- 认证 API：request-code → verify → 登录（Bearer token + httponly cookie 双模式）
+- 用户模型：session_token 管理（generate/clear）
+- API 认证保护：上传/删除/参数保存/AI 需认证，读操作按用户过滤
+- 92 个测试全部通过（含 7 个认证 + 2 个鉴权保护测试）

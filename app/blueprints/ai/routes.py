@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
+from app.blueprints.auth.routes import require_user
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
 from app.services.llm_service import generate_suggestion, generate_weekly_report
@@ -10,21 +11,27 @@ from app.services.metrics_service import calc_daily_tss, calc_pmc
 ai_bp = Blueprint("ai", __name__)
 
 
-def _get_current_context():
+def _get_current_context(user=None):
     """获取当前训练状态上下文。"""
     today = datetime.now(timezone.utc)
     start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
 
-    activities = Activity.objects(
+    qs = Activity.objects(
         start_time__gte=start,
         start_time__lte=end + "T23:59:59",
     )
-    daily = calc_daily_tss(list(activities))
+    if user:
+        qs = qs.filter(user=user)
+    activities = list(qs)
+    daily = calc_daily_tss(activities)
     pmc_data = calc_pmc(daily, start, end)
     latest = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
 
-    params = AthleteParams.objects().order_by("-effective_date").first()
+    params_qs = AthleteParams.objects()
+    if user:
+        params_qs = params_qs.filter(user=user)
+    params = params_qs.order_by("-effective_date").first()
     params_dict = {}
     if params:
         params_dict = {
@@ -41,8 +48,12 @@ def _get_current_context():
 @ai_bp.route("/ai/weekly-report", methods=["POST"])
 def weekly_report():
     """生成训练周报。"""
+    user, err = require_user()
+    if err:
+        return err
+
     try:
-        latest_pmc, daily_tss, params = _get_current_context()
+        latest_pmc, daily_tss, params = _get_current_context(user)
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 
@@ -51,6 +62,7 @@ def weekly_report():
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
     week_activities = Activity.objects(
         start_time__gte=week_start,
+        user=user,
     ).order_by("start_time")
 
     activities_data = []
@@ -91,11 +103,15 @@ def weekly_report():
 @ai_bp.route("/ai/suggestion", methods=["POST"])
 def suggestion():
     """获取个性化训练建议。"""
+    user, err = require_user()
+    if err:
+        return err
+
     data = request.get_json() or {}
     question = data.get("question", "")
 
     try:
-        latest_pmc, daily_tss, params = _get_current_context()
+        latest_pmc, daily_tss, params = _get_current_context(user)
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 

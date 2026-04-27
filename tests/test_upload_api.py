@@ -46,42 +46,47 @@ MINIMAL_TCX = """<?xml version="1.0" encoding="UTF-8"?>
 </TrainingCenterDatabase>"""
 
 
-def test_upload_no_file(client):
+def test_upload_no_auth(client):
     resp = client.post("/api/activities/upload")
+    assert resp.status_code == 401
+
+
+def test_upload_no_file(client, auth_headers):
+    resp = client.post("/api/activities/upload", headers=auth_headers)
     assert resp.status_code == 400
     data = resp.get_json()
     assert data["code"] == 400
     assert "文件" in data["message"]
 
 
-def test_upload_missing_activity_type(client):
+def test_upload_missing_activity_type(client, auth_headers):
     data = {
         "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
     }
-    resp = client.post("/api/activities/upload", data=data, content_type="multipart/form-data")
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
     assert resp.status_code == 400
     result = resp.get_json()
     assert "activity_type" in result["message"]
 
 
-def test_upload_invalid_activity_type(client):
+def test_upload_invalid_activity_type(client, auth_headers):
     data = {
         "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
         "activity_type": "skydiving",
     }
-    resp = client.post("/api/activities/upload", data=data, content_type="multipart/form-data")
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
     assert resp.status_code == 400
     result = resp.get_json()
     assert "不支持" in result["message"]
 
 
-def test_upload_valid_tcx(client):
+def test_upload_valid_tcx(client, auth_headers):
     data = {
         "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
         "activity_type": "cycling",
         "name": "测试骑行",
     }
-    resp = client.post("/api/activities/upload", data=data, content_type="multipart/form-data")
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
     assert resp.status_code == 200
     result = resp.get_json()
     assert result["code"] == 200
@@ -93,10 +98,10 @@ def test_upload_valid_tcx(client):
     assert result["data"]["data_summary"]["avg_power"] == 110.0
 
 
-def test_upload_invalid_file_content(client):
+def test_upload_invalid_file_content(client, auth_headers):
     data = {
         "file": (io.BytesIO(b"not xml content"), "test.tcx"),
         "activity_type": "cycling",
     }
-    resp = client.post("/api/activities/upload", data=data, content_type="multipart/form-data")
+    resp = client.post("/api/activities/upload", data=data, headers=auth_headers, content_type="multipart/form-data")
     assert resp.status_code == 400
