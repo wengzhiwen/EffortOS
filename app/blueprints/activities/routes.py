@@ -1,6 +1,7 @@
 import html
 import os
 import uuid
+from collections import defaultdict
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -258,6 +259,8 @@ def list_activities():
 
     查询参数:
     - activity_type: 按运动类型过滤（可选）
+    - start_date: 起始日期 "YYYY-MM-DD"（可选）
+    - end_date: 结束日期 "YYYY-MM-DD"（可选）
     - limit: 返回数量，默认 20
     - offset: 偏移量，默认 0
     """
@@ -266,15 +269,23 @@ def list_activities():
     limit = min(limit, 100)
 
     qs = Activity.objects()
-    # 已认证用户只看自己的活动
     from app.blueprints.auth.routes import _get_authenticated_user as _get_user
 
     current_user = _get_user()
     if current_user:
         qs = qs.filter(user=current_user)
+
     activity_type = request.args.get("activity_type")
     if activity_type:
         qs = qs.filter(activity_type=activity_type)
+
+    start_date = request.args.get("start_date")
+    if start_date:
+        qs = qs.filter(start_time__gte=start_date)
+
+    end_date = request.args.get("end_date")
+    if end_date:
+        qs = qs.filter(start_time__lte=end_date + "T23:59:59")
 
     activities = qs.order_by("-start_time").skip(offset).limit(limit)
     total = qs.count()
@@ -287,6 +298,64 @@ def list_activities():
             "items": [_serialize_activity(a) for a in activities],
         },
     })
+
+
+@activities_bp.route("/activities/export", methods=["GET"])
+def export_activities():
+    """导出活动列表为 CSV。
+
+    查询参数同 list_activities（activity_type, start_date, end_date）。
+    """
+    import csv
+    import io
+
+    qs = Activity.objects()
+    from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+
+    current_user = _get_user()
+    if current_user:
+        qs = qs.filter(user=current_user)
+
+    activity_type = request.args.get("activity_type")
+    if activity_type:
+        qs = qs.filter(activity_type=activity_type)
+
+    start_date = request.args.get("start_date")
+    if start_date:
+        qs = qs.filter(start_time__gte=start_date)
+
+    end_date = request.args.get("end_date")
+    if end_date:
+        qs = qs.filter(start_time__lte=end_date + "T23:59:59")
+
+    activities = qs.order_by("-start_time")
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["日期", "类型", "名称", "时长(秒)", "距离(m)", "平均心率", "平均功率", "TSS", "TSS方法"])
+
+    for a in activities:
+        s = a.data_summary
+        m = a.computed_metrics
+        writer.writerow([
+            a.start_time.strftime("%Y-%m-%d %H:%M"),
+            a.activity_type,
+            a.name or "",
+            s.duration_seconds if s else "",
+            round(s.total_distance, 1) if s and s.total_distance else "",
+            s.avg_heart_rate if s else "",
+            round(s.avg_power, 0) if s and s.avg_power else "",
+            round(m.tss, 1) if m and m.tss else "",
+            m.tss_method if m else "",
+        ])
+
+    from flask import Response
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=activities.csv"},
+    )
 
 
 @activities_bp.route("/activities/<activity_id>", methods=["GET"])
@@ -382,24 +451,25 @@ def get_pmc():
 
 @activities_bp.route("/dashboard", methods=["GET"])
 def get_dashboard():
-    """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动。"""
+    """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动 + 日历 + 统计。"""
     from datetime import datetime as dt, timedelta
 
     from app.services.metrics_service import calc_daily_tss, calc_pmc
 
     today = dt.now()
-    start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+    start = (today - timedelta(days=90)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
 
-    activities_all = Activity.objects(
-        start_time__gte=start,
-        start_time__lte=end + "T23:59:59",
-    )
     from app.blueprints.auth.routes import _get_authenticated_user as _get_user
 
     current_user = _get_user()
-    if current_user:
-        activities_all = activities_all.filter(user=current_user)
+
+    def _filter_user(qs):
+        return qs.filter(user=current_user) if current_user else qs
+
+    activities_all = _filter_user(
+        Activity.objects(start_time__gte=start, start_time__lte=end + "T23:59:59")
+    )
     daily = calc_daily_tss(list(activities_all))
     pmc_data = calc_pmc(daily, start, end)
 
@@ -407,11 +477,43 @@ def get_dashboard():
     latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
 
     # 最近 5 条活动
-    recent_qs = Activity.objects()
-    if current_user:
-        recent_qs = recent_qs.filter(user=current_user)
-    recent = recent_qs.order_by("-start_time").limit(5)
-    recent_list = [_serialize_activity(a) for a in recent]
+    recent_list = [_serialize_activity(a) for a in _filter_user(Activity.objects()).order_by("-start_time").limit(5)]
+
+    # 本周/本月统计
+    week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    month_start = today.strftime("%Y-%m-01")
+
+    week_activities = list(_filter_user(
+        Activity.objects(start_time__gte=week_start, start_time__lte=end + "T23:59:59")
+    ))
+    month_activities = list(_filter_user(
+        Activity.objects(start_time__gte=month_start, start_time__lte=end + "T23:59:59")
+    ))
+
+    def _calc_stats(activities):
+        total_tss = sum(
+            a.computed_metrics.tss for a in activities
+            if a.computed_metrics and a.computed_metrics.tss
+        )
+        total_duration = sum(
+            a.data_summary.duration_seconds for a in activities
+            if a.data_summary and a.data_summary.duration_seconds
+        )
+        total_distance = sum(
+            a.data_summary.total_distance for a in activities
+            if a.data_summary and a.data_summary.total_distance
+        )
+        return {
+            "count": len(activities),
+            "total_tss": round(total_tss, 1),
+            "total_duration_minutes": round(total_duration / 60),
+            "total_distance_km": round(total_distance / 1000, 1),
+        }
+
+    # 运动类型分布（本月）
+    type_breakdown = defaultdict(int)
+    for a in month_activities:
+        type_breakdown[a.activity_type] += 1
 
     return jsonify({
         "code": 200,
@@ -422,6 +524,10 @@ def get_dashboard():
             "tsb": latest_pmc["tsb"],
             "today_tss": daily.get(end, 0),
             "recent_activities": recent_list,
-            "pmc": pmc_data[-30:],  # 最近 30 天 PMC 数据
+            "pmc": pmc_data[-30:],
+            "calendar": daily,
+            "weekly_stats": _calc_stats(week_activities),
+            "monthly_stats": _calc_stats(month_activities),
+            "type_breakdown": dict(type_breakdown),
         },
     })

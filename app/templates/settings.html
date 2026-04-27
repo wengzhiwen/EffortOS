@@ -52,7 +52,7 @@
 
 <div class="card">
     <div class="card-title">当前生效参数</div>
-    <div id="current-params">加载中...</div>
+    <div id="current-params"><div class="loading"><div class="spinner"></div>加载中...</div></div>
 </div>
 
 <div class="card">
@@ -73,7 +73,7 @@
     <div class="card-title">历史参数变更</div>
     <table>
         <thead><tr><th>生效日期</th><th>FTP</th><th>骑行 LTHR</th><th>跑步 LTHR</th><th>最大心率</th><th>体重</th></tr></thead>
-        <tbody id="params-history"><tr><td colspan="6">加载中...</td></tr></tbody>
+        <tbody id="params-history"><tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
     </table>
 </div>
 {% endblock %}

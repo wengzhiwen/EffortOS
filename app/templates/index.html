@@ -24,6 +24,28 @@
     </div>
 </div>
 
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-title">本周统计</div>
+        <div id="weekly-stats" class="stats-grid">—</div>
+    </div>
+    <div class="card">
+        <div class="card-title">本月统计</div>
+        <div id="monthly-stats" class="stats-grid">—</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-title">训练日历（近 90 天 TSS）</div>
+        <div id="tss-calendar" class="tss-calendar"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">运动类型分布（本月）</div>
+        <canvas id="type-chart" height="200"></canvas>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-title">PMC 趋势（最近 30 天）</div>
     <canvas id="pmc-chart" height="200"></canvas>
@@ -42,7 +64,7 @@
             </tr>
         </thead>
         <tbody id="recent-activities">
-            <tr><td colspan="5">加载中...</td></tr>
+            <tr><td colspan="5"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
         </tbody>
     </table>
 </div>
@@ -50,7 +72,7 @@
 
 {% block script %}
 <script>
-fetch('/api/dashboard')
+authFetch('/api/dashboard')
     .then(r => r.json())
     .then(res => {
         const d = res.data;
@@ -61,6 +83,16 @@ fetch('/api/dashboard')
         const tsbEl = document.getElementById('tsb');
         tsbEl.textContent = d.tsb.toFixed(1);
         tsbEl.className = 'metric-value ' + (d.tsb > 0 ? 'metric-positive' : d.tsb < -30 ? 'metric-negative' : 'metric-neutral');
+
+        // 本周/本月统计
+        renderStats('weekly-stats', d.weekly_stats);
+        renderStats('monthly-stats', d.monthly_stats);
+
+        // TSS 日历热力图
+        renderCalendar(d.calendar);
+
+        // 运动类型分布
+        renderTypeChart(d.type_breakdown);
 
         // PMC 图表
         const labels = d.pmc.map(p => p.date);
@@ -100,5 +132,107 @@ fetch('/api/dashboard')
             </tr>`;
         }).join('');
     });
+
+function renderStats(elId, stats) {
+    if (!stats) return;
+    document.getElementById(elId).innerHTML = `
+        <div class="stat-item"><div class="stat-value">${stats.count}</div><div class="stat-label">活动次数</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_tss.toFixed(0)}</div><div class="stat-label">总 TSS</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_duration_minutes}</div><div class="stat-label">总时长(分)</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_distance_km}</div><div class="stat-label">总距离(km)</div></div>
+    `;
+}
+
+function renderCalendar(calendarData) {
+    const container = document.getElementById('tss-calendar');
+    const today = new Date();
+    const days = [];
+
+    // 生成最近 91 天（13 周）
+    for (let i = 90; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        days.push({ date: key, tss: calendarData[key] || 0, dow: d.getDay() });
+    }
+
+    // 按周分行（7 列 = 周日到周六）
+    const weeks = [];
+    let week = new Array(7).fill(null);
+    for (const day of days) {
+        week[day.dow] = day;
+        if (day.dow === 6 || day === days[days.length - 1]) {
+            weeks.push(week);
+            week = new Array(7).fill(null);
+        }
+    }
+
+    const maxTss = Math.max(...Object.values(calendarData), 1);
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+    let html = '<div class="cal-months">';
+    // 月份标签
+    const firstDays = weeks.map(w => w.find(d => d)).filter(Boolean);
+    const seenMonths = new Set();
+    for (const fd of firstDays) {
+        const m = fd.date.slice(0, 7);
+        if (!seenMonths.has(m)) {
+            seenMonths.add(m);
+            html += `<span class="cal-month">${monthNames[new Date(fd.date).getMonth()]}</span>`;
+        }
+    }
+    html += '</div><div class="cal-grid">';
+
+    // 日期标签
+    const dayLabels = ['日','一','二','三','四','五','六'];
+    html += '<div class="cal-dow">' + dayLabels.map(l => `<span>${l}</span>`).join('') + '</div>';
+
+    for (const w of weeks) {
+        html += '<div class="cal-week">';
+        for (const day of w) {
+            if (!day) {
+                html += '<div class="cal-cell cal-empty"></div>';
+            } else {
+                const level = day.tss === 0 ? 0 : day.tss < maxTss * 0.25 ? 1 : day.tss < maxTss * 0.5 ? 2 : day.tss < maxTss * 0.75 ? 3 : 4;
+                html += `<div class="cal-cell cal-level-${level}" title="${day.date}: ${day.tss.toFixed(0)} TSS"></div>`;
+            }
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // 图例
+    html += '<div class="cal-legend"><span>少</span>';
+    for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;"></div>`;
+    html += '<span>多</span></div>';
+
+    container.innerHTML = html;
+}
+
+function renderTypeChart(breakdown) {
+    const labels = Object.keys(breakdown);
+    const data = Object.values(breakdown);
+    if (labels.length === 0) {
+        document.getElementById('type-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary);">暂无活动数据</p>';
+        return;
+    }
+    const typeNames = {
+        cycling: '骑行', indoor_cycling: '室内骑行',
+        running: '跑步', indoor_running: '室内跑步', walking: '步行'
+    };
+    const colors = ['#2563eb', '#4338ca', '#16a34a', '#065f46', '#d97706'];
+    new Chart(document.getElementById('type-chart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => typeNames[l] || l),
+            datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            cutout: '60%',
+        }
+    });
+}
 </script>
 {% endblock %}

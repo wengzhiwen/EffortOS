@@ -37,6 +37,36 @@
 </div>
 
 <div class="card">
+    <div class="card-title">筛选</div>
+    <div class="grid grid-4" style="align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>运动类型</label>
+            <select id="filter-type">
+                <option value="">全部</option>
+                <option value="cycling">骑行</option>
+                <option value="indoor_cycling">室内骑行</option>
+                <option value="running">跑步</option>
+                <option value="indoor_running">室内跑步</option>
+                <option value="walking">步行</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>起始日期</label>
+            <input type="date" id="filter-start">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>结束日期</label>
+            <input type="date" id="filter-end">
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="loadActivities(0)">筛选</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">清除</button>
+            <button class="btn btn-secondary" onclick="exportCSV()">导出 CSV</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
     <table>
         <thead>
             <tr>
@@ -51,7 +81,7 @@
             </tr>
         </thead>
         <tbody id="activity-list">
-            <tr><td colspan="8">加载中...</td></tr>
+            <tr><td colspan="8"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
         </tbody>
     </table>
     <div id="pagination" style="margin-top: 1rem; text-align: center;"></div>
@@ -63,8 +93,22 @@
 let currentOffset = 0;
 const limit = 20;
 
+function getFilterParams() {
+    const params = new URLSearchParams();
+    const type = document.getElementById('filter-type').value;
+    const start = document.getElementById('filter-start').value;
+    const end = document.getElementById('filter-end').value;
+    if (type) params.set('activity_type', type);
+    if (start) params.set('start_date', start);
+    if (end) params.set('end_date', end);
+    return params.toString();
+}
+
 function loadActivities(offset = 0) {
-    authFetch(`/api/activities?limit=${limit}&offset=${offset}`)
+    currentOffset = offset;
+    const filters = getFilterParams();
+    const url = `/api/activities?limit=${limit}&offset=${offset}${filters ? '&' + filters : ''}`;
+    authFetch(url)
         .then(r => r.json())
         .then(res => {
             const tbody = document.getElementById('activity-list');
@@ -105,6 +149,32 @@ function loadActivities(offset = 0) {
             } else {
                 pag.innerHTML = '';
             }
+        });
+}
+
+function clearFilters() {
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-start').value = '';
+    document.getElementById('filter-end').value = '';
+    loadActivities(0);
+}
+
+function exportCSV() {
+    const filters = getFilterParams();
+    const url = `/api/activities/export${filters ? '?' + filters : ''}`;
+    const token = localStorage.getItem('token');
+    const a = document.createElement('a');
+    a.href = url;
+    // 使用 fetch 下载带认证的 CSV
+    authFetch(url)
+        .then(r => r.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'activities.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
         });
 }
 
