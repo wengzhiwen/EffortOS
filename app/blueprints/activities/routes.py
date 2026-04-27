@@ -26,7 +26,12 @@ def upload_activity():
     if not file.filename:
         return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
 
-    activity_type = request.form.get("activity_type")
+    # 扩展名前置检查
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ("tcx", "gpx"):
+        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
+
+    activity_type = request.form.get("activity_type", "").strip()
     if not activity_type:
         return jsonify({"code": 400, "message": "缺少 activity_type 参数", "data": None}), 400
 
@@ -34,16 +39,15 @@ def upload_activity():
     if activity_type not in valid_types:
         return jsonify({"code": 400, "message": f"不支持的运动类型: {activity_type}", "data": None}), 400
 
-    # 保存文件到 upload 目录
+    # 保存文件到 upload 目录（使用 UUID 避免路径遍历）
     upload_dir = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_dir, exist_ok=True)
 
-    ext = file.filename.rsplit(".", 1)[-1].lower()
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    file_path = os.path.join(upload_dir, filename)
+    safe_filename = f"{uuid.uuid4().hex}.{ext}"
+    file_path = os.path.join(upload_dir, safe_filename)
     file.save(file_path)
 
-    # 校验文件
+    # 校验文件内容
     is_valid, error_msg = validate_activity_file(file_path)
     if not is_valid:
         os.remove(file_path)
@@ -52,7 +56,7 @@ def upload_activity():
     # 解析文件
     try:
         parsed = parse_activity_file(file_path)
-    except (ValueError, Exception) as e:
+    except ValueError as e:
         os.remove(file_path)
         return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
 
@@ -68,7 +72,7 @@ def upload_activity():
         activity_type=activity_type,
         name=name,
         start_time=parsed["start_time"],
-        source_file=filename,
+        source_file=safe_filename,
         source_format=ext,
         data_summary=data_summary,
         raw_data_path=file_path,
