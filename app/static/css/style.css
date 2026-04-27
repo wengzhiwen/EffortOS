@@ -11,6 +11,53 @@
     --danger: #dc2626;
 }
 
+[data-theme="dark"] {
+    --primary: #60a5fa;
+    --primary-light: #1e3a5f;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --bg: #0f172a;
+    --card-bg: #1e293b;
+    --border: #334155;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+}
+
+[data-theme="dark"] .badge-cycling { background: #1e3a5f; color: #60a5fa; }
+[data-theme="dark"] .badge-indoor_cycling { background: #312e81; color: #a5b4fc; }
+[data-theme="dark"] .badge-running { background: #14532d; color: #4ade80; }
+[data-theme="dark"] .badge-indoor_running { background: #064e3b; color: #34d399; }
+[data-theme="dark"] .badge-walking { background: #78350f; color: #fbbf24; }
+
+[data-theme="dark"] .cal-level-0 { background: #1e293b; }
+[data-theme="dark"] .cal-level-1 { background: #166534; }
+[data-theme="dark"] .cal-level-2 { background: #22c55e; }
+[data-theme="dark"] .cal-level-3 { background: #4ade80; }
+[data-theme="dark"] .cal-level-4 { background: #86efac; }
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: var(--bg);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .btn-primary:hover { background: #3b82f6; }
+
+/* 主题切换按钮 */
+.theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--text);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
