@@ -33,7 +33,9 @@ def create_app(config_name=None):
 
     # 注册蓝图
     from app.blueprints.pages.routes import pages_bp
+    from app.blueprints.activities.routes import activities_bp
 
     app.register_blueprint(pages_bp)
+    app.register_blueprint(activities_bp, url_prefix="/api")
 
     return app
