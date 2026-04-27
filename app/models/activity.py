@@ -45,7 +45,8 @@ class ComputedMetrics(EmbeddedDocument):
 class Activity(BaseDocument):
     user = ReferenceField("User", required=True)
     activity_type = StringField(
-        required=True, choices=["cycling", "running", "swimming", "other"]
+        required=True,
+        choices=["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"],
     )
     name = StringField(max_length=200)
     start_time = DateTimeField(required=True)
