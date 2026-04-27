@@ -14,6 +14,7 @@ class Config:
     )
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4-mini-2026-03-17")
 
 
 class DevelopmentConfig(Config):
