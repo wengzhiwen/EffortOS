@@ -1,15 +1,20 @@
-# Sprint 15: 测试补充
+# Sprint 16: 代码质量自动化
 
 **状态**: 已完成
-**目标**: 为新功能补充测试覆盖
+**目标**: 配置 ruff lint/format，采纳代码质量提案
 
 ## 任务清单
 
-- [x] S15-1: analyze 端点测试（7 个新增）
+- [x] S16-1: 配置 ruff lint + format（pyproject.toml）
+- [x] S16-2: 修复所有 lint 问题 + 格式化代码
+- [x] S16-3: 更新 CLAUDE.md 收尾流程增加代码质量检查
 
 ## 评估小结
 
-Sprint 15 补充了测试覆盖：
-- POST /api/activities/analyze 端点：7 个新测试
-- 覆盖：认证检查、无效输入、有效分析、数据质量检测、临时文件清理
-- 总测试数从 94 增至 101，全部通过
+Sprint 16 完成了代码质量自动化：
+- pyproject.toml: ruff lint 规则（E/F/W/I/UP/B/SIM）+ format 配置
+- 修复 14 个 lint 问题（未使用导入、导入排序）
+- 格式化 10 个文件
+- CLAUDE.md: 每轮收尾新增代码质量检查步骤
+- 采纳提案：「代码lint」和「同行评审」
+- 101 个测试全部通过
