@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from mongoengine import DateTimeField, FloatField, IntField, ReferenceField, StringField
+from mongoengine import DateTimeField, FloatField, IntField, ReferenceField
 
 from app.models.base import BaseDocument
 
@@ -62,11 +62,11 @@ class AthleteParams(BaseDocument):
 
         # 基于 Joe Friel 的心率分区（LTHR 百分比）
         zones = [
-            {"name": "Z1", "min": 0, "max": int(lthr * 0.68)},       # 恢复区
+            {"name": "Z1", "min": 0, "max": int(lthr * 0.68)},  # 恢复区
             {"name": "Z2", "min": int(lthr * 0.68), "max": int(lthr * 0.83)},  # 有氧区
             {"name": "Z3", "min": int(lthr * 0.83), "max": int(lthr * 0.94)},  # 节奏区
             {"name": "Z4", "min": int(lthr * 0.94), "max": int(lthr * 1.05)},  # 阈值区
-            {"name": "Z5", "min": int(lthr * 1.05), "max": 999},     # VO2max+
+            {"name": "Z5", "min": int(lthr * 1.05), "max": 999},  # VO2max+
         ]
         return zones
 
@@ -79,12 +79,12 @@ class AthleteParams(BaseDocument):
             return []
 
         zones = [
-            {"name": "Z1", "min": 0, "max": int(self.ftp * 0.55)},      # 恢复区
+            {"name": "Z1", "min": 0, "max": int(self.ftp * 0.55)},  # 恢复区
             {"name": "Z2", "min": int(self.ftp * 0.55), "max": int(self.ftp * 0.75)},  # 耐力区
             {"name": "Z3", "min": int(self.ftp * 0.75), "max": int(self.ftp * 0.90)},  # 节奏区
             {"name": "Z4", "min": int(self.ftp * 0.90), "max": int(self.ftp * 1.05)},  # 阈值区
             {"name": "Z5", "min": int(self.ftp * 1.05), "max": int(self.ftp * 1.20)},  # VO2max 区
             {"name": "Z6", "min": int(self.ftp * 1.20), "max": int(self.ftp * 1.50)},  # 无氧区
-            {"name": "Z7", "min": int(self.ftp * 1.50), "max": 9999},   # 神经肌肉区
+            {"name": "Z7", "min": int(self.ftp * 1.50), "max": 9999},  # 神经肌肉区
         ]
         return zones

@@ -43,10 +43,10 @@ def chat(
                 temperature=temperature,
             )
             return response.choices[0].message.content
-        except Exception as e:
+        except Exception:
             if attempt == retries:
                 raise
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
 
     return ""
 
@@ -190,15 +190,10 @@ def generate_weekly_report(
 
     核心改变：先基于运动科学理论计算出分析结论，再让 LLM 组织语言。
     """
-    total_tss = sum(
-        a.get("computed_metrics", {}).get("tss", 0) or 0
-        for a in week_activities
-    )
+    total_tss = sum(a.get("computed_metrics", {}).get("tss", 0) or 0 for a in week_activities)
 
     # Step 1: 基于理论计算分析结论
-    load_analysis = analyze_training_load(
-        pmc_data.get("ctl", 0), pmc_data.get("atl", 0), pmc_data.get("tsb", 0)
-    )
+    load_analysis = analyze_training_load(pmc_data.get("ctl", 0), pmc_data.get("atl", 0), pmc_data.get("tsb", 0))
     volume_analysis = analyze_weekly_volume(total_tss, len(week_activities))
     distribution = analyze_activity_distribution(week_activities)
 
@@ -214,38 +209,40 @@ def generate_weekly_report(
     user_prompt = f"""请根据以下分析结论，组织一份训练周报。直接使用这些结论，不要重新分析原始数据。
 
 ## 本周训练概况
-- 训练次数：{volume_analysis['training_count']} 次
-- 总 TSS：{volume_analysis['total_tss']:.0f}
-- {volume_analysis['frequency_assessment']}
-- {volume_analysis['volume_change']}
+- 训练次数：{volume_analysis["training_count"]} 次
+- 总 TSS：{volume_analysis["total_tss"]:.0f}
+- {volume_analysis["frequency_assessment"]}
+- {volume_analysis["volume_change"]}
 
 ## 活动明细
 {activity_summary if activity_summary else "本周无运动记录"}
 
 ## 训练负荷分析（PMC）
-- CTL (Fitness): {pmc_data.get('ctl', 0):.1f} — {load_analysis['ctl_level']}
-- ATL (Fatigue): {pmc_data.get('atl', 0):.1f}
-- TSB (Form): {pmc_data.get('tsb', 0):.1f} — {load_analysis['tsb_level']}
-- ATL/CTL 比率: {load_analysis['atl_ctl_ratio']} — {load_analysis['ratio_assessment']}
+- CTL (Fitness): {pmc_data.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
+- ATL (Fatigue): {pmc_data.get("atl", 0):.1f}
+- TSB (Form): {pmc_data.get("tsb", 0):.1f} — {load_analysis["tsb_level"]}
+- ATL/CTL 比率: {load_analysis["atl_ctl_ratio"]} — {load_analysis["ratio_assessment"]}
 
 ## 负荷状态评估
-- 风险等级：{load_analysis['tsb_risk']}
-- CTL 评估：{load_analysis['ctl_advice']}
-- TSB 建议：{load_analysis['tsb_advice']}
+- 风险等级：{load_analysis["tsb_risk"]}
+- CTL 评估：{load_analysis["ctl_advice"]}
+- TSB 建议：{load_analysis["tsb_advice"]}
 
 ## 运动类型分布
-- TSS 分布：{distribution['distribution']}
-- {distribution['diversity']}
+- TSS 分布：{distribution["distribution"]}
+- {distribution["diversity"]}
 
 请组织成一份清晰的周报，包含：本周总结、负荷分析、风险评估、下周建议。使用 markdown 格式。"""
 
-    return chat([
-        {
-            "role": "system",
-            "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成流畅的中文训练周报。不要质疑或修改分析结论，只需将其以专业、友好的语气呈现给用户。使用 markdown 格式。",
-        },
-        {"role": "user", "content": user_prompt},
-    ])
+    return chat(
+        [
+            {
+                "role": "system",
+                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成流畅的中文训练周报。不要质疑或修改分析结论，只需将其以专业、友好的语气呈现给用户。使用 markdown 格式。",
+            },
+            {"role": "user", "content": user_prompt},
+        ]
+    )
 
 
 def generate_suggestion(
@@ -259,9 +256,7 @@ def generate_suggestion(
     先基于理论分析，再让 LLM 组织语言。
     """
     # Step 1: 计算分析结论
-    load_analysis = analyze_training_load(
-        pmc_data.get("ctl", 0), pmc_data.get("atl", 0), pmc_data.get("tsb", 0)
-    )
+    load_analysis = analyze_training_load(pmc_data.get("ctl", 0), pmc_data.get("atl", 0), pmc_data.get("tsb", 0))
 
     # 分析最近 7 天训练趋势
     active_days = sum(1 for t in recent_tss if t > 0)
@@ -288,15 +283,15 @@ def generate_suggestion(
     user_prompt = f"""请根据以下分析结论给出训练建议。直接使用这些结论，不要重新分析。
 
 ## 训练负荷状态
-- CTL (Fitness): {pmc_data.get('ctl', 0):.1f} — {load_analysis['ctl_level']}
-- ATL (Fatigue): {pmc_data.get('atl', 0):.1f}
-- TSB (Form): {pmc_data.get('tsb', 0):.1f} — {load_analysis['tsb_level']}
-- ATL/CTL 比率: {load_analysis['atl_ctl_ratio']} — {load_analysis['ratio_assessment']}
+- CTL (Fitness): {pmc_data.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
+- ATL (Fatigue): {pmc_data.get("atl", 0):.1f}
+- TSB (Form): {pmc_data.get("tsb", 0):.1f} — {load_analysis["tsb_level"]}
+- ATL/CTL 比率: {load_analysis["atl_ctl_ratio"]} — {load_analysis["ratio_assessment"]}
 
 ## 负荷评估
-- 风险：{load_analysis['tsb_risk']}
-- TSB 建议：{load_analysis['tsb_advice']}
-- CTL 建议：{load_analysis['ctl_advice']}
+- 风险：{load_analysis["tsb_risk"]}
+- TSB 建议：{load_analysis["tsb_advice"]}
+- CTL 建议：{load_analysis["ctl_advice"]}
 
 ## 最近 7 天
 - 每日 TSS：{tss_str}
@@ -307,10 +302,12 @@ def generate_suggestion(
 
 {"用户提问：" + question if question else "请给出综合训练建议。"}"""
 
-    return chat([
-        {
-            "role": "system",
-            "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成个性化的中文训练建议。不要质疑或修改分析结论，只需以专业教练的语气呈现给用户。如果用户有提问，结合分析结论回答。使用 markdown 格式。",
-        },
-        {"role": "user", "content": user_prompt},
-    ])
+    return chat(
+        [
+            {
+                "role": "system",
+                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成个性化的中文训练建议。不要质疑或修改分析结论，只需以专业教练的语气呈现给用户。如果用户有提问，结合分析结论回答。使用 markdown 格式。",
+            },
+            {"role": "user", "content": user_prompt},
+        ]
+    )

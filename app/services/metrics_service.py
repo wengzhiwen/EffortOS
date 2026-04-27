@@ -4,7 +4,6 @@ from typing import Optional
 
 from app.models.activity import ComputedMetrics
 
-
 # ============================================================
 # 功率衍生指标
 # ============================================================
@@ -34,7 +33,7 @@ def calc_normalized_power(power_values: list[int]) -> Optional[float]:
         return None
 
     # 取 4 次方 → 求均值 → 开 4 次方根
-    fourth_power_sum = sum(v ** 4 for v in rolling)
+    fourth_power_sum = sum(v**4 for v in rolling)
     np_val = (fourth_power_sum / len(rolling)) ** 0.25
     return round(np_val, 1)
 
@@ -86,7 +85,7 @@ def calc_hr_tss(duration_seconds: int, avg_hr: int, lthr: int) -> Optional[float
         return None
     hr_if = avg_hr / lthr
     duration_hours = duration_seconds / 3600
-    return round(duration_hours * hr_if ** 2 * 100, 1)
+    return round(duration_hours * hr_if**2 * 100, 1)
 
 
 def calc_hr_efficiency_factor(avg_speed: float, avg_hr: int) -> Optional[float]:
@@ -107,7 +106,7 @@ def calc_power_tss(duration_seconds: int, np_val: float, ftp: int) -> Optional[f
         return None
     if_val = np_val / ftp
     duration_hours = duration_seconds / 3600
-    return round(duration_hours * if_val ** 2 * 100, 1)
+    return round(duration_hours * if_val**2 * 100, 1)
 
 
 # ============================================================
@@ -191,19 +190,13 @@ def compute_activity_metrics(
         metrics.work_kj = calc_work_kj(power_values)
 
         if metrics.normalized_power:
-            metrics.variability_index = calc_variability_index(
-                metrics.normalized_power, avg_power
-            )
+            metrics.variability_index = calc_variability_index(metrics.normalized_power, avg_power)
 
             if avg_hr:
-                metrics.efficiency_factor = calc_power_efficiency_factor(
-                    metrics.normalized_power, avg_hr
-                )
+                metrics.efficiency_factor = calc_power_efficiency_factor(metrics.normalized_power, avg_hr)
 
         if ftp and metrics.normalized_power:
-            metrics.intensity_factor = calc_intensity_factor(
-                metrics.normalized_power, ftp
-            )
+            metrics.intensity_factor = calc_intensity_factor(metrics.normalized_power, ftp)
             metrics.tss = calc_power_tss(duration, metrics.normalized_power, ftp)
             metrics.tss_method = "power"
 
@@ -236,7 +229,7 @@ def compute_activity_metrics(
 # ============================================================
 
 ALPHA_CTL = 1 - math.exp(-1 / 42)  # ≈ 0.02353
-ALPHA_ATL = 1 - math.exp(-1 / 7)   # ≈ 0.13307
+ALPHA_ATL = 1 - math.exp(-1 / 7)  # ≈ 0.13307
 
 
 def calc_daily_tss(activities: list) -> dict[str, float]:
@@ -280,13 +273,15 @@ def calc_pmc(daily_tss: dict[str, float], start_date: str, end_date: str) -> lis
         atl = atl + (day_tss - atl) * ALPHA_ATL
         tsb = ctl - atl
 
-        result.append({
-            "date": date_str,
-            "tss": day_tss,
-            "ctl": round(ctl, 1),
-            "atl": round(atl, 1),
-            "tsb": round(tsb, 1),
-        })
+        result.append(
+            {
+                "date": date_str,
+                "tss": day_tss,
+                "ctl": round(ctl, 1),
+                "atl": round(atl, 1),
+                "tsb": round(tsb, 1),
+            }
+        )
 
         current += timedelta(days=1)
 

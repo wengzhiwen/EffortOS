@@ -2,7 +2,6 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from typing import Optional
 
-
 NS = {
     "tcx": "http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2",
     "ns3": "http://www.garmin.com/xmlschemas/ActivityExtension/v2",
@@ -210,11 +209,11 @@ def parse_gpx(file_path: str) -> dict:
         # 距离：从扩展数据获取，或根据 GPS 坐标累加
         distance = _safe_float(trkpt, ".//ns3:DistanceMeters", GPX_NS)
         if distance is None and prev_tp and lat is not None and prev_tp.get("latitude") is not None:
-            from math import sqrt, cos, radians
+            from math import cos, radians, sqrt
 
             dlat = lat - prev_tp["latitude"]
             dlon = (lon - prev_tp["longitude"]) * cos(radians(lat))
-            cumulative_distance += sqrt(dlat ** 2 + (dlon * 111320) ** 2) * 111320
+            cumulative_distance += sqrt(dlat**2 + (dlon * 111320) ** 2) * 111320
             distance = cumulative_distance
 
         # 速度：从扩展数据获取，或根据时间差和距离差推算

@@ -17,9 +17,13 @@ def get_effective_params(user, date: datetime) -> AthleteParams:
 
     返回 effective_date <= date 的最新一条记录。
     """
-    return AthleteParams.objects(
-        **_build_query(user, effective_date__lte=date),
-    ).order_by("-effective_date").first()
+    return (
+        AthleteParams.objects(
+            **_build_query(user, effective_date__lte=date),
+        )
+        .order_by("-effective_date")
+        .first()
+    )
 
 
 def save_params(user, params_data: dict) -> AthleteParams:

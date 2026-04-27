@@ -50,6 +50,7 @@ class ComputedMetrics(EmbeddedDocument):
 
 class Trackpoint(EmbeddedDocument):
     """单个时间序列数据点。"""
+
     elapsed = FloatField(required=True)  # 距开始的秒数
     hr = IntField()  # 心率
     power = IntField()  # 功率
@@ -91,17 +92,33 @@ class Activity(BaseDocument):
             return []
         total = len(tps)
         if total <= max_points:
-            return [{"elapsed": tp.elapsed, "hr": tp.hr, "power": tp.power,
-                      "speed": tp.speed, "cadence": tp.cadence,
-                      "altitude": tp.altitude, "distance": tp.distance}
-                    for tp in tps]
+            return [
+                {
+                    "elapsed": tp.elapsed,
+                    "hr": tp.hr,
+                    "power": tp.power,
+                    "speed": tp.speed,
+                    "cadence": tp.cadence,
+                    "altitude": tp.altitude,
+                    "distance": tp.distance,
+                }
+                for tp in tps
+            ]
         step = total / max_points
         result = []
         for i in range(max_points):
             tp = tps[int(i * step)]
-            result.append({"elapsed": tp.elapsed, "hr": tp.hr, "power": tp.power,
-                           "speed": tp.speed, "cadence": tp.cadence,
-                           "altitude": tp.altitude, "distance": tp.distance})
+            result.append(
+                {
+                    "elapsed": tp.elapsed,
+                    "hr": tp.hr,
+                    "power": tp.power,
+                    "speed": tp.speed,
+                    "cadence": tp.cadence,
+                    "altitude": tp.altitude,
+                    "distance": tp.distance,
+                }
+            )
         return result
 
     def __str__(self):

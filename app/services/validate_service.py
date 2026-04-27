@@ -1,5 +1,4 @@
 import os
-import struct
 
 ALLOWED_EXTENSIONS = {"tcx", "gpx"}
 ALLOWED_MIME_TYPES = {"application/xml", "text/xml", "application/gpx+xml"}
@@ -30,7 +29,7 @@ def validate_activity_file(file_path: str) -> tuple[bool, str]:
     try:
         with open(file_path, "rb") as f:
             raw_header = f.read(512)
-    except IOError:
+    except OSError:
         return False, "无法读取文件"
 
     # 检查是否包含 null 字节（二进制文件特征）

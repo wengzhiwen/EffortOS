@@ -48,13 +48,16 @@ def request_code():
     # 目前开发阶段直接返回验证码（仅开发/测试环境）
     is_dev = os.environ.get("FLASK_ENV") == "development"
     from flask import current_app
+
     expose_code = is_dev or current_app.config.get("TESTING")
 
-    return jsonify({
-        "code": 200,
-        "message": "验证码已发送",
-        "data": {"code": vc.code} if expose_code else None,
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "验证码已发送",
+            "data": {"code": vc.code} if expose_code else None,
+        }
+    )
 
 
 @auth_bp.route("/auth/verify", methods=["POST"])
@@ -89,18 +92,20 @@ def verify_code():
 
     token = user.generate_session_token()
 
-    response = jsonify({
-        "code": 200,
-        "message": "登录成功",
-        "data": {
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "nickname": user.nickname,
+    response = jsonify(
+        {
+            "code": 200,
+            "message": "登录成功",
+            "data": {
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "nickname": user.nickname,
+                },
+                "token": token,
             },
-            "token": token,
-        },
-    })
+        }
+    )
     response.set_cookie("session_token", token, httponly=True, max_age=86400, samesite="Lax")
     return response
 
@@ -124,17 +129,19 @@ def me():
     if err:
         return err
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "id": str(user.id),
-            "email": user.email,
-            "nickname": user.nickname,
-            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "id": str(user.id),
+                "email": user.email,
+                "nickname": user.nickname,
+                "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+            },
+        }
+    )
 
 
 @auth_bp.route("/auth/profile", methods=["PUT"])
@@ -153,12 +160,14 @@ def update_profile():
     user.nickname = nickname[:50]
     user.save()
 
-    return jsonify({
-        "code": 200,
-        "message": "更新成功",
-        "data": {
-            "id": str(user.id),
-            "email": user.email,
-            "nickname": user.nickname,
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "更新成功",
+            "data": {
+                "id": str(user.id),
+                "email": user.email,
+                "nickname": user.nickname,
+            },
+        }
+    )

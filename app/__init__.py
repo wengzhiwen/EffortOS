@@ -35,11 +35,11 @@ def create_app(config_name=None):
     )
 
     # 注册蓝图
-    from app.blueprints.pages.routes import pages_bp
     from app.blueprints.activities.routes import activities_bp
-    from app.blueprints.params.routes import params_bp
     from app.blueprints.ai.routes import ai_bp
     from app.blueprints.auth.routes import auth_bp
+    from app.blueprints.pages.routes import pages_bp
+    from app.blueprints.params.routes import params_bp
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(auth_bp, url_prefix="/api")

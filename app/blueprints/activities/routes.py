@@ -6,7 +6,7 @@ from collections import defaultdict
 from flask import Blueprint, current_app, jsonify, request
 
 from app.blueprints.auth.routes import require_user
-from app.models.activity import Activity, ComputedMetrics, DataSummary, Trackpoint
+from app.models.activity import Activity, DataSummary, Trackpoint
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import validate_activity_file
 
@@ -104,23 +104,25 @@ def analyze_activity():
         if hrs:
             avg_hr = sum(hrs) // len(hrs)
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "sport": sport,
-            "sport_display": SPORT_DISPLAY.get(sport, sport),
-            "name_suggestion": name_suggestion,
-            "start_time": start.isoformat(),
-            "duration_seconds": duration,
-            "total_distance": round(total_dist, 1),
-            "avg_heart_rate": avg_hr,
-            "trackpoint_count": total,
-            "has_heart_rate": hr_count > total * 0.5,
-            "has_power": power_count > total * 0.5,
-            "warnings": warnings,
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "sport": sport,
+                "sport_display": SPORT_DISPLAY.get(sport, sport),
+                "name_suggestion": name_suggestion,
+                "start_time": start.isoformat(),
+                "duration_seconds": duration,
+                "total_distance": round(total_dist, 1),
+                "avg_heart_rate": avg_hr,
+                "trackpoint_count": total,
+                "has_heart_rate": hr_count > total * 0.5,
+                "has_power": power_count > total * 0.5,
+                "warnings": warnings,
+            },
+        }
+    )
 
 
 @activities_bp.route("/activities/upload", methods=["POST"])
@@ -217,19 +219,21 @@ def upload_activity():
 
     activity.save()
 
-    return jsonify({
-        "code": 200,
-        "message": "上传成功",
-        "data": {
-            "id": str(activity.id),
-            "activity_type": activity.activity_type,
-            "name": html.escape(activity.name or ""),
-            "start_time": activity.start_time.isoformat(),
-            "data_summary": _serialize_summary(data_summary),
-            "computed_metrics": _serialize_metrics(activity.computed_metrics),
-            "trackpoint_count": len(trackpoints),
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "上传成功",
+            "data": {
+                "id": str(activity.id),
+                "activity_type": activity.activity_type,
+                "name": html.escape(activity.name or ""),
+                "start_time": activity.start_time.isoformat(),
+                "data_summary": _serialize_summary(data_summary),
+                "computed_metrics": _serialize_metrics(activity.computed_metrics),
+                "trackpoint_count": len(trackpoints),
+            },
+        }
+    )
 
 
 def _build_data_summary(laps, trackpoints):
@@ -325,11 +329,10 @@ def _serialize_metrics(metrics):
 
 def _compute_metrics(activity, trackpoints):
     """计算并填充 Activity 的 ComputedMetrics。"""
-    from app.services.metrics_service import compute_activity_metrics
-    from app.models.athlete_settings import AthleteParams
-
     # 查找生效的用户参数
     from app.blueprints.auth.routes import _get_authenticated_user as _get_user
+    from app.models.athlete_settings import AthleteParams
+    from app.services.metrics_service import compute_activity_metrics
 
     current_user = _get_user()
     if current_user:
@@ -400,14 +403,16 @@ def list_activities():
     activities = qs.order_by("-start_time").skip(offset).limit(limit)
     total = qs.count()
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "total": total,
-            "items": [_serialize_activity(a) for a in activities],
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "total": total,
+                "items": [_serialize_activity(a) for a in activities],
+            },
+        }
+    )
 
 
 @activities_bp.route("/activities/export", methods=["GET"])
@@ -447,17 +452,19 @@ def export_activities():
     for a in activities:
         s = a.data_summary
         m = a.computed_metrics
-        writer.writerow([
-            a.start_time.strftime("%Y-%m-%d %H:%M"),
-            a.activity_type,
-            a.name or "",
-            s.duration_seconds if s else "",
-            round(s.total_distance, 1) if s and s.total_distance else "",
-            s.avg_heart_rate if s else "",
-            round(s.avg_power, 0) if s and s.avg_power else "",
-            round(m.tss, 1) if m and m.tss else "",
-            m.tss_method if m else "",
-        ])
+        writer.writerow(
+            [
+                a.start_time.strftime("%Y-%m-%d %H:%M"),
+                a.activity_type,
+                a.name or "",
+                s.duration_seconds if s else "",
+                round(s.total_distance, 1) if s and s.total_distance else "",
+                s.avg_heart_rate if s else "",
+                round(s.avg_power, 0) if s and s.avg_power else "",
+                round(m.tss, 1) if m and m.tss else "",
+                m.tss_method if m else "",
+            ]
+        )
 
     from flask import Response
 
@@ -475,11 +482,13 @@ def get_activity(activity_id):
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": _serialize_activity(activity),
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": _serialize_activity(activity),
+        }
+    )
 
 
 @activities_bp.route("/activities/<activity_id>/trackpoints", methods=["GET"])
@@ -493,14 +502,16 @@ def get_trackpoints(activity_id):
     max_points = min(max_points, 5000)
 
     data = activity.get_trackpoints_downsampled(max_points)
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "total_points": len(activity.trackpoints) if activity.trackpoints else 0,
-            "points": data,
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "total_points": len(activity.trackpoints) if activity.trackpoints else 0,
+                "points": data,
+            },
+        }
+    )
 
 
 @activities_bp.route("/activities/<activity_id>", methods=["DELETE"])
@@ -530,7 +541,8 @@ def get_pmc():
     - start_date: 起始日期 "YYYY-MM-DD"（默认 60 天前）
     - end_date: 结束日期 "YYYY-MM-DD"（默认今天）
     """
-    from datetime import datetime as dt, timedelta
+    from datetime import datetime as dt
+    from datetime import timedelta
 
     from app.services.metrics_service import calc_daily_tss, calc_pmc
 
@@ -552,17 +564,20 @@ def get_pmc():
     daily = calc_daily_tss(list(activities))
     pmc_data = calc_pmc(daily, start_date, end_date)
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": pmc_data,
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": pmc_data,
+        }
+    )
 
 
 @activities_bp.route("/dashboard", methods=["GET"])
 def get_dashboard():
     """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动 + 日历 + 统计。"""
-    from datetime import datetime as dt, timedelta
+    from datetime import datetime as dt
+    from datetime import timedelta
 
     from app.services.metrics_service import calc_daily_tss, calc_pmc
 
@@ -577,9 +592,7 @@ def get_dashboard():
     def _filter_user(qs):
         return qs.filter(user=current_user) if current_user else qs
 
-    activities_all = _filter_user(
-        Activity.objects(start_time__gte=start, start_time__lte=end + "T23:59:59")
-    )
+    activities_all = _filter_user(Activity.objects(start_time__gte=start, start_time__lte=end + "T23:59:59"))
     daily = calc_daily_tss(list(activities_all))
     pmc_data = calc_pmc(daily, start, end)
 
@@ -593,25 +606,20 @@ def get_dashboard():
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
     month_start = today.strftime("%Y-%m-01")
 
-    week_activities = list(_filter_user(
-        Activity.objects(start_time__gte=week_start, start_time__lte=end + "T23:59:59")
-    ))
-    month_activities = list(_filter_user(
-        Activity.objects(start_time__gte=month_start, start_time__lte=end + "T23:59:59")
-    ))
+    week_activities = list(
+        _filter_user(Activity.objects(start_time__gte=week_start, start_time__lte=end + "T23:59:59"))
+    )
+    month_activities = list(
+        _filter_user(Activity.objects(start_time__gte=month_start, start_time__lte=end + "T23:59:59"))
+    )
 
     def _calc_stats(activities):
-        total_tss = sum(
-            a.computed_metrics.tss for a in activities
-            if a.computed_metrics and a.computed_metrics.tss
-        )
+        total_tss = sum(a.computed_metrics.tss for a in activities if a.computed_metrics and a.computed_metrics.tss)
         total_duration = sum(
-            a.data_summary.duration_seconds for a in activities
-            if a.data_summary and a.data_summary.duration_seconds
+            a.data_summary.duration_seconds for a in activities if a.data_summary and a.data_summary.duration_seconds
         )
         total_distance = sum(
-            a.data_summary.total_distance for a in activities
-            if a.data_summary and a.data_summary.total_distance
+            a.data_summary.total_distance for a in activities if a.data_summary and a.data_summary.total_distance
         )
         return {
             "count": len(activities),
@@ -625,19 +633,21 @@ def get_dashboard():
     for a in month_activities:
         type_breakdown[a.activity_type] += 1
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "ctl": latest_pmc["ctl"],
-            "atl": latest_pmc["atl"],
-            "tsb": latest_pmc["tsb"],
-            "today_tss": daily.get(end, 0),
-            "recent_activities": recent_list,
-            "pmc": pmc_data[-30:],
-            "calendar": daily,
-            "weekly_stats": _calc_stats(week_activities),
-            "monthly_stats": _calc_stats(month_activities),
-            "type_breakdown": dict(type_breakdown),
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "ctl": latest_pmc["ctl"],
+                "atl": latest_pmc["atl"],
+                "tsb": latest_pmc["tsb"],
+                "today_tss": daily.get(end, 0),
+                "recent_activities": recent_list,
+                "pmc": pmc_data[-30:],
+                "calendar": daily,
+                "weekly_stats": _calc_stats(week_activities),
+                "monthly_stats": _calc_stats(month_activities),
+                "type_breakdown": dict(type_breakdown),
+            },
+        }
+    )

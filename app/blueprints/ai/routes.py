@@ -87,17 +87,19 @@ def weekly_report():
     except Exception as e:
         return jsonify({"code": 500, "message": f"生成失败: {str(e)}", "data": None}), 500
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "report": report,
-            "week_activities": len(activities_data),
-            "ctl": latest_pmc["ctl"],
-            "atl": latest_pmc["atl"],
-            "tsb": latest_pmc["tsb"],
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "report": report,
+                "week_activities": len(activities_data),
+                "ctl": latest_pmc["ctl"],
+                "atl": latest_pmc["atl"],
+                "tsb": latest_pmc["tsb"],
+            },
+        }
+    )
 
 
 @ai_bp.route("/ai/suggestion", methods=["POST"])
@@ -129,13 +131,15 @@ def suggestion():
     except Exception as e:
         return jsonify({"code": 500, "message": f"生成失败: {str(e)}", "data": None}), 500
 
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "suggestion": advice,
-            "ctl": latest_pmc["ctl"],
-            "atl": latest_pmc["atl"],
-            "tsb": latest_pmc["tsb"],
-        },
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "suggestion": advice,
+                "ctl": latest_pmc["ctl"],
+                "atl": latest_pmc["atl"],
+                "tsb": latest_pmc["tsb"],
+            },
+        }
+    )

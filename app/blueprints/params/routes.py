@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
 from app.blueprints.auth.routes import require_user
 from app.models.athlete_settings import AthleteParams
-from app.services.params_service import get_effective_params, mark_activities_for_recalc, save_params
+from app.services.params_service import mark_activities_for_recalc, save_params
 
 params_bp = Blueprint("params", __name__)
 
@@ -60,11 +60,13 @@ def create_params():
     if params.effective_date:
         mark_activities_for_recalc(user, params.effective_date)
 
-    return jsonify({
-        "code": 200,
-        "message": "保存成功",
-        "data": _serialize_params(params),
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "保存成功",
+            "data": _serialize_params(params),
+        }
+    )
 
 
 @params_bp.route("/params/latest", methods=["GET"])
@@ -77,11 +79,13 @@ def get_latest_params():
     if current_user:
         qs = qs.filter(user=current_user)
     params = qs.order_by("-effective_date").first()
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": _serialize_params(params),
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": _serialize_params(params),
+        }
+    )
 
 
 @params_bp.route("/params/history", methods=["GET"])
@@ -94,8 +98,10 @@ def get_params_history():
     if current_user:
         qs = qs.filter(user=current_user)
     params_list = qs.order_by("-effective_date").limit(20)
-    return jsonify({
-        "code": 200,
-        "message": "ok",
-        "data": [_serialize_params(p) for p in params_list],
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": [_serialize_params(p) for p in params_list],
+        }
+    )
