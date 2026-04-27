@@ -6,28 +6,8 @@
     <title>{% block title %}EffortOS{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-</head>
-<body>
-    <nav class="navbar">
-        <a href="{{ url_for('pages.index') }}" class="brand">EffortOS</a>
-        <a href="{{ url_for('pages.index') }}" class="{{ 'active' if request.endpoint == 'pages.index' }}">仪表盘</a>
-        <a href="{{ url_for('pages.activities') }}" class="{{ 'active' if request.endpoint == 'pages.activities' }}">活动</a>
-        <a href="{{ url_for('pages.settings') }}" class="{{ 'active' if request.endpoint == 'pages.settings' }}">设置</a>
-        <a href="{{ url_for('pages.ai') }}" class="{{ 'active' if request.endpoint == 'pages.ai' }}">AI 教练</a>
-        <div class="navbar-right">
-            <span id="user-info" style="display:none;">
-                <a href="/profile" id="user-nickname" style="color: var(--text); font-weight: 500;"></a>
-                <button id="btn-logout" class="btn btn-secondary btn-sm">登出</button>
-            </span>
-            <a id="btn-login" href="/login" class="btn btn-primary btn-sm">登录</a>
-        </div>
-    </nav>
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
-    {% block script %}{% endblock %}
     <script>
-    // 全局认证工具
+    // 全局认证工具（必须在子模板 script 之前加载）
     (function() {
         function getToken() {
             return localStorage.getItem('token');
@@ -36,36 +16,6 @@
             const u = localStorage.getItem('user');
             return u ? JSON.parse(u) : null;
         }
-        function updateNavbar() {
-            const user = getUser();
-            const token = getToken();
-            const userInfo = document.getElementById('user-info');
-            const userNickname = document.getElementById('user-nickname');
-            const btnLogin = document.getElementById('btn-login');
-            if (user && token) {
-                if (userInfo) userInfo.style.display = 'inline-flex';
-                if (userNickname) userNickname.textContent = user.nickname || user.email;
-                if (btnLogin) btnLogin.style.display = 'none';
-            } else {
-                if (userInfo) userInfo.style.display = 'none';
-                if (btnLogin) btnLogin.style.display = 'inline-block';
-            }
-        }
-        // 登出
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async function() {
-                const token = getToken();
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: token ? {'Authorization': 'Bearer ' + token} : {},
-                });
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-            });
-        }
-        // authFetch：自动携带 token
         window.authFetch = function(url, options) {
             options = options || {};
             const token = getToken();
@@ -87,8 +37,56 @@
                 return resp;
             });
         };
-        updateNavbar();
+        // 页面加载后更新导航栏
+        document.addEventListener('DOMContentLoaded', function() {
+            var user = getUser();
+            var token = getToken();
+            var userInfo = document.getElementById('user-info');
+            var userNickname = document.getElementById('user-nickname');
+            var btnLogin = document.getElementById('btn-login');
+            if (user && token) {
+                if (userInfo) userInfo.style.display = 'inline-flex';
+                if (userNickname) userNickname.textContent = user.nickname || user.email;
+                if (btnLogin) btnLogin.style.display = 'none';
+            } else {
+                if (userInfo) userInfo.style.display = 'none';
+                if (btnLogin) btnLogin.style.display = 'inline-block';
+            }
+            var btnLogout = document.getElementById('btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', async function() {
+                    var t = getToken();
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: t ? {'Authorization': 'Bearer ' + t} : {},
+                    });
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                });
+            }
+        });
     })();
     </script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('pages.index') }}" class="brand">EffortOS</a>
+        <a href="{{ url_for('pages.index') }}" class="{{ 'active' if request.endpoint == 'pages.index' }}">仪表盘</a>
+        <a href="{{ url_for('pages.activities') }}" class="{{ 'active' if request.endpoint == 'pages.activities' }}">活动</a>
+        <a href="{{ url_for('pages.settings') }}" class="{{ 'active' if request.endpoint == 'pages.settings' }}">设置</a>
+        <a href="{{ url_for('pages.ai') }}" class="{{ 'active' if request.endpoint == 'pages.ai' }}">AI 教练</a>
+        <div class="navbar-right">
+            <span id="user-info" style="display:none;">
+                <a href="/profile" id="user-nickname" style="color: var(--text); font-weight: 500;"></a>
+                <button id="btn-logout" class="btn btn-secondary btn-sm">登出</button>
+            </span>
+            <a id="btn-login" href="/login" class="btn btn-primary btn-sm">登录</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    {% block script %}{% endblock %}
 </body>
 </html>
