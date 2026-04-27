@@ -253,3 +253,14 @@ Dashboard 空状态引导 + 错误页面：
 - 修复 auth/routes.py 中验证码校验的逻辑冗余（先验证后又有条件重复验证）
 - 采纳提案：「# 同行评审」— 模块划分与超大文件拆分
 - 104 个测试全部通过
+
+---
+
+### Sprint 20 完成 — 2026-04-28
+
+测试覆盖与日期查询 Bug 修复：
+- 新增 19 个测试（104 → 123），覆盖 Dashboard/Params/Export/Trackpoints API
+- 修复重要 bug：MongoEngine `start_time__lte` 用字符串比较时对带时间部分的日期失效
+- 改用 `_end_of_day()` 函数将日期字符串转为 datetime 对象进行比较
+- activities 和 dashboard 蓝图均已修复
+- 123 个测试全部通过

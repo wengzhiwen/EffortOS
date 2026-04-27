@@ -12,8 +12,6 @@ dashboard_bp = Blueprint("dashboard", __name__)
 
 def _get_authenticated_user():
     """从请求中获取已认证的用户。"""
-    from flask import request
-
     from app.models.user import User
 
     token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
@@ -30,21 +28,21 @@ def _filter_user(qs):
     return qs.filter(user=current_user) if current_user else qs
 
 
+def _end_of_day(date_str):
+    """将 'YYYY-MM-DD' 转为当天 23:59:59 的 datetime 对象（用于 __lte 查询）。"""
+    return dt.strptime(date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+
+
 @dashboard_bp.route("/pmc", methods=["GET"])
 def get_pmc():
-    """获取 PMC（CTL/ATL/TSB）时间序列。
-
-    查询参数:
-    - start_date: 起始日期 "YYYY-MM-DD"（默认 60 天前）
-    - end_date: 结束日期 "YYYY-MM-DD"（默认今天）
-    """
+    """获取 PMC（CTL/ATL/TSB）时间序列。"""
     end_date = request.args.get("end_date", dt.now().strftime("%Y-%m-%d"))
     start_date = request.args.get(
         "start_date",
         (dt.now() - timedelta(days=60)).strftime("%Y-%m-%d"),
     )
 
-    activities = _filter_user(Activity.objects(start_time__gte=start_date, start_time__lte=end_date + "T23:59:59"))
+    activities = _filter_user(Activity.objects(start_time__gte=start_date, start_time__lte=_end_of_day(end_date)))
     daily = calc_daily_tss(list(activities))
     pmc_data = calc_pmc(daily, start_date, end_date)
 
@@ -53,32 +51,27 @@ def get_pmc():
 
 @dashboard_bp.route("/dashboard", methods=["GET"])
 def get_dashboard():
-    """获取 Dashboard 汇总数据：最新 PMC 值 + 最近活动 + 日历 + 统计。"""
+    """获取 Dashboard 汇总数据。"""
     today = dt.now()
     start = (today - timedelta(days=90)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
+    end_dt = _end_of_day(end)
 
-    activities_all = _filter_user(Activity.objects(start_time__gte=start, start_time__lte=end + "T23:59:59"))
+    activities_all = _filter_user(Activity.objects(start_time__gte=start, start_time__lte=end_dt))
     daily = calc_daily_tss(list(activities_all))
     pmc_data = calc_pmc(daily, start, end)
 
     latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
 
-    # 最近 5 条活动
     from app.blueprints.activities.routes import _serialize_activity
 
     recent_list = [_serialize_activity(a) for a in _filter_user(Activity.objects()).order_by("-start_time").limit(5)]
 
-    # 本周/本月统计
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
     month_start = today.strftime("%Y-%m-01")
 
-    week_activities = list(
-        _filter_user(Activity.objects(start_time__gte=week_start, start_time__lte=end + "T23:59:59"))
-    )
-    month_activities = list(
-        _filter_user(Activity.objects(start_time__gte=month_start, start_time__lte=end + "T23:59:59"))
-    )
+    week_activities = list(_filter_user(Activity.objects(start_time__gte=week_start, start_time__lte=end_dt)))
+    month_activities = list(_filter_user(Activity.objects(start_time__gte=month_start, start_time__lte=end_dt)))
 
     def _calc_stats(activities):
         total_tss = sum(a.computed_metrics.tss for a in activities if a.computed_metrics and a.computed_metrics.tss)
@@ -95,7 +88,6 @@ def get_dashboard():
             "total_distance_km": round(total_distance / 1000, 1),
         }
 
-    # 运动类型分布（本月）
     type_breakdown = defaultdict(int)
     for a in month_activities:
         type_breakdown[a.activity_type] += 1

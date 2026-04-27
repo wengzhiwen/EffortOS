@@ -50,6 +50,13 @@ def _activity_type_filter(qs):
     return qs.filter(activity_type=activity_type) if activity_type else qs
 
 
+def _end_of_day(date_str):
+    """将 'YYYY-MM-DD' 转为当天 23:59:59 的 datetime 对象（用于 __lte 查询）。"""
+    from datetime import datetime
+
+    return datetime.strptime(date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+
+
 def _date_range_filter(qs):
     """按请求参数过滤日期范围。"""
     start_date = request.args.get("start_date")
@@ -57,7 +64,7 @@ def _date_range_filter(qs):
         qs = qs.filter(start_time__gte=start_date)
     end_date = request.args.get("end_date")
     if end_date:
-        qs = qs.filter(start_time__lte=end_date + "T23:59:59")
+        qs = qs.filter(start_time__lte=_end_of_day(end_date))
     return qs
 
 
