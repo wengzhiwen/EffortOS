@@ -1,16 +1,18 @@
-# Sprint 24: 清理 gitignore 和项目文件
+# Sprint 25: 活动批量删除
 
 **状态**: 已完成
-**目标**: 更新 .gitignore，清理项目中的临时文件
+**目标**: 支持活动列表多选和批量删除
 
 ## 任务清单
 
-- [x] S24-1: 更新 .gitignore（忽略截图、page-review、playwright-mcp、uploads）
-- [x] S24-2: 处理用户提案（同行评审 v2 — gitignore 更新）
+- [x] S25-1: 新增 POST /api/activities/batch-delete 端点
+- [x] S25-2: 活动列表页添加复选框、全选、批量删除按钮
+- [x] S25-3: 5 个新测试
 
 ## 评估小结
 
-Sprint 24 完成了项目清理：
-- .gitignore 新增：*.png、*.jpeg、page-review/、.playwright-mcp/、uploads/
-- 采纳提案「同行评审 v2」
-- 123 个测试全部通过
+Sprint 25 完成了活动批量删除功能：
+- 新增 batch-delete 端点：认证保护 + 最多 50 条 + 文件清理
+- 活动列表增加复选框列、全选按钮、动态批量删除按钮
+- 5 个新测试（正常删除、无认证、缺 ids、空数组、超限）
+- 128 个测试全部通过

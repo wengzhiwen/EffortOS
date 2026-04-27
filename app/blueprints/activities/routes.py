@@ -509,3 +509,32 @@ def delete_activity(activity_id):
 
     activity.delete()
     return jsonify({"code": 200, "message": "已删除", "data": None})
+
+
+@activities_bp.route("/activities/batch-delete", methods=["POST"])
+def batch_delete_activities():
+    """批量删除运动记录。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    data = request.get_json()
+    if not data or "ids" not in data:
+        return jsonify({"code": 400, "message": "缺少 ids 参数", "data": None}), 400
+
+    ids = data["ids"]
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"code": 400, "message": "ids 必须是非空数组", "data": None}), 400
+    if len(ids) > 50:
+        return jsonify({"code": 400, "message": "单次最多删除 50 条", "data": None}), 400
+
+    deleted = 0
+    for aid in ids:
+        activity = Activity.objects(id=aid, user=user).first()
+        if activity:
+            if activity.raw_data_path and os.path.exists(activity.raw_data_path):
+                os.remove(activity.raw_data_path)
+            activity.delete()
+            deleted += 1
+
+    return jsonify({"code": 200, "message": f"已删除 {deleted} 条记录", "data": {"deleted": deleted}})

@@ -68,9 +68,18 @@
 </div>
 
 <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <div>
+            <label style="font-size: 0.85rem; cursor: pointer;">
+                <input type="checkbox" id="select-all"> 全选
+            </label>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="batch-delete-btn" style="display: none;" onclick="batchDelete()">删除选中</button>
+    </div>
     <table>
         <thead>
             <tr>
+                <th></th>
                 <th>日期</th>
                 <th>类型</th>
                 <th>名称</th>
@@ -169,7 +178,7 @@ function loadActivities(offset = 0) {
             const tbody = document.getElementById('activity-list');
             const items = res.data.items;
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8">暂无活动记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9">暂无活动记录</td></tr>';
                 return;
             }
             tbody.innerHTML = items.map(a => {
@@ -180,6 +189,7 @@ function loadActivities(offset = 0) {
                 const hr = s.avg_heart_rate || '—';
                 const tss = m.tss != null ? m.tss.toFixed(1) : '—';
                 return `<tr>
+                    <td><input type="checkbox" class="activity-check" data-id="${a.id}"></td>
                     <td>${a.start_time.slice(0, 10)}</td>
                     <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
                     <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
@@ -272,6 +282,38 @@ document.getElementById('upload-form').addEventListener('submit', e => {
             btn.textContent = '上传';
         });
 });
+
+// 全选/取消全选
+document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.activity-check').forEach(cb => cb.checked = this.checked);
+    updateBatchBtn();
+});
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('activity-check')) updateBatchBtn();
+});
+
+function updateBatchBtn() {
+    const checked = document.querySelectorAll('.activity-check:checked');
+    const btn = document.getElementById('batch-delete-btn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    btn.textContent = `删除选中 (${checked.length})`;
+}
+
+function batchDelete() {
+    const ids = Array.from(document.querySelectorAll('.activity-check:checked')).map(cb => cb.dataset.id);
+    if (ids.length === 0) return;
+    if (!confirm(`确定删除 ${ids.length} 条活动？`)) return;
+    authFetch('/api/activities/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) loadActivities(0);
+            else alert(res.message);
+        });
+}
 
 loadActivities(0);
 </script>

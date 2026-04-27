@@ -302,3 +302,12 @@ AI 输出 Markdown 渲染：
 - .gitignore 新增忽略项：截图文件(*.png, *.jpeg)、page-review/、.playwright-mcp/、uploads/
 - 采纳提案「同行评审 v2」— gitignore 更新
 - 123 个测试全部通过
+
+---
+
+### Sprint 25 完成 — 2026-04-28
+
+活动批量删除功能：
+- 新增 POST /api/activities/batch-delete 端点（认证保护、最多 50 条、文件清理）
+- 活动列表页增加复选框、全选按钮、动态批量删除按钮
+- 5 个新测试（128 个测试全部通过）
