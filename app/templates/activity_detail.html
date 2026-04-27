@@ -11,12 +11,13 @@
 {% block script %}
 <script>
 const activityId = "{{ activity_id }}";
-const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
+const typeNames = window.TYPE_NAMES;
 
 Promise.all([
     authFetch(`/api/activities/${activityId}`).then(r => r.json()),
     authFetch(`/api/activities/${activityId}/trackpoints`).then(r => r.json()),
 ]).then(([activityRes, tpRes]) => {
+    if (!activityRes.data) throw new Error(activityRes.message || '活动不存在');
     const a = activityRes.data;
     window._activityData = a;
     const s = a.data_summary || {};
@@ -207,6 +208,8 @@ Promise.all([
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
     }
+}).catch(err => {
+    document.getElementById('activity-detail').innerHTML = `<div class="card" style="text-align:center;color:var(--text-secondary);padding:2rem;">加载失败: ${err.message}<br><a href="/activities" class="btn btn-primary" style="margin-top:1rem;">返回列表</a></div>`;
 });
 
 function editActivity() {

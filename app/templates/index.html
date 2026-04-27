@@ -74,11 +74,12 @@
 
 {% block script %}
 <script>
-const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
+const typeNames = window.TYPE_NAMES;
 
 authFetch('/api/dashboard')
     .then(r => r.json())
     .then(res => {
+        if (!res.data) throw new Error(res.message || '数据为空');
         const d = res.data;
         const hasActivities = d.recent_activities && d.recent_activities.length > 0;
         const hasMetrics = d.weekly_stats && d.weekly_stats.count > 0;
@@ -163,6 +164,10 @@ authFetch('/api/dashboard')
                 <td>${tss != null ? tss.toFixed(1) : '—'}</td>
             </tr>`;
         }).join('');
+    })
+    .catch(err => {
+        document.querySelectorAll('.metric-value').forEach(el => el.textContent = '—');
+        document.getElementById('recent-activities').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">加载失败: ${err.message}</td></tr>`;
     });
 
 function renderStats(elId, stats) {
