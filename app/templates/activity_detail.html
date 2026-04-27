@@ -44,12 +44,12 @@ Promise.all([
                 <div class="metric-value">${dist}</div>
             </div>
             <div class="card">
-                <div class="card-title">TSS</div>
+                <div class="card-title metric-title">TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量此活动对身体的负荷量</span></span></div>
                 <div class="metric-value">${m.tss != null ? m.tss.toFixed(1) : '—'}</div>
                 <div class="metric-unit">${m.tss_method === 'power' ? '基于功率' : m.tss_method === 'hr' ? '基于心率' : ''}</div>
             </div>
             <div class="card">
-                <div class="card-title">NP / IF</div>
+                <div class="card-title metric-title">NP / IF <span class="metric-help">?<span class="metric-tooltip">NP: 标准化功率，考虑变速的等效功率。IF: 强度因子 = NP/FTP</span></span></div>
                 <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
                 <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
             </div>
@@ -65,7 +65,7 @@ Promise.all([
                 <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
             </div>
             <div class="card">
-                <div class="card-title">做功 / VI / EF</div>
+                <div class="card-title metric-title">做功 / VI / EF <span class="metric-help">?<span class="metric-tooltip">做功: 总能量消耗。VI: 变异性指数 = NP/avgPower。EF: 效率因子 = NP/avgHR</span></span></div>
                 <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
                 <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
             </div>
