@@ -1,8 +1,11 @@
+import logging
 import os
 
-from flask import Flask
+from flask import Flask, jsonify
 
 from app.config import config_by_name
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(config_name=None):
@@ -49,5 +52,17 @@ def create_app(config_name=None):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
+
+    # 统一错误处理
+    @app.errorhandler(400)
+    @app.errorhandler(404)
+    @app.errorhandler(422)
+    def handle_client_error(error):
+        return jsonify({"code": error.code, "message": error.description, "data": None}), error.code
+
+    @app.errorhandler(500)
+    def handle_server_error(error):
+        logger.error("内部错误: %s", error, exc_info=True)
+        return jsonify({"code": 500, "message": "服务器内部错误", "data": None}), 500
 
     return app
