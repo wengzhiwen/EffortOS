@@ -14,7 +14,7 @@
         <div class="grid grid-3">
             <div class="form-group">
                 <label>运动类型</label>
-                <select name="activity_type" required>
+                <select name="activity_type" required id="upload-type">
                     <option value="cycling">骑行</option>
                     <option value="indoor_cycling">室内骑行</option>
                     <option value="running">跑步</option>
@@ -24,14 +24,15 @@
             </div>
             <div class="form-group">
                 <label>名称（可选）</label>
-                <input type="text" name="name" placeholder="例：晨间骑行">
+                <input type="text" name="name" id="upload-name" placeholder="选择文件后自动生成">
             </div>
             <div class="form-group">
                 <label>文件（TCX/GPX）</label>
-                <input type="file" name="file" accept=".tcx,.gpx" required>
+                <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">上传</button>
+        <div id="upload-preview" style="display: none; margin-bottom: 1rem;"></div>
+        <button type="submit" class="btn btn-primary" id="upload-btn">上传</button>
     </form>
     <div id="upload-status" style="margin-top: 0.5rem;"></div>
 </div>
@@ -93,6 +94,59 @@
 let currentOffset = 0;
 const limit = 20;
 const typeNames = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行' };
+
+// 文件选择后自动分析
+document.getElementById('upload-file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById('upload-preview');
+    preview.style.display = 'block';
+    preview.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析文件...</div>';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    authFetch('/api/activities/analyze', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code !== 200) {
+                preview.innerHTML = `<div style="color: var(--danger); font-size: 0.85rem;">${res.message}</div>`;
+                return;
+            }
+            const d = res.data;
+            // 自动填充表单
+            const typeSelect = document.getElementById('upload-type');
+            const matchingOption = Array.from(typeSelect.options).find(o => o.value === d.sport);
+            if (matchingOption) {
+                typeSelect.value = d.sport;
+            }
+            document.getElementById('upload-name').value = d.name_suggestion;
+
+            // 显示预览
+            const durationStr = d.duration_seconds ? Math.floor(d.duration_seconds / 60) + '分钟' : '—';
+            const distStr = d.total_distance ? (d.total_distance / 1000).toFixed(1) + ' km' : '—';
+            let html = `<div style="padding: 0.75rem; background: var(--primary-light); border-radius: 6px; font-size: 0.85rem;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">文件分析结果</div>
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <span>类型: <strong>${d.sport_display}</strong></span>
+                    <span>时长: ${durationStr}</span>
+                    <span>距离: ${distStr}</span>
+                    <span>数据点: ${d.trackpoint_count}</span>
+                    <span>心率: ${d.has_heart_rate ? '✓' : '✗'}</span>
+                    <span>功率: ${d.has_power ? '✓' : '✗'}</span>
+                </div>`;
+            if (d.warnings.length > 0) {
+                html += `<div style="margin-top: 0.5rem; color: var(--warning);">
+                    <strong>注意:</strong> ${d.warnings.join('；')}
+                </div>`;
+            }
+            html += '</div>';
+            preview.innerHTML = html;
+        })
+        .catch(() => {
+            preview.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.85rem;">分析失败，可直接上传。</div>';
+        });
+});
 
 function getFilterParams() {
     const params = new URLSearchParams();
@@ -192,21 +246,30 @@ document.querySelector('a[href="#upload"]').addEventListener('click', e => {
 document.getElementById('upload-form').addEventListener('submit', e => {
     e.preventDefault();
     const status = document.getElementById('upload-status');
-    status.textContent = '上传中...';
-    status.style.color = '';
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    btn.textContent = '上传中...';
+    status.textContent = '';
     const formData = new FormData(e.target);
     authFetch('/api/activities/upload', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(res => {
+            btn.disabled = false;
+            btn.textContent = '上传';
             if (res.code === 200) {
                 status.textContent = '上传成功！';
                 status.style.color = 'var(--success)';
                 e.target.reset();
+                document.getElementById('upload-preview').style.display = 'none';
                 loadActivities(0);
             } else {
                 status.textContent = res.message;
                 status.style.color = 'var(--danger)';
             }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '上传';
         });
 });
 

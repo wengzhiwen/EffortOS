@@ -12,6 +12,116 @@ from app.services.validate_service import validate_activity_file
 
 activities_bp = Blueprint("activities", __name__)
 
+SPORT_DISPLAY = {
+    "cycling": "骑行",
+    "indoor_cycling": "室内骑行",
+    "running": "跑步",
+    "indoor_running": "室内跑步",
+    "walking": "步行",
+    "swimming": "游泳",
+    "other": "其他",
+}
+
+
+@activities_bp.route("/activities/analyze", methods=["POST"])
+def analyze_activity():
+    """预分析运动数据文件，返回运动类型、名称建议和数据质量。
+
+    表单参数:
+    - file: 运动数据文件（TCX/GPX）
+    """
+    user, err = require_user()
+    if err:
+        return err
+
+    if "file" not in request.files:
+        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
+
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ("tcx", "gpx"):
+        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
+
+    # 临时保存文件用于解析
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    os.makedirs(upload_dir, exist_ok=True)
+    tmp_path = os.path.join(upload_dir, f"_analyze_{uuid.uuid4().hex}.{ext}")
+    file.save(tmp_path)
+
+    try:
+        # 校验
+        is_valid, error_msg = validate_activity_file(tmp_path)
+        if not is_valid:
+            return jsonify({"code": 400, "message": error_msg, "data": None}), 400
+
+        parsed = parse_activity_file(tmp_path)
+    except ValueError as e:
+        return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    trackpoints = parsed["trackpoints"]
+    sport = parsed.get("sport", "other")
+
+    # 名称建议：日期 + 运动类型
+    start = parsed["start_time"]
+    name_suggestion = f"{start.strftime('%m月%d日')}{SPORT_DISPLAY.get(sport, sport)}"
+
+    # 数据质量检查
+    total = len(trackpoints)
+    hr_count = sum(1 for tp in trackpoints if tp.get("heart_rate") is not None)
+    power_count = sum(1 for tp in trackpoints if tp.get("power") is not None)
+    speed_count = sum(1 for tp in trackpoints if tp.get("speed") is not None)
+    dist_count = sum(1 for tp in trackpoints if tp.get("distance") is not None)
+
+    warnings = []
+    if total == 0:
+        warnings.append("文件中没有轨迹数据点")
+    else:
+        hr_pct = hr_count / total
+        power_pct = power_count / total
+        if hr_pct < 0.1:
+            warnings.append("心率数据缺失超过 90%，无法计算心率相关指标")
+        if sport in ("cycling", "indoor_cycling") and power_pct < 0.1:
+            warnings.append("功率数据缺失，建议设置 FTP 后使用心率 TSS")
+        if dist_count == 0 and speed_count == 0:
+            warnings.append("无距离和速度数据")
+
+    # 基础摘要
+    duration = 0
+    total_dist = 0
+    avg_hr = 0
+    if trackpoints:
+        duration = int((trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds())
+        distances = [tp["distance"] for tp in trackpoints if tp.get("distance") is not None]
+        if distances:
+            total_dist = distances[-1]
+        hrs = [tp["heart_rate"] for tp in trackpoints if tp.get("heart_rate") is not None]
+        if hrs:
+            avg_hr = sum(hrs) // len(hrs)
+
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "sport": sport,
+            "sport_display": SPORT_DISPLAY.get(sport, sport),
+            "name_suggestion": name_suggestion,
+            "start_time": start.isoformat(),
+            "duration_seconds": duration,
+            "total_distance": round(total_dist, 1),
+            "avg_heart_rate": avg_hr,
+            "trackpoint_count": total,
+            "has_heart_rate": hr_count > total * 0.5,
+            "has_power": power_count > total * 0.5,
+            "warnings": warnings,
+        },
+    })
+
 
 @activities_bp.route("/activities/upload", methods=["POST"])
 def upload_activity():
