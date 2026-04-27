@@ -12,22 +12,22 @@ fi
 
 echo "=== EffortOS 开发服务器 ==="
 echo ""
-echo "测试 API 实例: http://localhost:5001"
-echo "用户体验实例: http://localhost:5000"
+echo "测试 API 实例: http://localhost:19527"
+echo "用户体验实例: http://localhost:9527"
 echo ""
 
 # 确保上传目录存在
 mkdir -p instance/uploads
 
-# 启动测试 API 实例（端口 5001）
-FLASK_ENV=development PORT=5001 venv/bin/python run.py &
+# 启动测试 API 实例（端口 19527）
+FLASK_ENV=development PORT=19527 venv/bin/python run.py &
 TEST_PID=$!
-echo "测试 API 实例已启动 (PID: $TEST_PID, 端口: 5001)"
+echo "测试 API 实例已启动 (PID: $TEST_PID, 端口: 19527)"
 
-# 启动用户体验实例（端口 5000）
-FLASK_ENV=development PORT=5000 venv/bin/python run.py &
+# 启动用户体验实例（端口 9527）
+FLASK_ENV=development PORT=9527 venv/bin/python run.py &
 DEV_PID=$!
-echo "用户体验实例已启动 (PID: $DEV_PID, 端口: 5000)"
+echo "用户体验实例已启动 (PID: $DEV_PID, 端口: 9527)"
 
 echo ""
 echo "按 Ctrl+C 停止所有实例"

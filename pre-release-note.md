@@ -3,12 +3,12 @@
 ## 访问方式
 
 ### 用户体验实例
-- 地址：http://localhost:5000
+- 地址：http://localhost:9527
 - 用途：直接体验完整功能
 - 数据：使用 `effortos` 数据库（与测试隔离）
 
 ### 测试 API 实例
-- 地址：http://localhost:5001
+- 地址：http://localhost:19527
 - 用途：API 调试和自动化测试
 - 数据：同上（可随时清理）
 
