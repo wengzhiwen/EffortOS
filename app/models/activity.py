@@ -5,6 +5,7 @@ from mongoengine import (
     DictField,
     EmbeddedDocument,
     EmbeddedDocumentField,
+    EmbeddedDocumentListField,
     FloatField,
     IntField,
     ReferenceField,
@@ -47,6 +48,17 @@ class ComputedMetrics(EmbeddedDocument):
     power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
 
 
+class Trackpoint(EmbeddedDocument):
+    """单个时间序列数据点。"""
+    elapsed = FloatField(required=True)  # 距开始的秒数
+    hr = IntField()  # 心率
+    power = IntField()  # 功率
+    speed = FloatField()  # 速度 (m/s)
+    cadence = IntField()  # 踏频
+    altitude = FloatField()  # 海拔
+    distance = FloatField()  # 累计距离
+
+
 class Activity(BaseDocument):
     user = ReferenceField("User")
     activity_type = StringField(
@@ -60,6 +72,7 @@ class Activity(BaseDocument):
 
     data_summary = EmbeddedDocumentField(DataSummary)
     computed_metrics = EmbeddedDocumentField(ComputedMetrics)
+    trackpoints = EmbeddedDocumentListField(Trackpoint)
 
     # 原始时间序列数据引用（大文件存于文件系统）
     raw_data_path = StringField()
@@ -70,6 +83,26 @@ class Activity(BaseDocument):
         "collection": "activities",
         "indexes": ["user", "start_time", "activity_type"],
     }
+
+    def get_trackpoints_downsampled(self, max_points=500):
+        """返回降采样后的 trackpoint 数据。"""
+        tps = self.trackpoints
+        if not tps:
+            return []
+        total = len(tps)
+        if total <= max_points:
+            return [{"elapsed": tp.elapsed, "hr": tp.hr, "power": tp.power,
+                      "speed": tp.speed, "cadence": tp.cadence,
+                      "altitude": tp.altitude, "distance": tp.distance}
+                    for tp in tps]
+        step = total / max_points
+        result = []
+        for i in range(max_points):
+            tp = tps[int(i * step)]
+            result.append({"elapsed": tp.elapsed, "hr": tp.hr, "power": tp.power,
+                           "speed": tp.speed, "cadence": tp.cadence,
+                           "altitude": tp.altitude, "distance": tp.distance})
+        return result
 
     def __str__(self):
         return f"Activity({self.activity_type} @ {self.start_time})"

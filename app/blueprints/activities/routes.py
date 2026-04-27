@@ -5,7 +5,7 @@ import uuid
 from flask import Blueprint, current_app, jsonify, request
 
 from app.blueprints.auth.routes import require_user
-from app.models.activity import Activity, ComputedMetrics, DataSummary
+from app.models.activity import Activity, ComputedMetrics, DataSummary, Trackpoint
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import validate_activity_file
 
@@ -84,6 +84,22 @@ def upload_activity():
         raw_data_path=file_path,
         user=user,
     )
+
+    # 存储 trackpoints 时间序列
+    if trackpoints:
+        first_time = trackpoints[0]["time"]
+        activity.trackpoints = [
+            Trackpoint(
+                elapsed=(tp["time"] - first_time).total_seconds(),
+                hr=tp.get("heart_rate"),
+                power=tp.get("power"),
+                speed=tp.get("speed"),
+                cadence=tp.get("cadence"),
+                altitude=tp.get("altitude"),
+                distance=tp.get("distance"),
+            )
+            for tp in trackpoints
+        ]
 
     # 计算运动指标
     _compute_metrics(activity, parsed["trackpoints"])
@@ -284,6 +300,27 @@ def get_activity(activity_id):
         "code": 200,
         "message": "ok",
         "data": _serialize_activity(activity),
+    })
+
+
+@activities_bp.route("/activities/<activity_id>/trackpoints", methods=["GET"])
+def get_trackpoints(activity_id):
+    """获取活动的时间序列数据（支持降采样）。"""
+    activity = Activity.objects(id=activity_id).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    max_points = request.args.get("max_points", 500, type=int)
+    max_points = min(max_points, 5000)
+
+    data = activity.get_trackpoints_downsampled(max_points)
+    return jsonify({
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "total_points": len(activity.trackpoints) if activity.trackpoints else 0,
+            "points": data,
+        },
     })
 
 

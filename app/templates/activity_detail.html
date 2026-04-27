@@ -12,101 +12,198 @@
 <script>
 const activityId = "{{ activity_id }}";
 
-authFetch(`/api/activities/${activityId}`)
-    .then(r => r.json())
-    .then(res => {
-        const a = res.data;
-        const s = a.data_summary || {};
-        const m = a.computed_metrics || {};
-        const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 3600) + '时' + Math.floor((s.duration_seconds % 3600) / 60) + '分' : '—';
-        const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
+Promise.all([
+    authFetch(`/api/activities/${activityId}`).then(r => r.json()),
+    authFetch(`/api/activities/${activityId}/trackpoints`).then(r => r.json()),
+]).then(([activityRes, tpRes]) => {
+    const a = activityRes.data;
+    const s = a.data_summary || {};
+    const m = a.computed_metrics || {};
+    const tpData = tpRes.data || {};
+    const hasTP = tpData.points && tpData.points.length > 0;
 
-        document.getElementById('activity-detail').innerHTML = `
-            <h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                ${a.start_time.slice(0, 19).replace('T', ' ')}
-                <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${a.activity_type}</span>
-            </p>
+    const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 3600) + '时' + Math.floor((s.duration_seconds % 3600) / 60) + '分' : '—';
+    const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
 
-            <div class="grid grid-4" style="margin-bottom: 1rem;">
-                <div class="card">
-                    <div class="card-title">时长</div>
-                    <div class="metric-value">${duration}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">距离</div>
-                    <div class="metric-value">${dist}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">TSS</div>
-                    <div class="metric-value">${m.tss != null ? m.tss.toFixed(1) : '—'}</div>
-                    <div class="metric-unit">${m.tss_method === 'power' ? '基于功率' : m.tss_method === 'hr' ? '基于心率' : ''}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">NP / IF</div>
-                    <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
-                    <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
-                </div>
+    document.getElementById('activity-detail').innerHTML = `
+        <h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            ${a.start_time.slice(0, 19).replace('T', ' ')}
+            <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${a.activity_type}</span>
+        </p>
+
+        <div class="grid grid-4" style="margin-bottom: 1rem;">
+            <div class="card">
+                <div class="card-title">时长</div>
+                <div class="metric-value">${duration}</div>
             </div>
-
-            <div class="grid grid-3" style="margin-bottom: 1rem;">
-                <div class="card">
-                    <div class="card-title">平均/最大心率</div>
-                    <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">平均/最大功率</div>
-                    <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">做功 / VI / EF</div>
-                    <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
-                    <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
-                </div>
+            <div class="card">
+                <div class="card-title">距离</div>
+                <div class="metric-value">${dist}</div>
             </div>
+            <div class="card">
+                <div class="card-title">TSS</div>
+                <div class="metric-value">${m.tss != null ? m.tss.toFixed(1) : '—'}</div>
+                <div class="metric-unit">${m.tss_method === 'power' ? '基于功率' : m.tss_method === 'hr' ? '基于心率' : ''}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">NP / IF</div>
+                <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
+                <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
+            </div>
+        </div>
 
+        <div class="grid grid-3" style="margin-bottom: 1rem;">
+            <div class="card">
+                <div class="card-title">平均/最大心率</div>
+                <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
+            </div>
+            <div class="card">
+                <div class="card-title">平均/最大功率</div>
+                <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
+            </div>
+            <div class="card">
+                <div class="card-title">做功 / VI / EF</div>
+                <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
+                <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
+            </div>
+        </div>
+
+        ${hasTP ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-title">心率曲线</div>
+            <canvas id="hr-chart" height="180"></canvas>
+        </div>
+
+        <div class="grid grid-2" style="margin-bottom: 1rem;">
+            ${tpData.points.some(p => p.power != null) ? `
+            <div class="card">
+                <div class="card-title">功率曲线</div>
+                <canvas id="power-chart" height="180"></canvas>
+            </div>` : ''}
+            ${tpData.points.some(p => p.speed != null) ? `
+            <div class="card">
+                <div class="card-title">速度曲线</div>
+                <canvas id="speed-chart" height="180"></canvas>
+            </div>` : ''}
+        </div>
+
+        ${tpData.points.some(p => p.altitude != null) ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-title">海拔曲线</div>
+            <canvas id="altitude-chart" height="150"></canvas>
+        </div>` : ''}
+        ` : ''}
+
+        <div class="grid grid-2" style="margin-bottom: 1rem;">
             ${m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0 ? `
             <div class="card">
                 <div class="card-title">心率分区时间</div>
                 <canvas id="hr-zones-chart" height="150"></canvas>
             </div>` : ''}
-
             ${m.power_zones_time && Object.keys(m.power_zones_time).length > 0 ? `
             <div class="card">
                 <div class="card-title">功率分区时间</div>
                 <canvas id="power-zones-chart" height="150"></canvas>
             </div>` : ''}
+        </div>
 
-            <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
-        `;
+        <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
+    `;
 
-        // 心率分区图
-        if (m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0) {
-            const hrLabels = Object.keys(m.hr_zones_time);
-            const hrValues = Object.values(m.hr_zones_time).map(v => (v / 60).toFixed(1));
-            new Chart(document.getElementById('hr-zones-chart'), {
-                type: 'bar',
-                data: {
-                    labels: hrLabels,
-                    datasets: [{ label: '时间（分钟）', data: hrValues, backgroundColor: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'] }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+    // 时间序列图表
+    if (hasTP) {
+        const points = tpData.points;
+        const labels = points.map(p => {
+            const min = Math.floor(p.elapsed / 60);
+            const sec = Math.floor(p.elapsed % 60);
+            return min + ':' + (sec < 10 ? '0' : '') + sec;
+        });
+
+        const chartOpts = {
+            responsive: true,
+            scales: { x: { display: true, ticks: { maxTicksLimit: 10 } }, y: { beginAtZero: false } },
+            plugins: { legend: { display: false } },
+            elements: { point: { radius: 0 }, line: { borderWidth: 1.5 } },
+        };
+
+        // 心率
+        const hrData = points.map(p => p.hr);
+        if (hrData.some(v => v != null)) {
+            new Chart(document.getElementById('hr-chart'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: '心率', data: hrData, borderColor: '#dc2626', fill: true, backgroundColor: 'rgba(220,38,38,0.1)' }] },
+                options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'bpm' } } } },
             });
         }
 
-        // 功率分区图
-        if (m.power_zones_time && Object.keys(m.power_zones_time).length > 0) {
-            const pwLabels = Object.keys(m.power_zones_time);
-            const pwValues = Object.values(m.power_zones_time).map(v => (v / 60).toFixed(1));
-            new Chart(document.getElementById('power-zones-chart'), {
-                type: 'bar',
-                data: {
-                    labels: pwLabels,
-                    datasets: [{ label: '时间（分钟）', data: pwValues, backgroundColor: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
+        // 功率
+        const powerData = points.map(p => p.power);
+        if (powerData.some(v => v != null)) {
+            const el = document.getElementById('power-chart');
+            if (el) {
+                new Chart(el, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: '功率', data: powerData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37,99,235,0.1)' }] },
+                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'W' } } } },
+                });
+            }
         }
-    });
+
+        // 速度
+        const speedData = points.map(p => p.speed ? (p.speed * 3.6) : null); // m/s → km/h
+        if (speedData.some(v => v != null)) {
+            const el = document.getElementById('speed-chart');
+            if (el) {
+                new Chart(el, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: '速度', data: speedData, borderColor: '#16a34a', fill: true, backgroundColor: 'rgba(22,163,74,0.1)' }] },
+                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'km/h' } } } },
+                });
+            }
+        }
+
+        // 海拔
+        const altData = points.map(p => p.altitude);
+        if (altData.some(v => v != null)) {
+            const el = document.getElementById('altitude-chart');
+            if (el) {
+                new Chart(el, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: '海拔', data: altData, borderColor: '#d97706', fill: true, backgroundColor: 'rgba(217,119,6,0.1)' }] },
+                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'm' } } } },
+                });
+            }
+        }
+    }
+
+    // 心率分区图
+    if (m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0) {
+        const hrLabels = Object.keys(m.hr_zones_time);
+        const hrValues = Object.values(m.hr_zones_time).map(v => (v / 60).toFixed(1));
+        new Chart(document.getElementById('hr-zones-chart'), {
+            type: 'bar',
+            data: {
+                labels: hrLabels,
+                datasets: [{ label: '时间（分钟）', data: hrValues, backgroundColor: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'] }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // 功率分区图
+    if (m.power_zones_time && Object.keys(m.power_zones_time).length > 0) {
+        const pwLabels = Object.keys(m.power_zones_time);
+        const pwValues = Object.values(m.power_zones_time).map(v => (v / 60).toFixed(1));
+        new Chart(document.getElementById('power-zones-chart'), {
+            type: 'bar',
+            data: {
+                labels: pwLabels,
+                datasets: [{ label: '时间（分钟）', data: pwValues, backgroundColor: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
+});
 </script>
 {% endblock %}
