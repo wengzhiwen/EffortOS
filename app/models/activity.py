@@ -34,12 +34,17 @@ class DataSummary(EmbeddedDocument):
 class ComputedMetrics(EmbeddedDocument):
     """计算得出的运动指标。"""
 
-    tss = FloatField()  # 训练压力分数
+    tss = FloatField()  # 训练压力分数（实际使用的值）
     hr_tss = FloatField()  # 基于心率的 TSS
-    intensity_factor = FloatField()  # 强度因子
-    normalized_power = FloatField()  # 标准化功率
-    hr_zones_time = DictField()  # 心率区间时间分布 {"z1": 秒数, ...}
-    power_zones_time = DictField()  # 功率区间时间分布
+    intensity_factor = FloatField()  # 强度因子（IF = NP/FTP）
+    hr_intensity_factor = FloatField()  # 心率强度因子（HR_IF = avg_hr/LTHR）
+    normalized_power = FloatField()  # 标准化功率（NP）
+    variability_index = FloatField()  # 变异性指数（VI = NP/avg_power）
+    efficiency_factor = FloatField()  # 效率因子（EF = NP/avg_hr 或 avg_speed/avg_hr）
+    work_kj = FloatField()  # 总做功（kJ）
+    tss_method = StringField()  # TSS 方法标记："power" / "hr" / null
+    hr_zones_time = DictField()  # 心率区间时间分布 {"Z1": 秒数, ...}
+    power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
 
 
 class Activity(BaseDocument):
