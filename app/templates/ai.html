@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}AI 教练 - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">AI 教练</h2>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-title">训练周报</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+            基于本周训练数据和 PMC 状态，生成训练周报和建议。
+        </p>
+        <button class="btn btn-primary" onclick="generateReport()">生成周报</button>
+    </div>
+    <div class="card">
+        <div class="card-title">训练建议</div>
+        <div class="form-group">
+            <textarea id="question" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;" placeholder="输入你的问题（可选），例如：本周应该做恢复骑行还是间歇训练？"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="getSuggestion()">获取建议</button>
+    </div>
+</div>
+
+<div class="card" id="result-card" style="display: none;">
+    <div class="card-title" id="result-title"></div>
+    <div id="result-content" style="white-space: pre-wrap; line-height: 1.8;"></div>
+    <div id="result-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function generateReport() {
+    const resultCard = document.getElementById('result-card');
+    const resultTitle = document.getElementById('result-title');
+    const resultContent = document.getElementById('result-content');
+    const resultMeta = document.getElementById('result-meta');
+
+    resultCard.style.display = 'block';
+    resultTitle.textContent = '训练周报';
+    resultContent.textContent = '正在生成...';
+    resultMeta.textContent = '';
+
+    fetch('/api/ai/weekly-report', { method: 'POST' })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code !== 200) {
+                resultContent.textContent = res.message;
+                return;
+            }
+            resultContent.textContent = res.data.report;
+            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)} | 本周活动: ${res.data.week_activities} 次`;
+        })
+        .catch(e => resultContent.textContent = '请求失败: ' + e.message);
+}
+
+function getSuggestion() {
+    const question = document.getElementById('question').value;
+    const resultCard = document.getElementById('result-card');
+    const resultTitle = document.getElementById('result-title');
+    const resultContent = document.getElementById('result-content');
+    const resultMeta = document.getElementById('result-meta');
+
+    resultCard.style.display = 'block';
+    resultTitle.textContent = '训练建议';
+    resultContent.textContent = '正在生成...';
+    resultMeta.textContent = '';
+
+    fetch('/api/ai/suggestion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code !== 200) {
+                resultContent.textContent = res.message;
+                return;
+            }
+            resultContent.textContent = res.data.suggestion;
+            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
+        })
+        .catch(e => resultContent.textContent = '请求失败: ' + e.message);
+}
+</script>
+{% endblock %}

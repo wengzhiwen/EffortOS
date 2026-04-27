@@ -21,3 +21,8 @@ def activity_detail(activity_id):
 @pages_bp.route("/settings")
 def settings():
     return render_template("settings.html")
+
+
+@pages_bp.route("/ai")
+def ai():
+    return render_template("ai.html")

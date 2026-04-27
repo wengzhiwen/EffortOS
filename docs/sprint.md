@@ -1,27 +1,23 @@
-# Sprint 4: 数据可视化
+# Sprint 5: LLM 运动建议
 
 **状态**: 已完成
-**对应 Milestone**: M5
-**目标**: Dashboard 首页、活动列表/详情、PMC 曲线图、参数设置页
+**对应 Milestone**: M6
+**目标**: OpenAI API 集成、训练周报生成、个性化建议
 
 ## 任务清单
 
-- [x] S4-1: 基础页面布局和样式（导航栏、CSS 框架、Chart.js 引入）
-- [x] S4-2: Dashboard 首页 — 今日 TSS、CTL/ATL/TSB 数值、PMC 趋势图、最近活动列表
-- [x] S4-3: 活动列表页 — 运动记录列表（含上传、删除、分页）
-- [x] S4-4: 活动详情页 — 指标摘要 + 心率/功率分区图表
-- [x] S4-5: PMC 曲线图 — Chart.js 折线图展示 CTL/ATL/TSB
-- [x] S4-6: 用户参数设置页面 — FTP/LTHR 配置 + 分区预览 + 历史记录
+- [x] S5-1: OpenAI API 服务层（llm_service.py）— API 调用封装、错误重试
+- [x] S5-2: 训练状态上下文构建 — PMC 数据 + 最近活动整理为 LLM prompt
+- [x] S5-3: 训练周报生成 API — POST /api/ai/weekly-report
+- [x] S5-4: 个性化建议 API — POST /api/ai/suggestion
+- [x] S5-5: AI 教练页面 — 周报展示 + 自由提问
 
 ## 评估小结
 
-Sprint 4 全部完成。实现了完整的前端可视化界面：
-
-- 自定义 CSS 样式系统（卡片、网格、标签、表单）
-- Dashboard 首页：TSS/CTL/ATL/TSB 四宫格 + PMC 30 天趋势图 + 最近活动
-- 活动列表页：上传、删除、分页、运动类型筛选
-- 活动详情页：完整指标展示 + 心率/功率分区柱状图
-- 参数设置页：参数保存 + 分区预览 + 历史记录
-- Dashboard API、Params API（CRUD + 历史）
-- params_service 支持 user=None（认证前）
+Sprint 5 全部完成。实现了 AI 运动建议功能：
+- llm_service.py：OpenAI API 封装（带重试机制）
+- 训练周报：基于本周活动 + PMC 状态生成周报
+- 个性化建议：支持自由提问，基于 PMC 和最近 TSS 数据
+- AI 教练页面：周报生成 + 建议获取 UI
+- 系统提示词：运动科学专业知识 + 中文输出
 - 68 个测试全部通过

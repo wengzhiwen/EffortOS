@@ -58,7 +58,7 @@
 - Fitness/Fatigue/Form 趋势图
 - 心率/功率区间分布图
 
-### M6: LLM 运动建议 `[~]` — Sprint 5
+### M6: LLM 运动建议 `[x]` — Sprint 5 ✓
 > OpenAI GPT-5.4 集成
 
 - OpenAI API 集成
