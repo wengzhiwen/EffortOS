@@ -63,10 +63,11 @@
                 <th>名称</th>
                 <th>时长</th>
                 <th>TSS</th>
+                <th>强度</th>
             </tr>
         </thead>
         <tbody id="recent-activities">
-            <tr><td colspan="5"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
+            <tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
         </tbody>
     </table>
 </div>
@@ -149,25 +150,30 @@ authFetch('/api/dashboard')
         // 最近活动列表
         const tbody = document.getElementById('recent-activities');
         if (!hasActivities) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">暂无活动记录，<a href="/activities">去上传</a></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">暂无活动记录，<a href="/activities">去上传</a></td></tr>';
             return;
         }
+        const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+        const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
         tbody.innerHTML = d.recent_activities.map(a => {
             const duration = a.data_summary?.duration_seconds;
             const durationStr = duration ? Math.floor(duration / 60) + '分钟' : '—';
             const tss = a.computed_metrics?.tss;
+            const il = a.computed_metrics?.intensity_level;
+            const intensityBadge = il ? `<span style="color:${intensityColors[il]};font-weight:600">${intensityNames[il]}</span>` : '—';
             return `<tr>
                 <td>${a.start_time.slice(0, 10)}</td>
                 <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
                 <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
                 <td>${durationStr}</td>
                 <td>${tss != null ? tss.toFixed(1) : '—'}</td>
+                <td>${intensityBadge}</td>
             </tr>`;
         }).join('');
     })
     .catch(err => {
         document.querySelectorAll('.metric-value').forEach(el => el.textContent = '—');
-        document.getElementById('recent-activities').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">加载失败: ${err.message}</td></tr>`;
+        document.getElementById('recent-activities').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">加载失败: ${err.message}</td></tr>`;
     });
 
 function renderStats(elId, stats) {

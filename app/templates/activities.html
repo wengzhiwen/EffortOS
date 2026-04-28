@@ -244,11 +244,14 @@ function exportCSV() {
         });
 }
 
-function deleteActivity(id) {
-    if (!confirm('确定删除此活动？')) return;
+async function deleteActivity(id) {
+    if (!await confirmDialog('确定删除此活动？')) return;
     authFetch(`/api/activities/${id}`, { method: 'DELETE' })
         .then(r => r.json())
-        .then(() => loadActivities(currentOffset));
+        .then(res => {
+            if (res.code === 200) showToast('已删除', 'success');
+            loadActivities(currentOffset);
+        });
 }
 
 // 上传表单
@@ -304,10 +307,10 @@ function updateBatchBtn() {
     btn.textContent = `删除选中 (${checked.length})`;
 }
 
-function batchDelete() {
+async function batchDelete() {
     const ids = Array.from(document.querySelectorAll('.activity-check:checked')).map(cb => cb.dataset.id);
     if (ids.length === 0) return;
-    if (!confirm(`确定删除 ${ids.length} 条活动？`)) return;
+    if (!await confirmDialog(`确定删除 ${ids.length} 条活动？`)) return;
     authFetch('/api/activities/batch-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -315,8 +318,8 @@ function batchDelete() {
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) loadActivities(0);
-            else alert(res.message);
+            if (res.code === 200) { showToast(`已删除 ${ids.length} 条`, 'success'); loadActivities(0); }
+            else showToast(res.message, 'error');
         });
 }
 

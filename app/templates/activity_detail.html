@@ -263,7 +263,7 @@ function saveEdit() {
         .then(r => r.json())
         .then(res => {
             if (res.code === 200) location.reload();
-            else alert(res.message);
+            else showToast(res.message, 'error');
         });
 }
 </script>

@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+    .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 2000; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast { padding: 0.75rem 1rem; border-radius: 6px; color: white; font-size: 0.9rem; opacity: 0; transform: translateX(100%); transition: all 0.3s; max-width: 360px; }
+    .toast.show { opacity: 1; transform: translateX(0); }
+    .toast-success { background: var(--success); }
+    .toast-error { background: var(--danger); }
+    .toast-info { background: var(--primary); }
+    .confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1500; display: flex; align-items: center; justify-content: center; }
+    .confirm-box { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .confirm-box p { margin-bottom: 1.25rem; line-height: 1.6; }
+    .confirm-box .btn-row { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    </style>
     <script>
     // 全局常量和工具
     window.TYPE_NAMES = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行', swimming: '游泳', other: '其他' };
@@ -137,5 +149,33 @@
         {% block content %}{% endblock %}
     </div>
     {% block script %}{% endblock %}
+    <div class="toast-container" id="toast-container"></div>
+    <script>
+    window.showToast = function(msg, type, duration) {
+        type = type || 'info';
+        duration = duration || 3000;
+        var container = document.getElementById('toast-container');
+        var el = document.createElement('div');
+        el.className = 'toast toast-' + type;
+        el.textContent = msg;
+        container.appendChild(el);
+        requestAnimationFrame(function() { el.classList.add('show'); });
+        setTimeout(function() {
+            el.classList.remove('show');
+            setTimeout(function() { el.remove(); }, 300);
+        }, duration);
+    };
+    window.confirmDialog = function(msg) {
+        return new Promise(function(resolve) {
+            var overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.innerHTML = '<div class="confirm-box"><p>' + msg + '</p><div class="btn-row"><button class="btn btn-secondary" id="confirm-cancel">取消</button><button class="btn btn-primary" id="confirm-ok">确定</button></div></div>';
+            document.body.appendChild(overlay);
+            overlay.querySelector('#confirm-ok').addEventListener('click', function() { overlay.remove(); resolve(true); });
+            overlay.querySelector('#confirm-cancel').addEventListener('click', function() { overlay.remove(); resolve(false); });
+            overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+        });
+    };
+    </script>
 </body>
 </html>
