@@ -86,11 +86,12 @@
                 <th>距离</th>
                 <th>平均心率</th>
                 <th>TSS</th>
+                <th>强度</th>
                 <th></th>
             </tr>
         </thead>
         <tbody id="activity-list">
-            <tr><td colspan="8"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
+            <tr><td colspan="10"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
         </tbody>
     </table>
     <div id="pagination" style="margin-top: 1rem; text-align: center;"></div>
@@ -102,6 +103,8 @@
 let currentOffset = 0;
 const limit = 20;
 const typeNames = window.TYPE_NAMES;
+const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 // 文件选择后自动分析
 document.getElementById('upload-file').addEventListener('change', function(e) {
@@ -177,7 +180,7 @@ function loadActivities(offset = 0) {
             const tbody = document.getElementById('activity-list');
             const items = res.data.items;
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9">暂无活动记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10">暂无活动记录</td></tr>';
                 return;
             }
             tbody.innerHTML = items.map(a => {
@@ -187,6 +190,8 @@ function loadActivities(offset = 0) {
                 const dist = s.total_distance ? (s.total_distance / 1000).toFixed(1) + ' km' : '—';
                 const hr = s.avg_heart_rate || '—';
                 const tss = m.tss != null ? m.tss.toFixed(1) : '—';
+                const il = m.intensity_level;
+                const intensityBadge = il ? `<span style="color: ${intensityColors[il] || '#999'}; font-weight: 600;">${intensityNames[il] || il}</span>` : '—';
                 return `<tr>
                     <td><input type="checkbox" class="activity-check" data-id="${a.id}"></td>
                     <td>${a.start_time.slice(0, 10)}</td>
@@ -196,6 +201,7 @@ function loadActivities(offset = 0) {
                     <td>${dist}</td>
                     <td>${hr}</td>
                     <td>${tss}</td>
+                    <td>${intensityBadge}</td>
                     <td><button onclick="deleteActivity('${a.id}')" style="color: var(--danger); background: none; border: none; cursor: pointer;">删除</button></td>
                 </tr>`;
             }).join('');
