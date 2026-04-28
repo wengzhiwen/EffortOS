@@ -86,6 +86,7 @@ def _serialize_activity(activity):
         "name": html.escape(activity.name or ""),
         "start_time": activity.start_time.isoformat(),
         "source_format": activity.source_format,
+        "notes": activity.notes or "",
         "data_summary": _serialize_summary(activity.data_summary),
         "computed_metrics": _serialize_metrics(activity.computed_metrics),
         "created_at": activity.created_at.isoformat() if activity.created_at else None,
@@ -489,6 +490,9 @@ def update_activity(activity_id):
         if data["activity_type"] not in VALID_ACTIVITY_TYPES:
             return jsonify({"code": 400, "message": f"不支持的运动类型: {data['activity_type']}", "data": None}), 400
         activity.activity_type = data["activity_type"]
+
+    if "notes" in data:
+        activity.notes = data["notes"][:2000] if data["notes"] else None
 
     activity.save()
     return jsonify({"code": 200, "message": "已更新", "data": _serialize_activity(activity)})

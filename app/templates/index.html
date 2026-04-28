@@ -234,9 +234,10 @@ function renderCalendar(calendarData) {
     }
     html += '</div>';
 
-    html += '<div class="cal-legend"><span>少</span>';
+    html += '<div class="cal-legend"><span>少 TSS</span>';
     for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;"></div>`;
-    html += '<span>多</span></div>';
+    html += '<span>多 TSS</span></div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">每格代表一天，颜色深浅表示当日训练负荷（TSS）。行 = 星期，列 = 周数。</div>';
 
     container.innerHTML = html;
 }

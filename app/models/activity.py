@@ -67,6 +67,7 @@ class Activity(BaseDocument):
         choices=["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"],
     )
     name = StringField(max_length=200)
+    notes = StringField()  # 用户备注/感受记录
     start_time = DateTimeField(required=True)
     source_file = StringField()  # 原始文件路径
     source_format = StringField(choices=["tcx", "gpx"])  # 文件格式

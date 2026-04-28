@@ -111,17 +111,19 @@ function loadParams() {
             if (d.weight && !form.weight.value) form.weight.value = d.weight;
 
             // 分区预览
+            const hrZoneNames = {'Z1':'热身','Z2':'有氧','Z3':'节奏','Z4':'阈值','Z5':'VO2max'};
+            const pwZoneNames = {'Z1':'恢复','Z2':'耐力','Z3':'节奏','Z4':'阈值','Z5':'VO2max','Z6':'无氧','Z7':'神经肌肉'};
             if (d.hr_zones && d.hr_zones.length > 0) {
                 document.getElementById('hr-zones-preview').innerHTML = d.hr_zones.map(z =>
                     `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border);">
-                        <span>${z.name}</span><span>${z.min} - ${z.max} bpm</span>
+                        <span>${z.name} ${hrZoneNames[z.name] || ''}</span><span>${z.min} - ${z.max} bpm</span>
                     </div>`
                 ).join('');
             }
             if (d.power_zones && d.power_zones.length > 0) {
                 document.getElementById('power-zones-preview').innerHTML = d.power_zones.map(z =>
                     `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border);">
-                        <span>${z.name}</span><span>${z.min} - ${z.max} W</span>
+                        <span>${z.name} ${pwZoneNames[z.name] || ''}</span><span>${z.min} - ${z.max} W</span>
                     </div>`
                 ).join('');
             }
