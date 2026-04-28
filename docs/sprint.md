@@ -1,21 +1,18 @@
-# Sprint 31: 自定义 UI 组件替代原生弹窗
+# Sprint 32: 数据导出增强 + 帮助页更新
 
 **状态**: 已完成
-**目标**: 用自定义 UI 组件替代原生 confirm/alert，改善用户体验
+**目标**: 增强数据导出功能，更新帮助页文档
 
 ## 任务清单
 
-- [x] S31-1: 自定义 confirmDialog() 替代原生 confirm()
-- [x] S31-2: 自定义 showToast() 替代原生 alert()
-- [x] S31-3: 仪表盘最近活动列表显示强度等级
-- [x] S31-4: 移动端表格横向滚动 + canvas 自适应
+- [x] S32-1: 导出端点支持 JSON 格式（?format=json）
+- [x] S32-2: CSV 导出新增强度列
+- [x] S32-3: 帮助页新增强度等级说明
 
 ## 评估小结
 
-Sprint 31 完成了 UI 组件升级：
-- 自定义 confirmDialog()：居中弹窗，支持取消/确定，点击遮罩关闭
-- 自定义 showToast()：右上角滑入通知，3 秒自动消失，支持 success/error/info 类型
-- 仪表盘最近活动列表新增强度列（彩色文字）
-- 活动删除和批量删除改用 confirmDialog + showToast
-- 移动端响应式：表格横向滚动、canvas 自适应宽度
+Sprint 32 完成了数据导出增强和帮助页更新：
+- 导出端点新增 JSON 格式支持（GET /api/activities/export?format=json）
+- CSV 导出新增强度等级列
+- 帮助页核心指标表新增强度等级说明（基于 IF 的 5 级评级）
 - 140 个测试全部通过
