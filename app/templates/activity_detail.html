@@ -68,7 +68,7 @@ Promise.all([
             </div>
         </div>` : ''}
 
-        <div class="grid grid-3" style="margin-bottom: 1rem;">
+        <div class="grid grid-4" style="margin-bottom: 1rem;">
             <div class="card">
                 <div class="card-title">平均/最大心率</div>
                 <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
@@ -81,6 +81,10 @@ Promise.all([
                 <div class="card-title metric-title">做功 / VI / EF <span class="metric-help">?<span class="metric-tooltip">做功: 总能量消耗。VI: 变异性指数 = NP/avgPower。EF: 效率因子 = NP/avgHR</span></span></div>
                 <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
                 <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">平均/最大踏频</div>
+                <div class="metric-value">${s.avg_cadence || '—'} <span class="metric-unit">/ ${s.max_cadence || '—'} rpm</span></div>
             </div>
         </div>
 
@@ -100,6 +104,11 @@ Promise.all([
             <div class="card">
                 <div class="card-title">速度曲线</div>
                 <canvas id="speed-chart" height="180"></canvas>
+            </div>` : ''}
+            ${tpData.points.some(p => p.cadence != null) ? `
+            <div class="card">
+                <div class="card-title">踏频曲线</div>
+                <canvas id="cadence-chart" height="180"></canvas>
             </div>` : ''}
         </div>
 
@@ -176,6 +185,19 @@ Promise.all([
                     type: 'line',
                     data: { labels, datasets: [{ label: '速度', data: speedData, borderColor: '#16a34a', fill: true, backgroundColor: 'rgba(22,163,74,0.1)' }] },
                     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'km/h' } } } },
+                });
+            }
+        }
+
+        // 踏频
+        const cadenceData = points.map(p => p.cadence);
+        if (cadenceData.some(v => v != null)) {
+            const el = document.getElementById('cadence-chart');
+            if (el) {
+                new Chart(el, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: '踏频', data: cadenceData, borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139,92,246,0.1)' }] },
+                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'rpm' } } } },
                 });
             }
         }
