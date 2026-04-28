@@ -72,3 +72,35 @@ def test_get_trackpoints_max_points(client, auth_headers):
     assert resp.status_code == 200
     data = resp.get_json()["data"]
     assert len(data["points"]) <= 10
+
+
+def test_export_json(client, auth_headers):
+    _upload_sample(client, auth_headers, "cycling", "骑行1")
+    _upload_sample(client, auth_headers, "running", "跑步1")
+
+    resp = client.get("/api/activities/export?format=json")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["code"] == 200
+    assert len(data["data"]) == 2
+    names = [d["name"] for d in data["data"]]
+    assert "骑行1" in names
+    assert "跑步1" in names
+
+
+def test_export_json_with_filter(client, auth_headers):
+    _upload_sample(client, auth_headers, "cycling", "骑行")
+    _upload_sample(client, auth_headers, "running", "跑步")
+
+    resp = client.get("/api/activities/export?format=json&activity_type=running")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert len(data["data"]) == 1
+    assert data["data"][0]["activity_type"] == "running"
+
+
+def test_export_csv_has_intensity_column(client, auth_headers):
+    _upload_sample(client, auth_headers)
+    resp = client.get("/api/activities/export")
+    lines = resp.data.decode("utf-8").strip().split("\n")
+    assert "强度" in lines[0]

@@ -61,7 +61,8 @@
         </div>
         <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-primary" onclick="loadActivities(0)">筛选</button>
-            <button class="btn btn-secondary" onclick="exportCSV()">导出 CSV</button>
+            <button class="btn btn-secondary" onclick="exportData('csv')">导出 CSV</button>
+            <button class="btn btn-secondary" onclick="exportData('json')">导出 JSON</button>
         </div>
     </div>
 </div>
@@ -229,19 +230,31 @@ function clearFilters() {
     loadActivities(0);
 }
 
-function exportCSV() {
+function exportData(format) {
     const filters = getFilterParams();
-    const url = `/api/activities/export${filters ? '?' + filters : ''}`;
-    authFetch(url)
-        .then(r => r.blob())
-        .then(blob => {
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = 'activities.csv';
-            a.click();
-            window.URL.revokeObjectURL(blobUrl);
-        });
+    const url = `/api/activities/export?format=${format}${filters ? '&' + filters : ''}`;
+    if (format === 'json') {
+        authFetch(url)
+            .then(r => r.json())
+            .then(res => {
+                const blob = new Blob([JSON.stringify(res.data, null, 2)], {type: 'application/json'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'activities.json';
+                a.click();
+                showToast('JSON 导出成功', 'success');
+            });
+    } else {
+        authFetch(url)
+            .then(r => r.blob())
+            .then(blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'activities.csv';
+                a.click();
+                showToast('CSV 导出成功', 'success');
+            });
+    }
 }
 
 async function deleteActivity(id) {
