@@ -30,7 +30,7 @@
 [data-theme="dark"] .badge-indoor_running { background: #064e3b; color: #34d399; }
 [data-theme="dark"] .badge-walking { background: #78350f; color: #fbbf24; }
 
-[data-theme="dark"] .cal-level-0 { background: #1e293b; }
+[data-theme="dark"] .cal-level-0 { background: #334155; }
 [data-theme="dark"] .cal-level-1 { background: #166534; }
 [data-theme="dark"] .cal-level-2 { background: #22c55e; }
 [data-theme="dark"] .cal-level-3 { background: #4ade80; }
@@ -241,6 +241,7 @@ body {
     .container { padding: 1rem; }
     canvas { max-width: 100%; height: auto !important; }
     table { display: block; overflow-x: auto; }
+    .filter-buttons { flex-wrap: wrap; }
 }
 
 /* 指标数值 */

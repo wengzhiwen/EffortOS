@@ -254,7 +254,7 @@ function editActivity() {
     overlay.id = 'edit-modal-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
     const typeOptions = Object.entries(typeNames).map(([k,v]) => `<option value="${k}" ${a.activity_type===k?'selected':''}>${v}</option>`).join('');
-    overlay.innerHTML = `<div style="background:var(--card);padding:1.5rem;border-radius:8px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;">
+    overlay.innerHTML = `<div style="background:var(--card-bg);padding:1.5rem;border-radius:8px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;border:1px solid var(--border);">
         <h3 style="margin-bottom:1rem;">编辑活动</h3>
         <div class="form-group"><label>名称</label><input type="text" id="edit-name" value="${(a.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"></div>
         <div class="form-group"><label>运动类型</label><select id="edit-type" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${typeOptions}</select></div>
