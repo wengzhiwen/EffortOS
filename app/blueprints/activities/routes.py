@@ -107,6 +107,7 @@ def _serialize_metrics(metrics):
         "variability_index": metrics.variability_index,
         "efficiency_factor": metrics.efficiency_factor,
         "work_kj": metrics.work_kj,
+        "intensity_level": metrics.intensity_level,
         "hr_zones_time": metrics.hr_zones_time,
         "power_zones_time": metrics.power_zones_time,
     }
@@ -403,15 +404,26 @@ def list_activities():
 
 @activities_bp.route("/activities/export", methods=["GET"])
 def export_activities():
-    """导出活动列表为 CSV。"""
+    """导出活动列表为 CSV 或 JSON。"""
     qs = _user_filter(Activity.objects())
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
     activities = qs.order_by("-start_time")
 
+    fmt = request.args.get("format", "csv")
+
+    if fmt == "json":
+        return jsonify(
+            {
+                "code": 200,
+                "message": "ok",
+                "data": [_serialize_activity(a) for a in activities],
+            }
+        )
+
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["日期", "类型", "名称", "时长(秒)", "距离(m)", "平均心率", "平均功率", "TSS", "TSS方法"])
+    writer.writerow(["日期", "类型", "名称", "时长(秒)", "距离(m)", "平均心率", "平均功率", "TSS", "TSS方法", "强度"])
 
     for a in activities:
         s = a.data_summary
@@ -427,6 +439,7 @@ def export_activities():
                 round(s.avg_power, 0) if s and s.avg_power else "",
                 round(m.tss, 1) if m and m.tss else "",
                 m.tss_method if m else "",
+                m.intensity_level if m else "",
             ]
         )
 
