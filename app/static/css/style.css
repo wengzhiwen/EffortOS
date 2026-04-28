@@ -237,6 +237,10 @@ body {
     th, td { padding: 0.5rem 0.25rem; }
     .metric-value { font-size: 1.5rem; }
     .grid-4 { grid-template-columns: 1fr 1fr; }
+    .card { padding: 1rem; }
+    .container { padding: 1rem; }
+    canvas { max-width: 100%; height: auto !important; }
+    table { display: block; overflow-x: auto; }
 }
 
 /* 指标数值 */
