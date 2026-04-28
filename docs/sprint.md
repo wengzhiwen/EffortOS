@@ -1,17 +1,21 @@
-# Sprint 30: AI 端点测试 + 移动端响应式优化
+# Sprint 31: 自定义 UI 组件替代原生弹窗
 
 **状态**: 已完成
-**目标**: 补充 AI 端点测试覆盖 + 移动端响应式改进
+**目标**: 用自定义 UI 组件替代原生 confirm/alert，改善用户体验
 
 ## 任务清单
 
-- [x] S30-1: AI weekly-report 端点测试（4 个：认证、成功、有活动、LLM 错误）
-- [x] S30-2: AI suggestion 端点测试（5 个：认证、有提问、无提问、有参数、LLM 错误）
-- [x] S30-3: 移动端响应式改进（表格横向滚动、canvas 自适应、间距优化）
+- [x] S31-1: 自定义 confirmDialog() 替代原生 confirm()
+- [x] S31-2: 自定义 showToast() 替代原生 alert()
+- [x] S31-3: 仪表盘最近活动列表显示强度等级
+- [x] S31-4: 移动端表格横向滚动 + canvas 自适应
 
 ## 评估小结
 
-Sprint 30 完成了 AI 端点测试覆盖和移动端优化：
-- 新增 9 个 AI API 测试（weekly-report 4 个 + suggestion 5 个），使用 mock 隔离 LLM 调用
-- 移动端改进：表格横向滚动、图表自适应宽度、卡片/容器间距调整
-- 总测试数 131 → 140，全部通过
+Sprint 31 完成了 UI 组件升级：
+- 自定义 confirmDialog()：居中弹窗，支持取消/确定，点击遮罩关闭
+- 自定义 showToast()：右上角滑入通知，3 秒自动消失，支持 success/error/info 类型
+- 仪表盘最近活动列表新增强度列（彩色文字）
+- 活动删除和批量删除改用 confirmDialog + showToast
+- 移动端响应式：表格横向滚动、canvas 自适应宽度
+- 140 个测试全部通过
