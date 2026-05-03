@@ -484,8 +484,14 @@ def list_activities():
     qs = _intensity_level_filter(qs)
     qs = _name_filter(qs)
 
+    # 排序
+    sort_field = request.args.get("sort", "-start_time")
+    allowed_sorts = {"start_time", "-start_time", "created_at", "-created_at", "name", "-name"}
+    if sort_field not in allowed_sorts:
+        sort_field = "-start_time"
+
     total = qs.count()
-    activities = list(qs.order_by("-start_time").skip(offset).limit(limit))
+    activities = list(qs.order_by(sort_field).skip(offset).limit(limit))
 
     # 计算每个活动的 PB 标记
     pb_map = _calc_pb_markers(activities, qs)
