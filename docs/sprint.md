@@ -1,11 +1,10 @@
-# Sprint 43: Dashboard 周报卡片 + 健康数据测试
+# Sprint 44: SEO 基础 + 代码质量
 
-**状态**: 已完成
-**目标**: 持续优化 — 仪表盘集成 AI 周报 + 健康数据 API 测试补全 + 深色模式对比度优化
+**状态**: 进行中
+**目标**: M8 SEO 基础设施 — robots.txt / sitemap / meta 标签 + 代码清理
 
 ## 任务清单
 
-- [x] **仪表盘 AI 周报快捷入口** — 在仪表盘添加"生成周报"按钮，点击后调用 AI 并展示结果
-- [x] **健康数据 API 测试补全** — 补充 upsert、日期范围查询、readiness 计算测试（7 个新用例）
-- [x] **活动详情 API 测试** — 补充 GET /activities/<id> 的测试用例（7 个新用例）
-- [x] **深色模式对比度优化** — 修复卡片标题、表头、按钮、统计值、日历等组件的深色模式对比度，修复仪表盘 JS 重复行 bug
+- [ ] **robots.txt 和 sitemap.xml** — 添加 Flask 路由生成 robots.txt 和 sitemap.xml
+- [ ] **页面 meta 标签优化** — 为关键页面添加 description、og:title、og:description 等 meta 标签
+- [ ] **活动模型和指标服务代码清理** — 清理 app/models/activity.py 和 app/services/metrics_service.py 中的未使用代码和冗余逻辑

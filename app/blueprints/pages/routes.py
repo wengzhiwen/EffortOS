@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, Response, redirect, render_template, request, url_for
 
 from app.utils.auth import get_authenticated_user
 
@@ -101,3 +101,36 @@ def help_page():
 def about():
     """关于页（公开）。"""
     return render_template("about.html")
+
+
+@pages_bp.route("/robots.txt")
+def robots():
+    return Response(
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Allow: /help\n"
+        "Allow: /about\n"
+        "Disallow: /api/\n"
+        "Disallow: /settings\n"
+        "Disallow: /profile\n"
+        "Disallow: /gear\n"
+        "Disallow: /wellness\n"
+        "Sitemap: https://effortos.app/sitemap.xml\n",
+        mimetype="text/plain",
+    )
+
+
+@pages_bp.route("/sitemap.xml")
+def sitemap():
+    pages = [
+        ("https://effortos.app/", "daily", "1.0"),
+        ("https://effortos.app/help", "monthly", "0.5"),
+        ("https://effortos.app/about", "monthly", "0.5"),
+        ("https://effortos.app/login", "monthly", "0.3"),
+    ]
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for loc, freq, priority in pages:
+        xml += f"  <url><loc>{loc}</loc><changefreq>{freq}</changefreq><priority>{priority}</priority></url>\n"
+    xml += "</urlset>"
+    return Response(xml, mimetype="application/xml")

@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}EffortOS{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}EffortOS — 运动数据追踪与分析平台，上传 TCX/GPX 文件，智能计算训练指标并提供个性化建议。{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}EffortOS{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}运动数据追踪与分析平台{% endblock %}">
+    <meta property="og:type" content="website">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
