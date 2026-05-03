@@ -18,7 +18,8 @@ const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fb
 Promise.all([
     authFetch(`/api/activities/${activityId}`).then(r => r.json()),
     authFetch(`/api/activities/${activityId}/trackpoints`).then(r => r.json()),
-]).then(([activityRes, tpRes]) => {
+    authFetch(`/api/activities/${activityId}/laps?mode=distance&interval=1000`).then(r => r.json()),
+]).then(([activityRes, tpRes, lapsRes]) => {
     if (!activityRes.data) throw new Error(activityRes.message || '活动不存在');
     const a = activityRes.data;
     window._activityData = a;
@@ -154,6 +155,33 @@ Promise.all([
                 }).join('')}
                 </tbody>
             </table>
+        </div>` : ''}
+
+        ${lapsRes.data && lapsRes.data.length > 0 ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="card-title">分段分析</div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm lap-mode-btn active" data-mode="distance" data-interval="1000" onclick="switchLapMode(this)">每公里</button>
+                    <button class="btn btn-sm lap-mode-btn" data-mode="time" data-interval="300" onclick="switchLapMode(this)">每 5 分钟</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="laps-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead><tr style="border-bottom: 2px solid var(--border);">
+                        <th style="padding: 0.4rem 0.5rem;">#</th>
+                        <th style="padding: 0.4rem 0.5rem;">时长</th>
+                        <th style="padding: 0.4rem 0.5rem;">距离</th>
+                        <th style="padding: 0.4rem 0.5rem;">配速</th>
+                        <th style="padding: 0.4rem 0.5rem;">心率</th>
+                        <th style="padding: 0.4rem 0.5rem;">功率</th>
+                        <th style="padding: 0.4rem 0.5rem;">踏频</th>
+                    </tr></thead>
+                    <tbody id="laps-body">
+                        ${lapsRes.data.map(lap => lapRow(lap)).join('')}
+                    </tbody>
+                </table>
+            </div>
         </div>` : ''}
 
         ${a.notes ? `<div class="card" style="margin-bottom: 1rem;"><div class="card-title">训练感受</div><p style="white-space: pre-wrap; line-height: 1.6;">${a.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>` : ''}
@@ -310,6 +338,47 @@ function saveEdit() {
         .then(res => {
             if (res.code === 200) location.reload();
             else showToast(res.message, 'error');
+        });
+}
+
+function lapRow(lap) {
+    const dur = lap.duration_seconds;
+    const durStr = dur >= 3600 ? Math.floor(dur/3600) + ':' + String(Math.floor((dur%3600)/60)).padStart(2,'0') + ':' + String(Math.floor(dur%60)).padStart(2,'0')
+        : Math.floor(dur/60) + ':' + String(Math.floor(dur%60)).padStart(2,'0');
+    const distStr = lap.distance_meters ? (lap.distance_meters / 1000).toFixed(2) + ' km' : '—';
+    const pace = lap.avg_speed_kmh ? (60 / lap.avg_speed_kmh).toFixed(0) + ':' + String(Math.floor((60 / lap.avg_speed_kmh % 1) * 60)).padStart(2,'0') + ' /km' : '—';
+    const hr = lap.avg_hr ? lap.avg_hr + (lap.max_hr ? ' / ' + lap.max_hr : '') + ' bpm' : '—';
+    const pw = lap.avg_power ? lap.avg_power + (lap.max_power ? ' / ' + lap.max_power : '') + ' W' : '—';
+    const cad = lap.avg_cadence ? lap.avg_cadence + ' rpm' : '—';
+    return `<tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 0.4rem 0.5rem; font-weight: 600;">${lap.lap}</td>
+        <td style="padding: 0.4rem 0.5rem;">${durStr}</td>
+        <td style="padding: 0.4rem 0.5rem;">${distStr}</td>
+        <td style="padding: 0.4rem 0.5rem;">${pace}</td>
+        <td style="padding: 0.4rem 0.5rem;">${hr}</td>
+        <td style="padding: 0.4rem 0.5rem;">${pw}</td>
+        <td style="padding: 0.4rem 0.5rem;">${cad}</td>
+    </tr>`;
+}
+
+function switchLapMode(btn) {
+    document.querySelectorAll('.lap-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    btn.style.background = 'var(--primary)';
+    btn.style.color = 'white';
+    document.querySelectorAll('.lap-mode-btn:not(.active)').forEach(b => { b.style.background = ''; b.style.color = ''; });
+
+    const mode = btn.dataset.mode;
+    const interval = btn.dataset.interval;
+    authFetch(`/api/activities/${activityId}/laps?mode=${mode}&interval=${interval}`)
+        .then(r => r.json())
+        .then(res => {
+            const body = document.getElementById('laps-body');
+            if (res.data && res.data.length > 0) {
+                body.innerHTML = res.data.map(lap => lapRow(lap)).join('');
+            } else {
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">数据不足</td></tr>';
+            }
         });
 }
 </script>
