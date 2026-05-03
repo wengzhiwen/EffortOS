@@ -85,6 +85,12 @@ def wellness():
     return _require_login_for("wellness.html")
 
 
+@pages_bp.route("/compare")
+def compare():
+    """活动对比（需登录）。"""
+    return _require_login_for("compare.html")
+
+
 @pages_bp.route("/help")
 def help_page():
     """帮助页（公开）。"""

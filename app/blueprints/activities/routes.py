@@ -547,6 +547,50 @@ def get_lap_splits(activity_id):
     return jsonify({"code": 200, "message": "ok", "data": laps})
 
 
+@activities_bp.route("/activities/compare", methods=["GET"])
+def compare_activities():
+    """对比两个活动的指标和曲线。"""
+    id_a = request.args.get("a")
+    id_b = request.args.get("b")
+    if not id_a or not id_b:
+        return jsonify({"code": 400, "message": "请提供两个活动 ID (a, b)", "data": None}), 400
+
+    a = Activity.objects(id=id_a).first()
+    b = Activity.objects(id=id_b).first()
+    if not a or not b:
+        return jsonify({"code": 404, "message": "活动不存在", "data": None}), 404
+
+    def _tp_data(activity):
+        tps = activity.get_trackpoints_downsampled(300)
+        total = tps[-1]["elapsed"] if tps else 1
+        return [{"percent": round(tp["elapsed"] / total * 100, 1), **tp} for tp in tps]
+
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "a": {
+                    "id": str(a.id),
+                    "name": a.name,
+                    "type": a.activity_type,
+                    "summary": _serialize_summary(a.data_summary),
+                    "metrics": _serialize_metrics(a.computed_metrics),
+                    "trackpoints": _tp_data(a),
+                },
+                "b": {
+                    "id": str(b.id),
+                    "name": b.name,
+                    "type": b.activity_type,
+                    "summary": _serialize_summary(b.data_summary),
+                    "metrics": _serialize_metrics(b.computed_metrics),
+                    "trackpoints": _tp_data(b),
+                },
+            },
+        }
+    )
+
+
 @activities_bp.route("/activities/<activity_id>", methods=["PUT"])
 def update_activity(activity_id):
     """更新运动记录（名称/类型）。"""
