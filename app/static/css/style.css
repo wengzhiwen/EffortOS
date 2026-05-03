@@ -430,13 +430,13 @@ a:hover { text-decoration: underline; }
 
 /* TSS 日历热力图 */
 .tss-calendar { overflow-x: auto; }
-.cal-months { display: flex; gap: 2px; margin-bottom: 0.25rem; padding-left: 32px; }
-.cal-month { font-size: 0.75rem; color: var(--text-secondary); flex-shrink: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.cal-grid { display: flex; gap: 3px; }
-.cal-dow { display: flex; flex-direction: column; gap: 3px; margin-right: 6px; }
-.cal-dow span { width: 24px; height: 18px; font-size: 0.7rem; color: var(--text-secondary); line-height: 18px; text-align: right; }
-.cal-week { display: flex; flex-direction: column; gap: 3px; }
-.cal-cell { width: 18px; height: 18px; border-radius: 3px; }
+.cal-months { display: flex; gap: 2px; margin-bottom: 0.25rem; padding-left: 28px; }
+.cal-month { font-size: 0.75rem; color: var(--text-secondary); flex-shrink: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; }
+.cal-grid { display: flex; gap: 3px; width: 100%; }
+.cal-dow { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.cal-dow span { width: 22px; font-size: 0.7rem; color: var(--text-secondary); line-height: 1; text-align: right; }
+.cal-week { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.cal-cell { width: 100%; aspect-ratio: 1; border-radius: 3px; }
 .cal-empty { background: transparent; }
 .cal-level-0 { background: #ebedf0; }
 .cal-level-1 { background: #9be9a8; }
