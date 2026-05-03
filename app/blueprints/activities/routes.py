@@ -697,6 +697,15 @@ def update_activity(activity_id):
     if "notes" in data:
         activity.notes = data["notes"][:2000] if data["notes"] else None
 
+    if "gear_id" in data:
+        if data["gear_id"]:
+            gear = Gear.objects(id=data["gear_id"], user=user).first()
+            if not gear:
+                return jsonify({"code": 404, "message": "装备不存在", "data": None}), 404
+            activity.gear = gear
+        else:
+            activity.gear = None
+
     activity.save()
     return jsonify({"code": 200, "message": "已更新", "data": _serialize_activity(activity)})
 
