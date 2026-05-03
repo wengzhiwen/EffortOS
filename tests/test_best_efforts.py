@@ -31,7 +31,6 @@ def test_constant_power():
     result = calc_best_efforts(tps)
     assert "power" in result
     assert "heart_rate" in result
-    # 常数功率，所有窗口均值应相同
     for w, val in result["power"].items():
         assert val == 200
     for w, val in result["heart_rate"].items():
@@ -46,8 +45,8 @@ def test_peak_power_short_window():
 
     tps = _make_trackpoints(120, power=power_fn, hr=150)
     result = calc_best_efforts(tps)
-    assert result["power"][5] > 300  # 5 秒窗口应捕获到高功率段
-    assert result["power"][60] < 200  # 60 秒窗口会被低功率拉低
+    assert result["power"][5] > 300
+    assert result["power"][60] < 200
 
 
 def test_increasing_power():
@@ -58,7 +57,6 @@ def test_increasing_power():
 
     tps = _make_trackpoints(600, power=power_fn)
     result = calc_best_efforts(tps)
-    # 短窗口（5s）应接近末尾高功率
     assert result["power"][5] > result["power"][300]
 
 
@@ -66,7 +64,45 @@ def test_windows_capped_by_data_length():
     """数据不足的窗口不应出现。"""
     tps = _make_trackpoints(10, power=200)
     result = calc_best_efforts(tps)
-    # 只有小于等于 10 秒数据的窗口
     if "power" in result:
         for w in result["power"]:
-            assert w <= 20  # 允许小误差
+            assert w <= 20
+
+
+def test_only_power_no_hr():
+    """只有功率数据时不应返回心率。"""
+    tps = _make_trackpoints(120, power=200)
+    result = calc_best_efforts(tps)
+    assert "power" in result
+    assert "heart_rate" not in result
+
+
+def test_only_hr_no_power():
+    """只有心率数据时不应返回功率。"""
+    tps = _make_trackpoints(120, hr=150)
+    result = calc_best_efforts(tps)
+    assert "heart_rate" in result
+    assert "power" not in result
+
+
+def test_long_activity_all_windows():
+    """3600 秒活动应覆盖所有窗口。"""
+    tps = _make_trackpoints(3600, power=200, hr=150)
+    result = calc_best_efforts(tps)
+    assert "power" in result
+    for w in BEST_EFFORT_WINDOWS:
+        assert w in result["power"], f"窗口 {w} 未出现在结果中"
+
+
+def test_sprint_effort():
+    """模拟冲刺：中间 15 秒极高功率。"""
+
+    def power_fn(i):
+        return 600 if 500 <= i < 515 else 200
+
+    tps = _make_trackpoints(1000, power=power_fn)
+    result = calc_best_efforts(tps)
+    assert result["power"][5] >= 550
+    assert result["power"][15] >= 550
+    # 300s 窗口包含大量 200W 数据，均值应远低于冲刺功率
+    assert result["power"][300] < 300
