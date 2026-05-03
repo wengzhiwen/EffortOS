@@ -395,7 +395,19 @@ Promise.all([
         }
     }
 }).catch(err => {
-    document.getElementById('activity-detail').innerHTML = `<div class="card" style="text-align:center;color:var(--text-secondary);padding:2rem;">加载失败: ${err.message}<br><a href="/activities" class="btn btn-primary" style="margin-top:1rem;">返回列表</a></div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'card';
+    errDiv.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem;';
+    errDiv.textContent = '加载失败: ' + err.message;
+    const backLink = document.createElement('a');
+    backLink.href = '/activities';
+    backLink.className = 'btn btn-primary';
+    backLink.style.marginTop = '1rem';
+    backLink.textContent = '返回列表';
+    errDiv.appendChild(document.createElement('br'));
+    errDiv.appendChild(backLink);
+    document.getElementById('activity-detail').innerHTML = '';
+    document.getElementById('activity-detail').appendChild(errDiv);
 });
 
 function editActivity() {

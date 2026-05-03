@@ -20,7 +20,16 @@ Bug 大扫除（每 5 个 Sprint 一次）：
 
 ---
 
-### Sprint 54 完成 — 2026-05-03
+### Sprint 56 完成 — 2026-05-03
+
+XSS 安全修复：
+- 修复 5 处 innerHTML 注入 API 错误消息的 XSS 漏洞（activities.html、index.html x3、activity_detail.html）
+- 改用 textContent / DOM API 安全渲染错误信息
+- 测试总数：215 全部通过，无回归
+
+---
+
+### Sprint 55 完成 — 2026-05-03
 
 体能趋势追踪：
 - Dashboard API 新增 `fitness_trend` 字段：返回最近 30 次活动的 TSS/NP/IF/EF 按时间排列

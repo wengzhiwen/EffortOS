@@ -147,7 +147,9 @@ document.getElementById('upload-file').addEventListener('change', function(e) {
         .then(r => r.json())
         .then(res => {
             if (res.code !== 200) {
-                preview.innerHTML = `<div style="color: var(--danger); font-size: 0.85rem;">${res.message}</div>`;
+                preview.textContent = res.message;
+                preview.style.color = 'var(--danger)';
+                preview.style.fontSize = '0.85rem';
                 return;
             }
             const d = res.data;

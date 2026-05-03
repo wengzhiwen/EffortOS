@@ -313,7 +313,12 @@ authFetch('/api/dashboard')
     })
     .catch(err => {
         document.querySelectorAll('.metric-value').forEach(el => el.textContent = '—');
-        document.getElementById('recent-activities').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">加载失败: ${err.message}</td></tr>`;
+        const errTr = document.getElementById('recent-activities').insertRow();
+        const errTd = errTr.insertCell();
+        errTd.colSpan = 6;
+        errTd.style.textAlign = 'center';
+        errTd.style.color = 'var(--text-secondary)';
+        errTd.textContent = '加载失败: ' + err.message;
     });
 
 function renderStats(elId, stats) {
@@ -438,7 +443,11 @@ function generateReport() {
             btn.disabled = false;
             btn.textContent = '重新生成';
             if (res.code !== 200) {
-                content.innerHTML = `<p style="color: var(--danger);">生成失败: ${res.message}</p>`;
+                content.innerHTML = '';
+                const errP = document.createElement('p');
+                errP.style.color = 'var(--danger)';
+                errP.textContent = '生成失败: ' + res.message;
+                content.appendChild(errP);
                 return;
             }
             const d = res.data;
@@ -455,7 +464,11 @@ function generateReport() {
         .catch(err => {
             btn.disabled = false;
             btn.textContent = '生成本周报告';
-            content.innerHTML = `<p style="color: var(--danger);">请求失败: ${err.message}</p>`;
+            content.innerHTML = '';
+            const errP2 = document.createElement('p');
+            errP2.style.color = 'var(--danger)';
+            errP2.textContent = '请求失败: ' + err.message;
+            content.appendChild(errP2);
         });
 }
 </script>
