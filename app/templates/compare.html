@@ -86,6 +86,9 @@ function renderResult(a, b) {
     _compareCharts = [];
 
     document.getElementById('compare-result').style.display = 'block';
+    document.getElementById('card-a').innerHTML = '';
+    document.getElementById('card-b').innerHTML = '';
+    document.getElementById('compare-body').innerHTML = '';
 
     // 活动摘要卡片
     document.getElementById('card-a').innerHTML = summaryCard(a, '#2563eb');
