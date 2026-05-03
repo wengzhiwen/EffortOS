@@ -6,6 +6,81 @@
 {% block og_description %}关于 EffortOS 运动数据分析平台{% endblock %}
 
 {% block content %}
-<h1>关于 EffortOS</h1>
-<p>EffortOS 是一个运动数据追踪和分析工具，帮助你量化训练、优化表现。</p>
+<div style="max-width: 700px;">
+    <h1 style="margin-bottom: 0.5rem;">关于 EffortOS</h1>
+    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1.5rem;">科学训练，数据驱动，AI 赋能</p>
+
+    <div class="card">
+        <div class="card-title">项目介绍</div>
+        <p style="margin-bottom: 0.75rem;">
+            EffortOS 是一款面向业余和半专业运动员的<strong>运动数据追踪与分析工具</strong>，类似 intervals.icu。
+            上传 TCX/GPX 运动数据文件，系统自动计算 TSS、CTL、ATL、TSB 等核心训练指标，
+            并通过 AI 教练提供个性化训练建议。
+        </p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            核心理念：用科学方法量化训练负荷，让你更聪明地训练，而不是更努力地训练。
+        </p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">核心功能</div>
+        <div class="grid grid-2" style="gap: 1rem;">
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">训练指标计算</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    TSS、CTL/ATL/TSB、NP、IF、EF、功率曲线、Best Efforts 等核心指标自动计算
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">数据可视化</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    PMC 趋势图、训练日历热力图、体能趋势、心率/功率分区图、活动对比
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">AI 教练</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    基于 OpenAI GPT 生成训练周报和个性化建议，回答你的训练问题
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">Wellness 追踪</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    日常主观感受 + HRV/静息心率记录，自动计算 Readiness 准备度分数
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">装备管理</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    追踪装备累计里程，设置使用寿命提醒，关联活动自动累计
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">数据导出</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                    支持 CSV/JSON 格式导出活动数据，支持多维度筛选
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">技术栈</div>
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; color: var(--text-secondary); font-size: 0.9rem;">
+            <div><strong style="color: var(--text);">后端</strong> Python + Flask</div>
+            <div><strong style="color: var(--text);">数据库</strong> MongoDB</div>
+            <div><strong style="color: var(--text);">AI</strong> OpenAI GPT</div>
+            <div><strong style="color: var(--text);">前端</strong> Chart.js + Vanilla JS</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">开源说明</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            EffortOS 同时是一个 <strong>AI 自驱动实验项目</strong>：以 Claude Code 为核心，
+            持续执行「规划 → 选取任务 → 实施 → 评估 → 再规划」的循环，
+            在只有明确目标而无详细设计的基础上不断自我进化。
+        </p>
+    </div>
+</div>
 {% endblock %}
