@@ -328,7 +328,7 @@ def analyze_activity():
         if hr_pct < 0.1:
             warnings.append("心率数据缺失超过 90%，无法计算心率相关指标")
         if sport in ("cycling", "indoor_cycling") and power_pct < 0.1:
-            warnings.append("功率数据缺失，建议设置 FTP 后使用心率 TSS")
+            warnings.append("功率数据缺失，将使用心率计算 TSS")
         if dist_count == 0 and speed_count == 0:
             warnings.append("无距离和速度数据")
 
