@@ -53,6 +53,17 @@
     <canvas id="pmc-chart" height="200"></canvas>
 </div>
 
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-title">周训练量趋势（最近 12 周）</div>
+        <canvas id="weekly-trend-chart" height="200"></canvas>
+    </div>
+    <div class="card">
+        <div class="card-title">周训练次数</div>
+        <canvas id="weekly-count-chart" height="200"></canvas>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-title">最近活动</div>
     <table>
@@ -146,6 +157,36 @@ authFetch('/api/dashboard')
                 plugins: { legend: { position: 'bottom' } }
             }
         });
+
+        // 周训练量趋势
+        if (d.weekly_trend && d.weekly_trend.length > 0) {
+            const wtLabels = d.weekly_trend.map(w => w.week.slice(5));
+            new Chart(document.getElementById('weekly-trend-chart'), {
+                type: 'bar',
+                data: {
+                    labels: wtLabels,
+                    datasets: [{ label: 'TSS', data: d.weekly_trend.map(w => w.tss), backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'TSS' } } }
+                }
+            });
+
+            new Chart(document.getElementById('weekly-count-chart'), {
+                type: 'bar',
+                data: {
+                    labels: wtLabels,
+                    datasets: [{ label: '训练天数', data: d.weekly_trend.map(w => w.count), backgroundColor: 'rgba(22,163,74,0.7)', borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '天' } } }
+                }
+            });
+        }
 
         // 最近活动列表
         const tbody = document.getElementById('recent-activities');

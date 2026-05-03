@@ -80,6 +80,17 @@ def get_dashboard():
     for a in month_activities:
         type_breakdown[a.activity_type] += 1
 
+    # 周趋势：最近 12 周的 TSS 和活动次数
+    weekly_trend = []
+    for w in range(11, -1, -1):
+        week_end_date = today - timedelta(days=today.weekday() + 7 * w)
+        week_start_date = week_end_date - timedelta(days=6)
+        ws = week_start_date.strftime("%Y-%m-%d")
+        we = week_end_date.strftime("%Y-%m-%d")
+        week_tss = sum(v for k, v in daily.items() if ws <= k <= we)
+        week_count = sum(1 for k, v in daily.items() if ws <= k <= we and v > 0)
+        weekly_trend.append({"week": ws, "tss": round(week_tss, 1), "count": week_count})
+
     return jsonify(
         {
             "code": 200,
@@ -95,6 +106,7 @@ def get_dashboard():
                 "weekly_stats": _calc_stats(week_activities),
                 "monthly_stats": _calc_stats(month_activities),
                 "type_breakdown": dict(type_breakdown),
+                "weekly_trend": weekly_trend,
             },
         }
     )
