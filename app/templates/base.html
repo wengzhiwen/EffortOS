@@ -8,7 +8,7 @@
     <meta property="og:title" content="{% block og_title %}EffortOS{% endblock %}">
     <meta property="og:description" content="{% block og_description %}运动数据追踪与分析平台{% endblock %}">
     <meta property="og:type" content="website">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -175,10 +175,26 @@
         return new Promise(function(resolve) {
             var overlay = document.createElement('div');
             overlay.className = 'confirm-overlay';
-            overlay.innerHTML = '<div class="confirm-box"><p>' + msg + '</p><div class="btn-row"><button class="btn btn-secondary" id="confirm-cancel">取消</button><button class="btn btn-primary" id="confirm-ok">确定</button></div></div>';
+            var box = document.createElement('div');
+            box.className = 'confirm-box';
+            var p = document.createElement('p');
+            p.textContent = msg;
+            var btnRow = document.createElement('div');
+            btnRow.className = 'btn-row';
+            var btnCancel = document.createElement('button');
+            btnCancel.className = 'btn btn-secondary';
+            btnCancel.textContent = '取消';
+            var btnOk = document.createElement('button');
+            btnOk.className = 'btn btn-primary';
+            btnOk.textContent = '确定';
+            btnRow.appendChild(btnCancel);
+            btnRow.appendChild(btnOk);
+            box.appendChild(p);
+            box.appendChild(btnRow);
+            overlay.appendChild(box);
             document.body.appendChild(overlay);
-            overlay.querySelector('#confirm-ok').addEventListener('click', function() { overlay.remove(); resolve(true); });
-            overlay.querySelector('#confirm-cancel').addEventListener('click', function() { overlay.remove(); resolve(false); });
+            btnOk.addEventListener('click', function() { overlay.remove(); resolve(true); });
+            btnCancel.addEventListener('click', function() { overlay.remove(); resolve(false); });
             overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); resolve(false); } });
         });
     };
