@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 
+from app.models.activity import Activity
 from app.models.wellness import WellnessEntry
+from app.services.metrics_service import calc_daily_tss
 from app.utils.auth import require_user
 
 wellness_bp = Blueprint("wellness", __name__)
@@ -95,3 +97,91 @@ def delete_wellness(entry_id):
 
     entry.delete()
     return jsonify({"code": 200, "message": "已删除", "data": None})
+
+
+@wellness_bp.route("/wellness/readiness", methods=["GET"])
+def get_readiness():
+    """计算今日准备度（Readiness）。
+
+    基于主观感受（睡眠/疲劳/压力/酸痛/心情）和近期训练负荷综合计算。
+    满分 100，越高表示准备度越好。
+    """
+    user, err = require_user()
+    if err:
+        return err
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    entry = WellnessEntry.objects(user=user, date=today).first()
+
+    # 主观感受分（满分 50）
+    subjective_score = 0
+    subjective_fields = 0
+
+    if entry:
+        # 睡眠和心情正向（越高越好）
+        if entry.sleep_quality:
+            subjective_score += entry.sleep_quality * 2.5  # 满分 12.5
+            subjective_fields += 1
+        if entry.mood:
+            subjective_score += entry.mood * 2.5  # 满分 12.5
+            subjective_fields += 1
+        # 疲劳、压力、酸痛反向（越低越好，5→0, 1→4）
+        if entry.fatigue:
+            subjective_score += (6 - entry.fatigue) * 2.5  # 满分 12.5
+            subjective_fields += 1
+        if entry.stress:
+            subjective_score += (6 - entry.stress) * 1.5  # 满分 7.5
+            subjective_fields += 1
+        if entry.soreness:
+            subjective_score += (6 - entry.soreness) * 1.5  # 满分 7.5
+            subjective_fields += 1
+
+    # 训练负荷分（满分 50）：基于近 7 天 TSS
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    activities = Activity.objects(user=user, start_time__gte=week_ago)
+    daily = calc_daily_tss(list(activities))
+    week_tss = sum(daily.values())
+
+    # TSS 负荷评分：0 TSS → 50 分（充分休息），> 600 TSS → 0 分（过度训练）
+    if week_tss <= 300:
+        load_score = 50
+    elif week_tss <= 600:
+        load_score = 50 - (week_tss - 300) / 300 * 30
+    else:
+        load_score = max(0, 20 - (week_tss - 600) / 400 * 20)
+
+    total = subjective_score + load_score
+    total = round(min(max(total, 0), 100))
+
+    # 准备度等级
+    if total >= 80:
+        level = "excellent"
+        label = "极佳"
+    elif total >= 60:
+        level = "good"
+        label = "良好"
+    elif total >= 40:
+        level = "moderate"
+        label = "一般"
+    elif total >= 20:
+        level = "low"
+        label = "较低"
+    else:
+        level = "rest"
+        label = "需要休息"
+
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "score": total,
+                "level": level,
+                "label": label,
+                "subjective_score": round(subjective_score),
+                "load_score": round(load_score),
+                "week_tss": round(week_tss, 1),
+                "has_wellness_entry": entry is not None,
+            },
+        }
+    )
