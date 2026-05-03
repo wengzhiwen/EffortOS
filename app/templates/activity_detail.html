@@ -143,8 +143,9 @@ Promise.all([
                     ${m.best_efforts.heart_rate ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">峰值心率</th>' : ''}
                 </tr></thead>
                 <tbody>
-                ${Object.keys(m.best_efforts.power || m.best_efforts.heart_rate).sort((a,b) => a-b).map(w => {
-                    const label = w < 60 ? w + '秒' : w < 3600 ? (w/60) + '分钟' : (w/3600) + '小时';
+                ${Object.keys(m.best_efforts.power || m.best_efforts.heart_rate).sort((a,b) => parseInt(a)-parseInt(b)).map(w => {
+                    const wn = parseInt(w);
+                    const label = wn < 60 ? wn + '秒' : wn < 3600 ? (wn/60) + '分钟' : (wn/3600) + '小时';
                     const pw = m.best_efforts.power && m.best_efforts.power[w];
                     const hr = m.best_efforts.heart_rate && m.best_efforts.heart_rate[w];
                     return `<tr style="border-bottom: 1px solid var(--border);">

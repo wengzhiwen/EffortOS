@@ -1,8 +1,11 @@
+import logging
 import threading
 from datetime import datetime
 
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
+
+logger = logging.getLogger(__name__)
 
 
 def _build_query(user, **extra_filters):
@@ -169,7 +172,10 @@ def _do_recalc(user_id: str, activities: list):
     """后台线程：逐个重算活动指标。"""
     try:
         for activity in activities:
-            recalc_activity(activity)
+            try:
+                recalc_activity(activity)
+            except Exception:
+                logger.exception("重算活动 %s 失败", activity.id)
             if user_id in _recalc_status:
                 _recalc_status[user_id]["done"] += 1
     finally:

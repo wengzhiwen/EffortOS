@@ -222,9 +222,9 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
             if "heart_rate" not in result and best_hr is not None:
                 result["heart_rate"] = {}
             if best_power is not None:
-                result["power"][window_sec] = best_power
+                result["power"][str(window_sec)] = best_power
             if best_hr is not None:
-                result["heart_rate"][window_sec] = best_hr
+                result["heart_rate"][str(window_sec)] = best_hr
 
     return result
 

@@ -31,10 +31,20 @@ def test_constant_power():
     result = calc_best_efforts(tps)
     assert "power" in result
     assert "heart_rate" in result
-    for w, val in result["power"].items():
+    for val in result["power"].values():
         assert val == 200
-    for w, val in result["heart_rate"].items():
+    for val in result["heart_rate"].values():
         assert val == 150
+
+
+def test_keys_are_strings():
+    """MongoEngine DictField 要求 key 为字符串。"""
+    tps = _make_trackpoints(120, power=200, hr=150)
+    result = calc_best_efforts(tps)
+    for key in result.get("power", {}):
+        assert isinstance(key, str)
+    for key in result.get("heart_rate", {}):
+        assert isinstance(key, str)
 
 
 def test_peak_power_short_window():
@@ -45,8 +55,8 @@ def test_peak_power_short_window():
 
     tps = _make_trackpoints(120, power=power_fn, hr=150)
     result = calc_best_efforts(tps)
-    assert result["power"][5] > 300
-    assert result["power"][60] < 200
+    assert result["power"]["5"] > 300
+    assert result["power"]["60"] < 200
 
 
 def test_increasing_power():
@@ -57,7 +67,7 @@ def test_increasing_power():
 
     tps = _make_trackpoints(600, power=power_fn)
     result = calc_best_efforts(tps)
-    assert result["power"][5] > result["power"][300]
+    assert result["power"]["5"] > result["power"]["300"]
 
 
 def test_windows_capped_by_data_length():
@@ -66,7 +76,7 @@ def test_windows_capped_by_data_length():
     result = calc_best_efforts(tps)
     if "power" in result:
         for w in result["power"]:
-            assert w <= 20
+            assert int(w) <= 20
 
 
 def test_only_power_no_hr():
@@ -91,7 +101,7 @@ def test_long_activity_all_windows():
     result = calc_best_efforts(tps)
     assert "power" in result
     for w in BEST_EFFORT_WINDOWS:
-        assert w in result["power"], f"窗口 {w} 未出现在结果中"
+        assert str(w) in result["power"], f"窗口 {w} 未出现在结果中"
 
 
 def test_sprint_effort():
@@ -102,7 +112,6 @@ def test_sprint_effort():
 
     tps = _make_trackpoints(1000, power=power_fn)
     result = calc_best_efforts(tps)
-    assert result["power"][5] >= 550
-    assert result["power"][15] >= 550
-    # 300s 窗口包含大量 200W 数据，均值应远低于冲刺功率
-    assert result["power"][300] < 300
+    assert result["power"]["5"] >= 550
+    assert result["power"]["15"] >= 550
+    assert result["power"]["300"] < 300
