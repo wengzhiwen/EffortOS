@@ -138,7 +138,12 @@ Promise.all([
             <div class="card-title">海拔曲线</div>
             <canvas id="altitude-chart" height="150"></canvas>
         </div>` : ''}
-        ` : ''}
+        ` : `
+        <div class="card" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            <p style="font-size: 0.95rem;">此活动暂无时间序列数据（心率、功率、速度等）</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;">上传包含传感器数据的 TCX/GPX 文件可查看详细曲线图</p>
+        </div>
+        `}
 
         <div class="grid grid-2" style="margin-bottom: 1rem;">
             ${m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0 ? `
