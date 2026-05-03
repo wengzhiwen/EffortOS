@@ -270,15 +270,27 @@ function renderCalendar(calendarData) {
     const maxTss = Math.max(...Object.values(calendarData), 1);
     const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-    let html = '<div class="cal-months">';
-    const firstDays = weeks.map(w => w.find(d => d)).filter(Boolean);
-    const seenMonths = new Set();
-    for (const fd of firstDays) {
-        const m = fd.date.slice(0, 7);
-        if (!seenMonths.has(m)) {
-            seenMonths.add(m);
-            html += `<span class="cal-month">${monthNames[new Date(fd.date).getMonth()]}</span>`;
+    // 计算每个月份标签对应多少个周列（用于对齐）
+    const weekMonths = weeks.map(w => {
+        const d = w.find(x => x);
+        return d ? d.date.slice(0, 7) : null;
+    });
+    const monthSpans = []; // [{month: "2026-02", weekCount: 4, label: "2月"}, ...]
+    let prev = null;
+    for (const m of weekMonths) {
+        if (m && m !== prev) {
+            monthSpans.push({ month: m, weekCount: 1, label: monthNames[parseInt(m.slice(5, 7)) - 1] });
+            prev = m;
+        } else if (m === prev && monthSpans.length > 0) {
+            monthSpans[monthSpans.length - 1].weekCount++;
         }
+    }
+
+    // 每个单元格 12px 宽 + 2px gap = 14px per week
+    const cellUnit = 14;
+    let html = '<div class="cal-months">';
+    for (const ms of monthSpans) {
+        html += `<span class="cal-month" style="width:${ms.weekCount * cellUnit - 2}px;">${ms.label}</span>`;
     }
     html += '</div><div class="cal-grid">';
 

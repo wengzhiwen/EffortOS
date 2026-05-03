@@ -412,8 +412,8 @@ a:hover { text-decoration: underline; }
 
 /* TSS 日历热力图 */
 .tss-calendar { overflow-x: auto; }
-.cal-months { display: flex; gap: 0; margin-bottom: 0.25rem; padding-left: 28px; }
-.cal-month { font-size: 0.7rem; color: var(--text-secondary); flex-shrink: 0; }
+.cal-months { display: flex; gap: 2px; margin-bottom: 0.25rem; padding-left: 24px; }
+.cal-month { font-size: 0.7rem; color: var(--text-secondary); flex-shrink: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .cal-grid { display: flex; gap: 2px; }
 .cal-dow { display: flex; flex-direction: column; gap: 2px; margin-right: 4px; }
 .cal-dow span { width: 16px; height: 12px; font-size: 0.6rem; color: var(--text-secondary); line-height: 12px; text-align: right; }
