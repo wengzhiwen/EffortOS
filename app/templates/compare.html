@@ -184,7 +184,6 @@ function interpolateToPercent(tps, field) {
 }
 
 function fmt(v, dec, unit) { return v != null ? (dec != null ? v.toFixed(dec) : v) + (unit ? ' ' + unit : '') : '—'; }
-function fmtDur(s) { return s ? Math.floor(s/60) + '分' : '—'; }
 function fmtDist(m) { return m ? (m/1000).toFixed(1) + ' km' : '—'; }
 </script>
 {% endblock %}

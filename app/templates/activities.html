@@ -167,10 +167,7 @@ const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '
 const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 function formatWindow(w) {
-    const s = parseInt(w);
-    if (s < 60) return s + '秒';
-    if (s < 3600) return (s / 60) + '分钟';
-    return (s / 3600) + '小时';
+    return fmtDur(parseInt(w));
 }
 
 // 文件选择/拖拽后自动分析
@@ -283,7 +280,7 @@ function loadActivities(offset = 0) {
             tbody.innerHTML = items.map(a => {
                 const s = a.data_summary || {};
                 const m = a.computed_metrics || {};
-                const duration = s.duration_seconds ? Math.floor(s.duration_seconds / 60) + '分' : '—';
+                const duration = fmtDur(s.duration_seconds);
                 const dist = s.total_distance ? (s.total_distance / 1000).toFixed(1) + ' km' : '—';
                 const hr = s.avg_heart_rate || '—';
                 const tss = m.tss != null ? m.tss.toFixed(1) : '—';

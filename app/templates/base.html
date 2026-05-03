@@ -28,6 +28,16 @@
     // 全局常量和工具
     window.TYPE_NAMES = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行', swimming: '游泳', other: '其他' };
     window.esc = function(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+    window.fmtDur = function(sec) {
+        if (!sec) return '—';
+        var s = Math.round(sec);
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+        var parts = [];
+        if (h) parts.push(h + '小时');
+        if (m) parts.push(m + '分钟');
+        if (r || parts.length === 0) parts.push(r + '秒');
+        return parts.join('');
+    };
     </script>
     <script>
     // 全局认证工具（必须在子模板 script 之前加载）

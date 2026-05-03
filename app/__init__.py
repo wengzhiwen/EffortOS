@@ -57,14 +57,12 @@ def create_app(config_name=None):
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
 
-    limiter = Limiter(
+    Limiter(
         get_remote_address,
         app=app,
-        default_limits=["200 per day", "60 per hour"],
+        default_limits=["200 per day", "500 per hour"],
         storage_uri="memory://",
     )
-    # 对上传接口单独限速
-    limiter.limit("10 per hour")(activities_bp)
 
     # 安全响应头
     @app.after_request

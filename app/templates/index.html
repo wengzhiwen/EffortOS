@@ -297,7 +297,7 @@ authFetch('/api/dashboard')
         const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
         tbody.innerHTML = d.recent_activities.map(a => {
             const duration = a.data_summary?.duration_seconds;
-            const durationStr = duration ? Math.floor(duration / 60) + '分钟' : '—';
+            const durationStr = fmtDur(duration);
             const tss = a.computed_metrics?.tss;
             const il = a.computed_metrics?.intensity_level;
             const intensityBadge = il ? `<span style="color:${intensityColors[il]};font-weight:600">${intensityNames[il]}</span>` : '—';
