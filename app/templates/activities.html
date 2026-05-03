@@ -12,36 +12,51 @@
 </h2>
 
 <div class="confirm-overlay" id="upload-modal" style="display: none;">
-    <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 640px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+    <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 560px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="margin: 0; font-size: 1.1rem;">上传运动数据</h3>
+            <h3 style="margin: 0; font-size: 1.1rem;" id="upload-title">上传运动数据</h3>
             <button onclick="closeUploadModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); line-height: 1;">&times;</button>
         </div>
         <form id="upload-form" enctype="multipart/form-data">
-            <div class="grid grid-3">
-                <div class="form-group">
-                    <label>运动类型</label>
-                    <select name="activity_type" required id="upload-type">
-                        <option value="cycling">骑行</option>
-                        <option value="indoor_cycling">室内骑行</option>
-                        <option value="running">跑步</option>
-                        <option value="indoor_running">室内跑步</option>
-                        <option value="walking">步行</option>
-                    </select>
+            <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file" style="display: none;">
+
+            <!-- Step 1: 选择文件 -->
+            <div id="upload-step1">
+                <div id="upload-dropzone" onclick="document.getElementById('upload-file').click()" style="border: 2px dashed var(--border); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">点击或拖拽文件到这里</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">支持 TCX / GPX 格式</div>
                 </div>
-                <div class="form-group">
-                    <label>名称（可选）</label>
-                    <input type="text" name="name" id="upload-name" placeholder="选择文件后自动生成">
-                </div>
-                <div class="form-group">
-                    <label>文件（TCX/GPX）</label>
-                    <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file">
+                <div id="upload-loading" style="display: none; text-align: center; padding: 2rem;">
+                    <div class="spinner" style="margin: 0 auto 0.75rem;"></div>
+                    <div style="color: var(--text-secondary);">正在分析文件...</div>
                 </div>
             </div>
-            <div id="upload-preview" style="display: none; margin-bottom: 1rem;"></div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button type="submit" class="btn btn-primary" id="upload-btn">上传</button>
-                <span id="upload-status" style="font-size: 0.85rem;"></span>
+
+            <!-- Step 2: 确认信息 -->
+            <div id="upload-step2" style="display: none;">
+                <div id="upload-preview"></div>
+                <div class="grid grid-2" style="margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>运动类型</label>
+                        <select name="activity_type" required id="upload-type">
+                            <option value="cycling">骑行</option>
+                            <option value="indoor_cycling">室内骑行</option>
+                            <option value="running">跑步</option>
+                            <option value="indoor_running">室内跑步</option>
+                            <option value="walking">步行</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>活动名称</label>
+                        <input type="text" name="name" id="upload-name">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary" id="upload-btn">确认上传</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetUploadStep()">重新选择</button>
+                    <span id="upload-status" style="font-size: 0.85rem;"></span>
+                </div>
             </div>
         </form>
     </div>
@@ -158,13 +173,27 @@ function formatWindow(w) {
     return (s / 3600) + '小时';
 }
 
-// 文件选择后自动分析
-document.getElementById('upload-file').addEventListener('change', function(e) {
-    const file = e.target.files[0];
+// 文件选择/拖拽后自动分析
+const dropzone = document.getElementById('upload-dropzone');
+const fileInput = document.getElementById('upload-file');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor = 'var(--primary)'; dropzone.style.background = 'var(--primary-light)'; });
+dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; dropzone.style.background = ''; });
+dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.style.borderColor = 'var(--border)';
+    dropzone.style.background = '';
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
+
+fileInput.addEventListener('change', function() {
+    const file = this.files[0];
     if (!file) return;
-    const preview = document.getElementById('upload-preview');
-    preview.style.display = 'block';
-    preview.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析文件...</div>';
+    document.getElementById('upload-step1').style.display = 'none';
+    document.getElementById('upload-loading').style.display = 'block';
 
     const formData = new FormData();
     formData.append('file', file);
@@ -173,27 +202,23 @@ document.getElementById('upload-file').addEventListener('change', function(e) {
         .then(r => r.json())
         .then(res => {
             if (res.code !== 200) {
-                preview.textContent = res.message;
-                preview.style.color = 'var(--danger)';
-                preview.style.fontSize = '0.85rem';
+                document.getElementById('upload-loading').style.display = 'none';
+                document.getElementById('upload-step1').style.display = 'block';
+                showToast(res.message || '分析失败', 'error');
                 return;
             }
             const d = res.data;
-            // 自动填充表单
             const typeSelect = document.getElementById('upload-type');
             const matchingOption = Array.from(typeSelect.options).find(o => o.value === d.sport);
-            if (matchingOption) {
-                typeSelect.value = d.sport;
-            }
+            if (matchingOption) typeSelect.value = d.sport;
             document.getElementById('upload-name').value = d.name_suggestion;
 
-            // 显示预览
-            const durationStr = d.duration_seconds ? Math.floor(d.duration_seconds / 60) + '分钟' : '—';
+            const durationStr = d.duration_seconds ? formatWindow(d.duration_seconds) : '—';
             const distStr = d.total_distance ? (d.total_distance / 1000).toFixed(1) + ' km' : '—';
             let html = `<div style="padding: 0.75rem; background: var(--primary-light); border-radius: 6px; font-size: 0.85rem;">
-                <div style="font-weight: 600; margin-bottom: 0.5rem;">文件分析结果</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">分析结果</div>
                 <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-                    <span>类型: <strong>${d.sport_display}</strong></span>
+                    <span>类型: <strong>${esc(d.sport_display)}</strong></span>
                     <span>时长: ${durationStr}</span>
                     <span>距离: ${distStr}</span>
                     <span>数据点: ${d.trackpoint_count}</span>
@@ -201,17 +226,29 @@ document.getElementById('upload-file').addEventListener('change', function(e) {
                     <span>功率: ${d.has_power ? '✓' : '✗'}</span>
                 </div>`;
             if (d.warnings.length > 0) {
-                html += `<div style="margin-top: 0.5rem; color: var(--warning);">
-                    <strong>注意:</strong> ${d.warnings.join('；')}
-                </div>`;
+                html += `<div style="margin-top: 0.5rem; color: var(--warning);"><strong>注意:</strong> ${esc(d.warnings.join('；'))}</div>`;
             }
             html += '</div>';
-            preview.innerHTML = html;
+            document.getElementById('upload-preview').innerHTML = html;
+
+            document.getElementById('upload-loading').style.display = 'none';
+            document.getElementById('upload-step2').style.display = 'block';
+            document.getElementById('upload-title').textContent = '确认上传';
         })
         .catch(() => {
-            preview.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.85rem;">分析失败，可直接上传。</div>';
+            document.getElementById('upload-loading').style.display = 'none';
+            document.getElementById('upload-step1').style.display = 'block';
+            showToast('分析失败，请重试', 'error');
         });
 });
+
+function resetUploadStep() {
+    document.getElementById('upload-step2').style.display = 'none';
+    document.getElementById('upload-step1').style.display = 'block';
+    document.getElementById('upload-title').textContent = '上传运动数据';
+    document.getElementById('upload-form').reset();
+    document.getElementById('upload-status').textContent = '';
+}
 
 function getFilterParams() {
     const params = new URLSearchParams();
@@ -332,12 +369,11 @@ async function deleteActivity(id) {
 // 上传弹层
 function openUploadModal() {
     document.getElementById('upload-modal').style.display = 'flex';
+    resetUploadStep();
 }
 function closeUploadModal() {
     document.getElementById('upload-modal').style.display = 'none';
     document.getElementById('upload-form').reset();
-    document.getElementById('upload-preview').style.display = 'none';
-    document.getElementById('upload-status').textContent = '';
 }
 document.getElementById('upload-modal').addEventListener('click', e => {
     if (e.target.id === 'upload-modal') closeUploadModal();
