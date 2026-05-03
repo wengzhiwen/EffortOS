@@ -245,17 +245,15 @@ function loadActivities(offset = 0) {
 
             const total = res.data.total;
             const pag = document.getElementById('pagination');
+            let html = `<span style="color: var(--text-secondary); font-size: 0.85rem; margin-right: 1rem;">共 ${total} 条</span>`;
             if (total > limit) {
                 const pages = Math.ceil(total / limit);
                 const current = Math.floor(offset / limit);
-                let html = '';
                 for (let i = 0; i < pages; i++) {
                     html += `<a href="#" onclick="loadActivities(${i * limit}); return false;" class="btn btn-sm" style="${i === current ? 'background: var(--primary); color: white;' : ''}">${i + 1}</a> `;
                 }
-                pag.innerHTML = html;
-            } else {
-                pag.innerHTML = '';
             }
+            pag.innerHTML = html;
         });
 }
 
