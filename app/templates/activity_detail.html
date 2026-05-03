@@ -132,6 +132,30 @@ Promise.all([
             </div>` : ''}
         </div>
 
+        ${m.best_efforts && (m.best_efforts.power || m.best_efforts.heart_rate) ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-title">最佳表现</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead><tr style="border-bottom: 2px solid var(--border);">
+                    <th style="text-align: left; padding: 0.4rem 0.6rem;">时长</th>
+                    ${m.best_efforts.power ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">峰值功率</th>' : ''}
+                    ${m.best_efforts.heart_rate ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">峰值心率</th>' : ''}
+                </tr></thead>
+                <tbody>
+                ${Object.keys(m.best_efforts.power || m.best_efforts.heart_rate).sort((a,b) => a-b).map(w => {
+                    const label = w < 60 ? w + '秒' : w < 3600 ? (w/60) + '分钟' : (w/3600) + '小时';
+                    const pw = m.best_efforts.power && m.best_efforts.power[w];
+                    const hr = m.best_efforts.heart_rate && m.best_efforts.heart_rate[w];
+                    return `<tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.4rem 0.6rem;">${label}</td>
+                        ${m.best_efforts.power ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #2563eb;">${pw ? pw + ' W' : '—'}</td>` : ''}
+                        ${m.best_efforts.heart_rate ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #dc2626;">${hr ? hr + ' bpm' : '—'}</td>` : ''}
+                    </tr>`;
+                }).join('')}
+                </tbody>
+            </table>
+        </div>` : ''}
+
         ${a.notes ? `<div class="card" style="margin-bottom: 1rem;"><div class="card-title">训练感受</div><p style="white-space: pre-wrap; line-height: 1.6;">${a.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>` : ''}
 
         <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
