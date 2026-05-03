@@ -78,7 +78,13 @@ function doCompare() {
         });
 }
 
+let _compareCharts = [];
+
 function renderResult(a, b) {
+    // 销毁上一次对比的图表实例
+    _compareCharts.forEach(c => c.destroy());
+    _compareCharts = [];
+
     document.getElementById('compare-result').style.display = 'block';
 
     // 活动摘要卡片
@@ -122,7 +128,7 @@ function renderResult(a, b) {
     const hrA = interpolateToPercent(a.trackpoints, 'hr');
     const hrB = interpolateToPercent(b.trackpoints, 'hr');
     if (hrA.some(v => v != null) || hrB.some(v => v != null)) {
-        new Chart(document.getElementById('compare-hr'), {
+        _compareCharts.push(new Chart(document.getElementById('compare-hr'), {
             type: 'line',
             data: { labels, datasets: [
                 { label: a.name || 'A', data: hrA, borderColor: '#2563eb' },
@@ -135,7 +141,7 @@ function renderResult(a, b) {
     const pwA = interpolateToPercent(a.trackpoints, 'power');
     const pwB = interpolateToPercent(b.trackpoints, 'power');
     if (pwA.some(v => v != null) || pwB.some(v => v != null)) {
-        new Chart(document.getElementById('compare-power'), {
+        _compareCharts.push(new Chart(document.getElementById('compare-power'), {
             type: 'line',
             data: { labels, datasets: [
                 { label: a.name || 'A', data: pwA, borderColor: '#2563eb' },
