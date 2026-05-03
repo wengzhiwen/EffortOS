@@ -60,6 +60,17 @@
 
 <div class="grid grid-2">
     <div class="card">
+        <div class="card-title">体能趋势 — NP / 效率因子(EF)</div>
+        <canvas id="fitness-trend-chart" height="200"></canvas>
+    </div>
+    <div class="card">
+        <div class="card-title">训练强度分布</div>
+        <canvas id="intensity-trend-chart" height="200"></canvas>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
         <div class="card-title">周训练量趋势（最近 12 周）</div>
         <canvas id="weekly-trend-chart" height="200"></canvas>
     </div>
@@ -189,6 +200,60 @@ authFetch('/api/dashboard')
             });
         } else {
             pmcEl.parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">上传运动数据后，PMC 趋势将在此显示</p>';
+        }
+
+        // 体能趋势图
+        if (d.fitness_trend && d.fitness_trend.length > 0) {
+            const ftLabels = d.fitness_trend.map(f => f.date.slice(5));
+            const ftEl = document.getElementById('fitness-trend-chart');
+            const npData = d.fitness_trend.map(f => f.np);
+            const efData = d.fitness_trend.map(f => f.ef);
+            if (npData.some(v => v != null)) {
+                new Chart(ftEl, {
+                    type: 'line',
+                    data: {
+                        labels: ftLabels,
+                        datasets: [
+                            { label: 'NP (W)', data: npData, borderColor: '#2563eb', fill: false, tension: 0.3, yAxisID: 'y' },
+                            { label: 'EF', data: efData, borderColor: '#16a34a', fill: false, tension: 0.3, yAxisID: 'y1' },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { beginAtZero: false, position: 'left', title: { display: true, text: 'NP (W)' } },
+                            y1: { beginAtZero: false, position: 'right', title: { display: true, text: 'EF' }, grid: { drawOnChartArea: false } }
+                        },
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+            // 训练强度分布
+            const itEl = document.getElementById('intensity-trend-chart');
+            const ifData = d.fitness_trend.map(f => f.if);
+            const tssData = d.fitness_trend.map(f => f.tss);
+            new Chart(itEl, {
+                type: 'bar',
+                data: {
+                    labels: ftLabels,
+                    datasets: [
+                        { label: 'TSS', data: tssData, backgroundColor: 'rgba(37,99,235,0.6)', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'IF', data: ifData, type: 'line', borderColor: '#f97316', fill: false, tension: 0.3, yAxisID: 'y1' },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, position: 'left', title: { display: true, text: 'TSS' } },
+                        y1: { beginAtZero: false, position: 'right', title: { display: true, text: 'IF' }, grid: { drawOnChartArea: false } }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        } else {
+            document.getElementById('fitness-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
+            document.getElementById('intensity-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
         }
 
         // 周训练量趋势

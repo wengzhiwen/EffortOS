@@ -100,6 +100,28 @@ def get_dashboard():
         week_count = sum(1 for k, v in daily.items() if ws <= k <= we and v > 0)
         weekly_trend.append({"week": ws, "tss": round(week_tss, 1), "count": week_count})
 
+    # 体能趋势：近期活动的 NP/EF/TSS 变化
+    trend_activities = list(
+        _filter_user(Activity.objects(start_time__lte=end_dt, computed_metrics__ne=None))
+        .order_by("-start_time")
+        .limit(30)
+        .only("start_time", "computed_metrics")
+    )
+    fitness_trend = []
+    for a in reversed(trend_activities):
+        cm = a.computed_metrics
+        if not cm or cm.tss is None:
+            continue
+        fitness_trend.append(
+            {
+                "date": a.start_time.strftime("%Y-%m-%d"),
+                "tss": cm.tss,
+                "np": cm.normalized_power,
+                "if": cm.intensity_factor,
+                "ef": cm.efficiency_factor,
+            }
+        )
+
     return jsonify(
         {
             "code": 200,
@@ -116,6 +138,7 @@ def get_dashboard():
                 "monthly_stats": _calc_stats(month_activities),
                 "type_breakdown": dict(type_breakdown),
                 "weekly_trend": weekly_trend,
+                "fitness_trend": fitness_trend,
             },
         }
     )
