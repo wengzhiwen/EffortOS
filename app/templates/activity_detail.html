@@ -19,7 +19,8 @@ Promise.all([
     authFetch(`/api/activities/${activityId}`).then(r => r.json()),
     authFetch(`/api/activities/${activityId}/trackpoints`).then(r => r.json()),
     authFetch(`/api/activities/${activityId}/laps?mode=distance&interval=1000`).then(r => r.json()),
-]).then(([activityRes, tpRes, lapsRes]) => {
+    authFetch('/api/activities/power-curve').then(r => r.json()),
+]).then(([activityRes, tpRes, lapsRes, curveRes]) => {
     if (!activityRes.data) throw new Error(activityRes.message || '活动不存在');
     const a = activityRes.data;
     window._activityData = a;
@@ -175,6 +176,12 @@ Promise.all([
                 }).join('')}
                 </tbody>
             </table>
+        </div>` : ''}
+
+        ${m.best_efforts && m.best_efforts.power && curveRes.data && curveRes.data.power && Object.keys(curveRes.data.power).length > 0 ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-title">功率曲线（本次 vs 历史最佳）</div>
+            <canvas id="power-curve-chart" height="200"></canvas>
         </div>` : ''}
 
         ${lapsRes.data && lapsRes.data.length > 0 ? `
@@ -355,6 +362,37 @@ Promise.all([
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
+    }
+
+    // Power curve chart
+    if (m.best_efforts && m.best_efforts.power && curveRes.data && curveRes.data.power) {
+        const histCurve = curveRes.data.power;
+        const actCurve = m.best_efforts.power;
+        const allWindows = [...new Set([...Object.keys(histCurve), ...Object.keys(actCurve)])].sort((a,b) => parseInt(a)-parseInt(b));
+        if (allWindows.length > 0) {
+            const labels = allWindows.map(w => { const s=parseInt(w); return s<60?s+'秒':s<3600?(s/60)+'分钟':(s/3600)+'小时'; });
+            const histData = allWindows.map(w => histCurve[w] || null);
+            const actData = allWindows.map(w => actCurve[w] || null);
+            const el = document.getElementById('power-curve-chart');
+            if (el) {
+                new Chart(el, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: '历史最佳', data: histData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, borderWidth: 2, pointRadius: 3 },
+                            { label: '本次活动', data: actData, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', fill: false, borderWidth: 2, pointRadius: 3, borderDash: [5,3] },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { beginAtZero: false, title: { display: true, text: '功率 (W)' } } },
+                        plugins: { legend: { position: 'bottom' } },
+                        elements: { line: { tension: 0.3 } }
+                    }
+                });
+            }
+        }
     }
 }).catch(err => {
     document.getElementById('activity-detail').innerHTML = `<div class="card" style="text-align:center;color:var(--text-secondary);padding:2rem;">加载失败: ${err.message}<br><a href="/activities" class="btn btn-primary" style="margin-top:1rem;">返回列表</a></div>`;

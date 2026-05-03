@@ -730,3 +730,36 @@ def batch_delete_activities():
             deleted += 1
 
     return jsonify({"code": 200, "message": f"已删除 {deleted} 条记录", "data": {"deleted": deleted}})
+
+
+@activities_bp.route("/activities/power-curve", methods=["GET"])
+def get_power_curve():
+    """获取用户的历史最佳功率/心率曲线。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    qs = Activity.objects(user=user, computed_metrics__ne=None).only("computed_metrics", "start_time")
+    activities = list(qs.order_by("-start_time").limit(200))
+
+    curve = {"power": {}, "heart_rate": {}}
+    for a in activities:
+        cm = a.computed_metrics
+        if not cm or not cm.best_efforts:
+            continue
+        for metric in ("power", "heart_rate"):
+            data = cm.best_efforts.get(metric)
+            if not data:
+                continue
+            for window_str, val in data.items():
+                if val is None:
+                    continue
+                key = str(window_str)
+                if key not in curve[metric] or val > curve[metric][key]:
+                    curve[metric][key] = val
+
+    # 按窗口时间排序
+    for metric in curve:
+        curve[metric] = dict(sorted(curve[metric].items(), key=lambda x: int(x[0])))
+
+    return jsonify({"code": 200, "message": "ok", "data": curve})
