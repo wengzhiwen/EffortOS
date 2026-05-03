@@ -53,6 +53,19 @@ def create_app(config_name=None):
     app.register_blueprint(gear_bp, url_prefix="/api")
     app.register_blueprint(wellness_bp, url_prefix="/api")
 
+    # API 速率限制
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "60 per hour"],
+        storage_uri="memory://",
+    )
+    # 对上传接口单独限速
+    limiter.limit("10 per hour")(activities_bp)
+
     # 安全响应头
     @app.after_request
     def set_security_headers(response):
