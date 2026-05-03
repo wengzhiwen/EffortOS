@@ -42,6 +42,7 @@ def create_app(config_name=None):
     from app.blueprints.gear.routes import gear_bp
     from app.blueprints.pages.routes import pages_bp
     from app.blueprints.params.routes import params_bp
+    from app.blueprints.wellness.routes import wellness_bp
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(auth_bp, url_prefix="/api")
@@ -50,6 +51,7 @@ def create_app(config_name=None):
     app.register_blueprint(ai_bp, url_prefix="/api")
     app.register_blueprint(dashboard_bp, url_prefix="/api")
     app.register_blueprint(gear_bp, url_prefix="/api")
+    app.register_blueprint(wellness_bp, url_prefix="/api")
 
     # 安全响应头
     @app.after_request
