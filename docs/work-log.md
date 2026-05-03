@@ -8,6 +8,17 @@
 
 ---
 
+### Sprint 46 完成 — 2026-05-03
+
+性能优化 + Bug 修复：
+- Dashboard API: recent activities 添加日期上限过滤，避免全表扫描
+- Dashboard API: 合并 7d/30d 为单次 30d 查询 + 内存过滤，减少一次 DB 查询
+- Activities API: 修复 gear ReferenceField 懒加载 N+1 问题（通过 _data 直接取 ObjectId）
+- 修复 PB 计算遍历 best_efforts 错误层级导致活动列表 500 错误（Sprint 45 发现）
+- 测试总数：202 全部通过
+
+---
+
 ### Sprint 45 完成 — 2026-05-03
 
 Bug 大扫除（每 5 个 Sprint 一次）：
