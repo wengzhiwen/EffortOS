@@ -151,7 +151,7 @@ def _calc_pb_markers(activities, full_qs):
         for metric in ("power", "heart_rate"):
             if metric not in cm.best_efforts:
                 continue
-            for window, val in cm.best_efforts.items():
+            for window, val in cm.best_efforts[metric].items():
                 key = f"{metric}_{window}"
                 if val is not None and (key not in prior_best or val > prior_best[key]):
                     prior_best[key] = val
@@ -167,7 +167,7 @@ def _calc_pb_markers(activities, full_qs):
             for metric in ("power", "heart_rate"):
                 if metric not in cm.best_efforts:
                     continue
-                for window, val in cm.best_efforts.items():
+                for window, val in cm.best_efforts[metric].items():
                     if val is None:
                         continue
                     key = f"{metric}_{window}"
