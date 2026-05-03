@@ -122,8 +122,31 @@ def suggestion():
         date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
         recent_tss.append(daily_tss.get(date, 0))
 
+    # 获取最近活动的最佳表现和强度分布
+    recent_activities = list(
+        Activity.objects(user=user, start_time__gte=(today - timedelta(days=14)).strftime("%Y-%m-%d"))
+        .order_by("-start_time")
+        .limit(5)
+    )
+    best_efforts_list = []
+    intensity_counts = {}
+    for a in recent_activities:
+        cm = a.computed_metrics
+        if not cm:
+            continue
+        if cm.best_efforts:
+            best_efforts_list.append(
+                {
+                    "date": a.start_time.strftime("%m-%d"),
+                    "type": a.activity_type,
+                    "best_efforts": cm.best_efforts,
+                }
+            )
+        if cm.intensity_level:
+            intensity_counts[cm.intensity_level] = intensity_counts.get(cm.intensity_level, 0) + 1
+
     try:
-        advice = generate_suggestion(latest_pmc, recent_tss, params, question)
+        advice = generate_suggestion(latest_pmc, recent_tss, params, question, best_efforts_list, intensity_counts)
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:

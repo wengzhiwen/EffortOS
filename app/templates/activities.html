@@ -121,6 +121,13 @@ const typeNames = window.TYPE_NAMES;
 const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
 const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
+function formatWindow(w) {
+    const s = parseInt(w);
+    if (s < 60) return s + '秒';
+    if (s < 3600) return (s / 60) + '分钟';
+    return (s / 3600) + '小时';
+}
+
 // 文件选择后自动分析
 document.getElementById('upload-file').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -209,11 +216,13 @@ function loadActivities(offset = 0) {
                 const tss = m.tss != null ? m.tss.toFixed(1) : '—';
                 const il = m.intensity_level;
                 const intensityBadge = il ? `<span style="color: ${intensityColors[il] || '#999'}; font-weight: 600;">${intensityNames[il] || il}</span>` : '—';
+                const pbWindows = a.pb_windows || [];
+                const pbBadge = pbWindows.length > 0 ? ` <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.7rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; vertical-align: middle;" title="刷新 PB: ${pbWindows.map(w => formatWindow(w)).join(', ')}">PB</span>` : '';
                 return `<tr>
                     <td><input type="checkbox" class="activity-check" data-id="${a.id}"></td>
                     <td>${a.start_time.slice(0, 10)}</td>
                     <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
-                    <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
+                    <td><a href="/activities/${a.id}">${a.name || '—'}</a>${pbBadge}</td>
                     <td>${duration}</td>
                     <td>${dist}</td>
                     <td>${hr}</td>

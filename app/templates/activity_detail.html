@@ -31,12 +31,26 @@ Promise.all([
     const durSec = s.duration_seconds || 0;
     const duration = durSec ? Math.floor(durSec / 3600) + '时' + Math.floor((durSec % 3600) / 60) + '分' : '—';
     const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
+    const elevGain = s.elevation_gain ? s.elevation_gain.toFixed(0) + ' m' : null;
+
+    // 加载装备信息
+    let gearInfo = '';
+    if (a.gear_id) {
+        gearInfo = `<span style="margin-left: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">装备加载中...</span>`;
+        authFetch('/api/gear').then(r => r.json()).then(res => {
+            const gear = (res.data || []).find(g => g.id === a.gear_id);
+            const el = document.getElementById('gear-info');
+            if (el && gear) el.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-secondary);">🚴 ${gear.name}</span>`;
+            else if (el) el.innerHTML = '';
+        });
+    }
 
     document.getElementById('activity-detail').innerHTML = `
         <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
             <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>
+            <span id="gear-info">${gearInfo}</span>
         </p>
 
         <div class="grid grid-4" style="margin-bottom: 1rem;">
@@ -87,6 +101,11 @@ Promise.all([
                 <div class="card-title">平均/最大踏频</div>
                 <div class="metric-value">${s.avg_cadence || '—'} <span class="metric-unit">/ ${s.max_cadence || '—'} rpm</span></div>
             </div>
+            ${elevGain ? `
+            <div class="card">
+                <div class="card-title">爬升 / 下降</div>
+                <div class="metric-value">${s.elevation_gain.toFixed(0)} <span class="metric-unit">m</span> / ${s.elevation_loss ? s.elevation_loss.toFixed(0) : '—'} <span class="metric-unit">m</span></div>
+            </div>` : ''}
         </div>
 
         ${hasTP ? `

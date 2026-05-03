@@ -247,9 +247,11 @@ def generate_weekly_report(
 
 def generate_suggestion(
     pmc_data: dict,
-    recent_tss: list[float],
+    recent_tss: list,
     params: dict,
     question: str = "",
+    best_efforts_list=None,
+    intensity_counts=None,
 ) -> str:
     """生成个性化训练建议。
 
@@ -279,6 +281,49 @@ def generate_suggestion(
 
     tss_str = ", ".join(f"{t:.0f}" for t in recent_tss) if recent_tss else "无数据"
 
+    # 构建最佳表现段落
+    best_efforts_section = ""
+    if best_efforts_list:
+        lines = []
+        for entry in best_efforts_list:
+            be = entry["best_efforts"]
+            parts = []
+            for metric in ("power", "heart_rate"):
+                if metric in be:
+                    peaks = be[metric]
+                    # 取短/中/长窗口代表值
+                    short = next((peaks[k] for k in ("5", "10", "15") if k in peaks), None)
+                    mid = next((peaks[k] for k in ("60", "300") if k in peaks), None)
+                    long_ = next((peaks[k] for k in ("1200", "3600") if k in peaks), None)
+                    label = "功率" if metric == "power" else "心率"
+                    vals = []
+                    if short is not None:
+                        vals.append(f"短时峰值{label} {short:.0f}")
+                    if mid is not None:
+                        vals.append(f"5分钟均{label} {mid:.0f}")
+                    if long_ is not None:
+                        vals.append(f"长时均{label} {long_:.0f}")
+                    if vals:
+                        parts.append("、".join(vals))
+            if parts:
+                lines.append(f"- {entry['date']} ({entry['type']}): {'; '.join(parts)}")
+        if lines:
+            best_efforts_section = "\n## 近期最佳表现\n" + "\n".join(lines)
+
+    # 构建强度分布段落
+    intensity_section = ""
+    if intensity_counts:
+        total = sum(intensity_counts.values())
+        level_names = {
+            "recovery": "恢复",
+            "endurance": "耐力",
+            "tempo": "节奏",
+            "threshold": "阈值",
+            "vo2max": "VO2max",
+        }
+        parts = [f"{level_names.get(k, k)} {v}次({v * 100 // total}%)" for k, v in intensity_counts.items()]
+        intensity_section = f"\n## 近期训练强度分布\n- {'、'.join(parts)}"
+
     # Step 2: 交给 LLM 组织语言
     user_prompt = f"""请根据以下分析结论给出训练建议。直接使用这些结论，不要重新分析。
 
@@ -299,8 +344,9 @@ def generate_suggestion(
 - 日均 TSS：{avg_daily_tss:.0f}
 - 趋势：训练量{tss_trend}
 - {rest_assessment}
+{best_efforts_section}{intensity_section}
 
-{"用户提问：" + question if question else "请给出综合训练建议。"}"""
+{"用户提问：" + question if question else "请给出综合训练建议。如果最佳表现数据中有突出的峰值表现，可以提及并给出突破建议。"}"""
 
     return chat(
         [
