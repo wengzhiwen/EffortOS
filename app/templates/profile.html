@@ -56,6 +56,8 @@
             status.style.color = 'var(--danger)';
             return;
         }
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
         authFetch('/api/auth/profile', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -79,7 +81,8 @@
                     status.style.color = 'var(--danger)';
                 }
                 setTimeout(() => status.textContent = '', 3000);
-            });
+            })
+            .finally(() => { btn.disabled = false; });
     });
 
     loadProfile();
