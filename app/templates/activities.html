@@ -7,37 +7,44 @@
     活动记录
     <div style="float: right; display: flex; gap: 0.5rem;">
         <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">对比</a>
-        <a href="#upload" class="btn btn-primary" style="font-size: 0.85rem;">上传文件</a>
+        <button class="btn btn-primary" style="font-size: 0.85rem;" onclick="openUploadModal()">上传文件</button>
     </div>
 </h2>
 
-<div class="card" id="upload" style="display: none;">
-    <div class="card-title">上传运动数据</div>
-    <form id="upload-form" enctype="multipart/form-data">
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>运动类型</label>
-                <select name="activity_type" required id="upload-type">
-                    <option value="cycling">骑行</option>
-                    <option value="indoor_cycling">室内骑行</option>
-                    <option value="running">跑步</option>
-                    <option value="indoor_running">室内跑步</option>
-                    <option value="walking">步行</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>名称（可选）</label>
-                <input type="text" name="name" id="upload-name" placeholder="选择文件后自动生成">
-            </div>
-            <div class="form-group">
-                <label>文件（TCX/GPX）</label>
-                <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file">
-            </div>
+<div class="confirm-overlay" id="upload-modal" style="display: none;">
+    <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 640px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.1rem;">上传运动数据</h3>
+            <button onclick="closeUploadModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); line-height: 1;">&times;</button>
         </div>
-        <div id="upload-preview" style="display: none; margin-bottom: 1rem;"></div>
-        <button type="submit" class="btn btn-primary" id="upload-btn">上传</button>
-    </form>
-    <div id="upload-status" style="margin-top: 0.5rem;"></div>
+        <form id="upload-form" enctype="multipart/form-data">
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>运动类型</label>
+                    <select name="activity_type" required id="upload-type">
+                        <option value="cycling">骑行</option>
+                        <option value="indoor_cycling">室内骑行</option>
+                        <option value="running">跑步</option>
+                        <option value="indoor_running">室内跑步</option>
+                        <option value="walking">步行</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>名称（可选）</label>
+                    <input type="text" name="name" id="upload-name" placeholder="选择文件后自动生成">
+                </div>
+                <div class="form-group">
+                    <label>文件（TCX/GPX）</label>
+                    <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file">
+                </div>
+            </div>
+            <div id="upload-preview" style="display: none; margin-bottom: 1rem;"></div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="submit" class="btn btn-primary" id="upload-btn">上传</button>
+                <span id="upload-status" style="font-size: 0.85rem;"></span>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card">
@@ -322,11 +329,18 @@ async function deleteActivity(id) {
         });
 }
 
-// 上传表单
-const uploadSection = document.querySelector('#upload');
-document.querySelector('a[href="#upload"]').addEventListener('click', e => {
-    e.preventDefault();
-    uploadSection.style.display = uploadSection.style.display === 'none' ? 'block' : 'none';
+// 上传弹层
+function openUploadModal() {
+    document.getElementById('upload-modal').style.display = 'flex';
+}
+function closeUploadModal() {
+    document.getElementById('upload-modal').style.display = 'none';
+    document.getElementById('upload-form').reset();
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('upload-status').textContent = '';
+}
+document.getElementById('upload-modal').addEventListener('click', e => {
+    if (e.target.id === 'upload-modal') closeUploadModal();
 });
 
 document.getElementById('upload-form').addEventListener('submit', e => {
@@ -343,10 +357,8 @@ document.getElementById('upload-form').addEventListener('submit', e => {
             btn.disabled = false;
             btn.textContent = '上传';
             if (res.code === 200) {
-                status.textContent = '上传成功！';
-                status.style.color = 'var(--success)';
-                e.target.reset();
-                document.getElementById('upload-preview').style.display = 'none';
+                showToast('上传成功', 'success');
+                closeUploadModal();
                 loadActivities(0);
             } else {
                 status.textContent = res.message;
