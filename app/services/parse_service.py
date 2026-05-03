@@ -1,6 +1,8 @@
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as _ET
 from datetime import datetime, timezone
 from typing import Optional
+
+import defusedxml.ElementTree as ET
 
 NS = {
     "tcx": "http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2",
@@ -35,7 +37,7 @@ def _parse_time(time_str: str) -> datetime:
     return datetime.fromisoformat(time_str).astimezone(timezone.utc)
 
 
-def _safe_float(element: ET.Element, path: str, namespaces: dict) -> Optional[float]:
+def _safe_float(element: _ET.Element, path: str, namespaces: dict) -> Optional[float]:
     """安全地从 XML 元素提取浮点值。"""
     node = element.find(path, namespaces)
     if node is not None and node.text:
@@ -43,7 +45,7 @@ def _safe_float(element: ET.Element, path: str, namespaces: dict) -> Optional[fl
     return None
 
 
-def _safe_int(element: ET.Element, path: str, namespaces: dict) -> Optional[int]:
+def _safe_int(element: _ET.Element, path: str, namespaces: dict) -> Optional[int]:
     """安全地从 XML 元素提取整数值。"""
     node = element.find(path, namespaces)
     if node is not None and node.text:

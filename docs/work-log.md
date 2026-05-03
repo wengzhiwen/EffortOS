@@ -8,6 +8,16 @@
 
 ---
 
+### Sprint 48 完成 — 2026-05-03
+
+安全加固：
+- **修复 XXE 漏洞**：xml.etree.ElementTree → defusedxml.ElementTree，防止 XML 外部实体注入攻击
+- 添加 defusedxml>=0.7 到 requirements.txt
+- 安全审计确认：文件扩展名白名单、UUID 安全文件名、50MB 大小限制、上传速率限制均已生效
+- 测试总数：211 全部通过
+
+---
+
 ### Sprint 47 完成 — 2026-05-03
 
 错误处理 + 边界用例测试：

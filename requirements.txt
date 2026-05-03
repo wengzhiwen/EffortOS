@@ -5,3 +5,4 @@ openai>=1.0
 pytest>=8.0
 ruff>=0.4
 Flask-Limiter
+defusedxml>=0.7

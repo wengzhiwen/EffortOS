@@ -1,15 +1,16 @@
-# Sprint 47: 错误处理 + 边界用例测试
+# Sprint 48: 输入校验 + 安全加固
 
 **状态**: 已完成
-**目标**: 持续优化 — API 错误处理健壮性 + 边界用例测试
+**目标**: 持续优化 — API 输入校验审查 + 文件上传安全加固
 
 ## 任务清单
 
-- [x] **API 错误处理审查** — PMC 端点添加日期格式校验，无效日期返回 400
-- [x] **边界用例测试补充** — dashboard 新增 4 个测试，auth 新增 5 个测试
-- [ ] ~~前端错误提示优化~~ — 推迟到后续 sprint
+- [x] **文件上传安全审查** — 修复 XXE 漏洞：xml.etree.ElementTree → defusedxml.ElementTree
+- [x] **API 输入校验审查** — MAX_CONTENT_LENGTH 已正确应用(50MB)，文件扩展名/UUID 文件名已有防护
+- [x] **XSS 防护检查** — html.escape() 已在活动名称序列化中使用
 
-## 新增测试
+## 安全审计结果
 
-Dashboard (4): no_auth, weekly_trend 结构, calendar 结构, invalid_date → 400
-Auth (5): missing_email, missing_verify_fields, profile_no_auth, logout_no_auth(幂等), invalid_token
+- **已修复**: XXE 注入漏洞（defusedxml 替换标准 XML 解析器）
+- **已确认安全**: 文件扩展名白名单、UUID 安全文件名、MAX_CONTENT_LENGTH 限制、上传速率限制(10/h)
+- **依赖更新**: requirements.txt 添加 defusedxml>=0.7
