@@ -79,6 +79,12 @@ def gear():
     return _require_login_for("gear.html")
 
 
+@pages_bp.route("/wellness")
+def wellness():
+    """Wellness 日常追踪（需登录）。"""
+    return _require_login_for("wellness.html")
+
+
 @pages_bp.route("/help")
 def help_page():
     """帮助页（公开）。"""

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Wellness - EffortOS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">Wellness 日常追踪</h2>
+
+<div class="card" style="margin-bottom: 1rem;">
+    <div class="card-title">今日记录 <span id="today-date" style="color: var(--text-secondary); font-weight: normal;"></span></div>
+    <form id="wellness-form">
+        <div class="grid grid-3" style="gap: 1rem;">
+            <div class="form-group">
+                <label>睡眠质量</label>
+                <div class="rating-group" data-field="sleep_quality">
+                    <button type="button" data-val="1">1</button>
+                    <button type="button" data-val="2">2</button>
+                    <button type="button" data-val="3">3</button>
+                    <button type="button" data-val="4">4</button>
+                    <button type="button" data-val="5">5</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>很差</span><span>极好</span></div>
+            </div>
+            <div class="form-group">
+                <label>疲劳度</label>
+                <div class="rating-group" data-field="fatigue">
+                    <button type="button" data-val="1">1</button>
+                    <button type="button" data-val="2">2</button>
+                    <button type="button" data-val="3">3</button>
+                    <button type="button" data-val="4">4</button>
+                    <button type="button" data-val="5">5</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>精力充沛</span><span>极度疲劳</span></div>
+            </div>
+            <div class="form-group">
+                <label>压力</label>
+                <div class="rating-group" data-field="stress">
+                    <button type="button" data-val="1">1</button>
+                    <button type="button" data-val="2">2</button>
+                    <button type="button" data-val="3">3</button>
+                    <button type="button" data-val="4">4</button>
+                    <button type="button" data-val="5">5</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>很放松</span><span>压力山大</span></div>
+            </div>
+            <div class="form-group">
+                <label>肌肉酸痛</label>
+                <div class="rating-group" data-field="soreness">
+                    <button type="button" data-val="1">1</button>
+                    <button type="button" data-val="2">2</button>
+                    <button type="button" data-val="3">3</button>
+                    <button type="button" data-val="4">4</button>
+                    <button type="button" data-val="5">5</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>无感</span><span>非常酸痛</span></div>
+            </div>
+            <div class="form-group">
+                <label>心情</label>
+                <div class="rating-group" data-field="mood">
+                    <button type="button" data-val="1">1</button>
+                    <button type="button" data-val="2">2</button>
+                    <button type="button" data-val="3">3</button>
+                    <button type="button" data-val="4">4</button>
+                    <button type="button" data-val="5">5</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>低落</span><span>极佳</span></div>
+            </div>
+            <div class="form-group">
+                <label>HRV (ms)</label>
+                <input type="number" id="wellness-hrv" step="0.1" placeholder="如 55.3">
+            </div>
+        </div>
+        <div class="grid grid-3" style="gap: 1rem; margin-top: 0.5rem;">
+            <div class="form-group">
+                <label>静息心率 (bpm)</label>
+                <input type="number" id="wellness-resting-hr" placeholder="如 58">
+            </div>
+            <div class="form-group">
+                <label>体重 (kg)</label>
+                <input type="number" id="wellness-weight" step="0.1" placeholder="如 68.5">
+            </div>
+            <div class="form-group">
+                <label>备注</label>
+                <input type="text" id="wellness-notes" placeholder="昨晚睡得不错">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;" id="save-btn">保存</button>
+    </form>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-title">主观感受趋势（近 30 天）</div>
+        <canvas id="wellness-chart" height="250"></canvas>
+    </div>
+    <div class="card">
+        <div class="card-title">HRV / 静息心率趋势</div>
+        <canvas id="hrv-chart" height="250"></canvas>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <div class="card-title">历史记录</div>
+    <table>
+        <thead><tr>
+            <th>日期</th><th>睡眠</th><th>疲劳</th><th>压力</th><th>酸痛</th><th>心情</th><th>HRV</th><th>静息心率</th>
+        </tr></thead>
+        <tbody id="wellness-history"></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block script %}
+<style>
+.rating-group { display: flex; gap: 0.35rem; }
+.rating-group button {
+    width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border);
+    background: var(--card-bg); cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.15s;
+}
+.rating-group button.selected {
+    border-color: var(--primary); background: var(--primary); color: white;
+}
+</style>
+<script>
+const formData = {};
+
+// 评分按钮交互
+document.querySelectorAll('.rating-group').forEach(group => {
+    const field = group.dataset.field;
+    group.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            formData[field] = parseInt(btn.dataset.val);
+        });
+    });
+});
+
+// 加载今日数据
+const today = new Date().toISOString().slice(0, 10);
+document.getElementById('today-date').textContent = today;
+
+authFetch('/api/wellness/today')
+    .then(r => r.json())
+    .then(res => {
+        if (res.data) {
+            const d = res.data;
+            ['sleep_quality', 'fatigue', 'stress', 'soreness', 'mood'].forEach(f => {
+                if (d[f]) {
+                    formData[f] = d[f];
+                    const group = document.querySelector(`.rating-group[data-field="${f}"]`);
+                    if (group) {
+                        group.querySelectorAll('button').forEach(btn => {
+                            btn.classList.toggle('selected', parseInt(btn.dataset.val) === d[f]);
+                        });
+                    }
+                }
+            });
+            if (d.hrv) document.getElementById('wellness-hrv').value = d.hrv;
+            if (d.resting_hr) document.getElementById('wellness-resting-hr').value = d.resting_hr;
+            if (d.weight) document.getElementById('wellness-weight').value = d.weight;
+            if (d.notes) document.getElementById('wellness-notes').value = d.notes;
+            document.getElementById('save-btn').textContent = '更新';
+        }
+    });
+
+// 保存
+document.getElementById('wellness-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const data = {
+        date: today,
+        ...formData,
+        hrv: document.getElementById('wellness-hrv').value ? parseFloat(document.getElementById('wellness-hrv').value) : null,
+        resting_hr: document.getElementById('wellness-resting-hr').value ? parseInt(document.getElementById('wellness-resting-hr').value) : null,
+        weight: document.getElementById('wellness-weight').value ? parseFloat(document.getElementById('wellness-weight').value) : null,
+        notes: document.getElementById('wellness-notes').value || null,
+    };
+    authFetch('/api/wellness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) { showToast('已保存', 'success'); loadHistory(); }
+            else showToast(res.message, 'error');
+        });
+});
+
+// 趋势图 + 历史记录
+function loadHistory() {
+    authFetch('/api/wellness?days=30')
+        .then(r => r.json())
+        .then(res => {
+            const entries = res.data || [];
+
+            // 趋势图
+            if (entries.length > 0) {
+                const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+                const labels = sorted.map(e => e.date.slice(5));
+
+                new Chart(document.getElementById('wellness-chart'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: '睡眠', data: sorted.map(e => e.sleep_quality), borderColor: '#2563eb', tension: 0.3, pointRadius: 3 },
+                            { label: '疲劳', data: sorted.map(e => e.fatigue), borderColor: '#dc2626', tension: 0.3, pointRadius: 3 },
+                            { label: '压力', data: sorted.map(e => e.stress), borderColor: '#f59e0b', tension: 0.3, pointRadius: 3 },
+                            { label: '心情', data: sorted.map(e => e.mood), borderColor: '#16a34a', tension: 0.3, pointRadius: 3 },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } },
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+
+                // HRV / 静息心率趋势
+                const hrvData = sorted.filter(e => e.hrv || e.resting_hr);
+                if (hrvData.length > 0) {
+                    new Chart(document.getElementById('hrv-chart'), {
+                        type: 'line',
+                        data: {
+                            labels: hrvData.map(e => e.date.slice(5)),
+                            datasets: [
+                                { label: 'HRV (ms)', data: hrvData.map(e => e.hrv), borderColor: '#8b5cf6', tension: 0.3, yAxisID: 'y' },
+                                { label: '静息心率', data: hrvData.map(e => e.resting_hr), borderColor: '#dc2626', tension: 0.3, yAxisID: 'y1' },
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: { position: 'left', title: { display: true, text: 'HRV (ms)' } },
+                                y1: { position: 'right', title: { display: true, text: 'bpm' }, grid: { drawOnChartArea: false } },
+                            },
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                }
+            }
+
+            // 历史表格
+            const tbody = document.getElementById('wellness-history');
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">暂无记录</td></tr>';
+                return;
+            }
+            tbody.innerHTML = entries.map(e => `<tr>
+                <td>${e.date}</td>
+                <td>${e.sleep_quality || '—'}</td>
+                <td>${e.fatigue || '—'}</td>
+                <td>${e.stress || '—'}</td>
+                <td>${e.soreness || '—'}</td>
+                <td>${e.mood || '—'}</td>
+                <td>${e.hrv || '—'}</td>
+                <td>${e.resting_hr || '—'}</td>
+            </tr>`).join('');
+        });
+}
+
+loadHistory();
+</script>
+{% endblock %}
