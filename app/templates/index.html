@@ -376,7 +376,7 @@ function renderCalendar(calendarData) {
     }
 
     // 每个单元格 12px 宽 + 2px gap = 14px per week
-    const cellUnit = 14;
+    const cellUnit = 21;
     let html = '<div class="cal-months">';
     for (const ms of monthSpans) {
         html += `<span class="cal-month" style="width:${ms.weekCount * cellUnit - 2}px;">${ms.label}</span>`;
@@ -401,9 +401,8 @@ function renderCalendar(calendarData) {
     html += '</div>';
 
     html += '<div class="cal-legend"><span>少 TSS</span>';
-    for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;"></div>`;
+    for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;"></div>`;
     html += '<span>多 TSS</span></div>';
-    html += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">每格代表一天，颜色深浅表示当日训练负荷（TSS）。行 = 星期，列 = 周数。</div>';
 
     container.innerHTML = html;
 }
