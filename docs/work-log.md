@@ -8,6 +8,18 @@
 
 ---
 
+### Sprint 55 完成 — 2026-05-03
+
+Bug 大扫除（每 5 个 Sprint 一次）：
+- 逐页 Playwright 截图审查：桌面端 12 页 + 移动端 5 页 + 深色模式 8 页 + 移动深色模式
+- 覆盖页面：landing、dashboard、activities、activity detail、settings、AI coach、wellness、gear、profile、help、about、compare
+- 检查项：布局异常、交互功能、移动端适配、深色模式对比度、弹层组件、空状态
+- 结果：**未发现 bug**，所有页面在桌面/移动/深色模式下表现正常
+- 新增的 Sprint 54 体能趋势图表在所有模式下渲染正确
+- 测试总数：215 全部通过，无回归
+
+---
+
 ### Sprint 54 完成 — 2026-05-03
 
 体能趋势追踪：
