@@ -19,3 +19,5 @@ class Gear(BaseDocument):
     is_active = StringField(default="active")  # active / retired
 
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
+
+    meta = {"collection": "gear", "indexes": ["user", "is_active"]}

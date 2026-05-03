@@ -86,7 +86,7 @@ class Activity(BaseDocument):
 
     meta = {
         "collection": "activities",
-        "indexes": ["user", "start_time", "activity_type"],
+        "indexes": ["user", "start_time", "activity_type", ("user", "start_time"), ("user", "activity_type")],
     }
 
     def get_trackpoints_downsampled(self, max_points=500):
