@@ -219,6 +219,20 @@ def compute_activity_metrics(
     if has_power and power_zones:
         metrics.power_zones_time = calc_zone_times(power_values, power_zones)
 
+    # 强度评级：基于 IF（功率优先，心率兜底）
+    if_val = metrics.intensity_factor or metrics.hr_intensity_factor
+    if if_val:
+        if if_val < 0.65:
+            metrics.intensity_level = "recovery"
+        elif if_val < 0.80:
+            metrics.intensity_level = "endurance"
+        elif if_val < 0.90:
+            metrics.intensity_level = "tempo"
+        elif if_val < 1.05:
+            metrics.intensity_level = "threshold"
+        else:
+            metrics.intensity_level = "vo2max"
+
     return metrics
 
 

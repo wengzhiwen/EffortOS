@@ -1,24 +1,26 @@
 import io
 import os
 import tempfile
+from datetime import datetime
 
 import pytest
 
+_today = datetime.now().strftime("%Y-%m-%d")
 
-MINIMAL_TCX = """<?xml version="1.0" encoding="UTF-8"?>
+MINIMAL_TCX = f"""<?xml version="1.0" encoding="UTF-8"?>
 <TrainingCenterDatabase
   xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
   xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Activities>
     <Activity Sport="Biking">
-      <Id>2026-04-27T06:34:45.000Z</Id>
-      <Lap StartTime="2026-04-27T06:34:45.000Z">
+      <Id>{_today}T06:34:45.000Z</Id>
+      <Lap StartTime="{_today}T06:34:45.000Z">
         <TotalTimeSeconds>2.0</TotalTimeSeconds>
         <DistanceMeters>16.0</DistanceMeters>
         <Track>
           <Trackpoint>
-            <Time>2026-04-27T06:34:45.000Z</Time>
+            <Time>{_today}T06:34:45.000Z</Time>
             <DistanceMeters>8.0</DistanceMeters>
             <HeartRateBpm><Value>90</Value></HeartRateBpm>
             <Extensions>
@@ -29,7 +31,7 @@ MINIMAL_TCX = """<?xml version="1.0" encoding="UTF-8"?>
             </Extensions>
           </Trackpoint>
           <Trackpoint>
-            <Time>2026-04-27T06:34:47.000Z</Time>
+            <Time>{_today}T06:34:47.000Z</Time>
             <DistanceMeters>16.0</DistanceMeters>
             <HeartRateBpm><Value>95</Value></HeartRateBpm>
             <Extensions>

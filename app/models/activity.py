@@ -44,6 +44,7 @@ class ComputedMetrics(EmbeddedDocument):
     efficiency_factor = FloatField()  # 效率因子（EF = NP/avg_hr 或 avg_speed/avg_hr）
     work_kj = FloatField()  # 总做功（kJ）
     tss_method = StringField()  # TSS 方法标记："power" / "hr" / null
+    intensity_level = StringField()  # 强度分类："recovery"/"endurance"/"tempo"/"threshold"/"vo2max"
     hr_zones_time = DictField()  # 心率区间时间分布 {"Z1": 秒数, ...}
     power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
 

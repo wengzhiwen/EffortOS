@@ -1,8 +1,11 @@
 import io
+from datetime import datetime
 
 import pytest
 
 from tests.test_upload_api import MINIMAL_TCX
+
+_today = datetime.now().strftime("%Y-%m-%d")
 
 
 def _upload_activity(client, auth_headers, activity_type="cycling", name="测试"):
@@ -19,7 +22,7 @@ def _save_params(client, auth_headers, ftp=200, lthr=160):
     client.post(
         "/api/params",
         json={
-            "effective_date": "2026-04-27",
+            "effective_date": _today,
             "ftp": ftp,
             "cycling_lthr": lthr,
             "running_lthr": 170,
@@ -49,7 +52,9 @@ def test_pmc_with_activities(client, auth_headers):
 
 
 def test_pmc_date_range(client, auth_headers):
-    resp = client.get("/api/pmc?start_date=2026-04-01&end_date=2026-04-27")
+    start = "2026-04-01"
+    end = "2026-04-27"
+    resp = client.get(f"/api/pmc?start_date={start}&end_date={end}")
     assert resp.status_code == 200
     data = resp.get_json()["data"]
     assert len(data) == 27
