@@ -141,6 +141,95 @@ def calc_zone_times(
 
 
 # ============================================================
+# Best Efforts（最佳表现）
+# ============================================================
+
+BEST_EFFORT_WINDOWS = [5, 15, 30, 60, 120, 300, 600, 1200, 3600]  # 秒
+
+
+def calc_best_efforts(trackpoints: list[dict]) -> dict:
+    """计算不同时间窗口的最佳功率和最佳心率。
+
+    使用滑动窗口算法：对每个时间窗口，找出窗口内功率/心率的最高滚动平均值。
+
+    返回: {
+        "power": {5: 450, 15: 380, 60: 320, ...},
+        "heart_rate": {5: 178, 15: 176, 60: 172, ...}
+    }
+    """
+    if not trackpoints or len(trackpoints) < 2:
+        return {}
+
+    n = len(trackpoints)
+    # 计算逐秒间隔
+    intervals = []
+    for i in range(1, n):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        intervals.append(max(dt, 0.5))  # 最小 0.5 秒防除零
+
+    # 预提取有效值序列
+    power_seq = [tp.get("power") for tp in trackpoints]
+    hr_seq = [tp.get("heart_rate") for tp in trackpoints]
+
+    result = {}
+
+    for window_sec in BEST_EFFORT_WINDOWS:
+        if window_sec > n * 2:  # 数据太短，跳过
+            continue
+
+        best_power = None
+        best_hr = None
+
+        # 滑动窗口：对每个起点，累积时间直到达到窗口
+        i = 0
+        while i < n:
+            cum_time = 0.0
+            cum_power = 0.0
+            cum_hr = 0.0
+            power_count = 0
+            hr_count = 0
+            j = i
+
+            while j < n:
+                if j > i:
+                    cum_time += intervals[j - 1]
+                if cum_time > window_sec and j > i:
+                    break
+
+                if power_seq[j] is not None:
+                    cum_power += power_seq[j]
+                    power_count += 1
+                if hr_seq[j] is not None:
+                    cum_hr += hr_seq[j]
+                    hr_count += 1
+                j += 1
+
+            if cum_time >= window_sec * 0.9:  # 允许 10% 误差
+                if power_count > 0:
+                    avg_p = cum_power / power_count
+                    if best_power is None or avg_p > best_power:
+                        best_power = round(avg_p)
+                if hr_count > 0:
+                    avg_h = cum_hr / hr_count
+                    if best_hr is None or avg_h > best_hr:
+                        best_hr = round(avg_h)
+
+            i += 1
+
+        if best_power is not None or best_hr is not None:
+            if "power" not in result and best_power is not None:
+                result["power"] = {}
+            if "heart_rate" not in result and best_hr is not None:
+                result["heart_rate"] = {}
+            if best_power is not None:
+                result["power"][window_sec] = best_power
+            if best_hr is not None:
+                result["heart_rate"][window_sec] = best_hr
+
+    return result
+
+
+# ============================================================
 # 统一计算入口
 # ============================================================
 
@@ -218,6 +307,11 @@ def compute_activity_metrics(
 
     if has_power and power_zones:
         metrics.power_zones_time = calc_zone_times(power_values, power_zones)
+
+    # Best Efforts：不同时长的峰值功率和峰值心率
+    best_efforts = calc_best_efforts(trackpoints)
+    if best_efforts:
+        metrics.best_efforts = best_efforts
 
     # 强度评级：基于 IF（功率优先，心率兜底）
     if_val = metrics.intensity_factor or metrics.hr_intensity_factor

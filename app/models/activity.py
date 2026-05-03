@@ -47,6 +47,7 @@ class ComputedMetrics(EmbeddedDocument):
     intensity_level = StringField()  # 强度分类："recovery"/"endurance"/"tempo"/"threshold"/"vo2max"
     hr_zones_time = DictField()  # 心率区间时间分布 {"Z1": 秒数, ...}
     power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
+    best_efforts = DictField()  # 最佳表现 {"power": {5: 450, ...}, "heart_rate": {5: 178, ...}}
 
 
 class Trackpoint(EmbeddedDocument):
