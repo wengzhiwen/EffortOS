@@ -102,7 +102,10 @@
                 <input type="checkbox" id="select-all"> 全选
             </label>
         </div>
-        <button class="btn btn-secondary btn-sm" id="batch-delete-btn" style="display: none;" onclick="batchDelete()">删除选中</button>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" id="batch-gear-btn" style="display: none;" onclick="batchGear()">分配装备</button>
+            <button class="btn btn-secondary btn-sm" id="batch-delete-btn" style="display: none;" onclick="batchDelete()">删除选中</button>
+        </div>
     </div>
     <table>
         <thead>
@@ -365,9 +368,10 @@ document.addEventListener('change', function(e) {
 
 function updateBatchBtn() {
     const checked = document.querySelectorAll('.activity-check:checked');
-    const btn = document.getElementById('batch-delete-btn');
-    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
-    btn.textContent = `删除选中 (${checked.length})`;
+    const show = checked.length > 0;
+    document.getElementById('batch-delete-btn').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('batch-gear-btn').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('batch-delete-btn').textContent = `删除选中 (${checked.length})`;
 }
 
 async function batchDelete() {
@@ -384,6 +388,67 @@ async function batchDelete() {
             if (res.code === 200) { showToast(`已删除 ${ids.length} 条`, 'success'); loadActivities(0); }
             else showToast(res.message, 'error');
         });
+}
+
+async function batchGear() {
+    const ids = Array.from(document.querySelectorAll('.activity-check:checked')).map(cb => cb.dataset.id);
+    if (ids.length === 0) return;
+    const gearRes = await authFetch('/api/gear').then(r => r.json());
+    const gears = (gearRes.data || []).filter(g => g.is_active !== 'retired');
+    if (gears.length === 0) { showToast('暂无可用装备，请先添加', 'error'); return; }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--card-bg);padding:1.5rem;border-radius:8px;max-width:400px;width:90%;border:1px solid var(--border);';
+    const h3 = document.createElement('h3');
+    h3.textContent = `为 ${ids.length} 条活动分配装备`;
+    h3.style.marginBottom = '1rem';
+    const select = document.createElement('select');
+    select.style.cssText = 'width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:1rem;';
+    const optNone = document.createElement('option');
+    optNone.value = '';
+    optNone.textContent = '— 清除装备 —';
+    select.appendChild(optNone);
+    gears.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        select.appendChild(opt);
+    });
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:0.5rem;';
+    const btnOk = document.createElement('button');
+    btnOk.className = 'btn btn-primary';
+    btnOk.textContent = '确定';
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn btn-secondary';
+    btnCancel.textContent = '取消';
+    btnRow.appendChild(btnOk);
+    btnRow.appendChild(btnCancel);
+    box.appendChild(h3);
+    box.appendChild(select);
+    box.appendChild(btnRow);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    btnCancel.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    btnOk.addEventListener('click', () => {
+        const gearId = select.value;
+        btnOk.disabled = true;
+        authFetch('/api/activities/batch-gear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids, gear_id: gearId || null }),
+        })
+            .then(r => r.json())
+            .then(res => {
+                overlay.remove();
+                if (res.code === 200) { showToast(res.message, 'success'); loadActivities(0); }
+                else showToast(res.message, 'error');
+            });
+    });
 }
 
 loadActivities(0);

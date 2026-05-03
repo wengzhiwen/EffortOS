@@ -7,6 +7,7 @@ import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 
 from app.models.activity import Activity, DataSummary, Trackpoint
+from app.models.gear import Gear
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import validate_activity_file
 from app.utils.auth import require_user, user_filter
@@ -746,6 +747,39 @@ def batch_delete_activities():
             deleted += 1
 
     return jsonify({"code": 200, "message": f"已删除 {deleted} 条记录", "data": {"deleted": deleted}})
+
+
+@activities_bp.route("/activities/batch-gear", methods=["POST"])
+def batch_assign_gear():
+    """批量给活动分配装备。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    data = request.get_json()
+    if not data or "ids" not in data or "gear_id" not in data:
+        return jsonify({"code": 400, "message": "缺少 ids 或 gear_id 参数", "data": None}), 400
+
+    ids = data["ids"]
+    gear_id = data["gear_id"]
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"code": 400, "message": "ids 必须是非空数组", "data": None}), 400
+    if len(ids) > 50:
+        return jsonify({"code": 400, "message": "单次最多处理 50 条", "data": None}), 400
+
+    gear = Gear.objects(id=gear_id, user=user).first() if gear_id else None
+    if gear_id and not gear:
+        return jsonify({"code": 404, "message": "装备不存在", "data": None}), 404
+
+    updated = 0
+    for aid in ids:
+        activity = Activity.objects(id=aid, user=user).first()
+        if activity:
+            activity.gear = gear
+            activity.save()
+            updated += 1
+
+    return jsonify({"code": 200, "message": f"已更新 {updated} 条记录", "data": {"updated": updated}})
 
 
 @activities_bp.route("/activities/power-curve", methods=["GET"])

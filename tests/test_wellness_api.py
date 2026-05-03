@@ -1,8 +1,5 @@
 from datetime import datetime
 
-import pytest
-
-
 _today = datetime.now().strftime("%Y-%m-%d")
 
 
@@ -96,7 +93,11 @@ def test_readiness_no_wellness(client, auth_headers):
 
 def test_readiness_with_wellness(client, auth_headers):
     """有 wellness 记录时主观分应 > 0。"""
-    client.post("/api/wellness", json={"date": _today, "sleep_quality": 5, "mood": 5, "fatigue": 1, "stress": 1, "soreness": 1}, headers=auth_headers)
+    client.post(
+        "/api/wellness",
+        json={"date": _today, "sleep_quality": 5, "mood": 5, "fatigue": 1, "stress": 1, "soreness": 1},
+        headers=auth_headers,
+    )
 
     resp = client.get("/api/wellness/readiness", headers=auth_headers)
     data = resp.get_json()["data"]
@@ -108,7 +109,11 @@ def test_readiness_with_wellness(client, auth_headers):
 def test_readiness_levels(client, auth_headers):
     """验证不同准备度等级。"""
     # 低主观分：高疲劳低睡眠 → 主观分很低
-    client.post("/api/wellness", json={"date": _today, "sleep_quality": 1, "fatigue": 5, "stress": 5, "soreness": 5, "mood": 1}, headers=auth_headers)
+    client.post(
+        "/api/wellness",
+        json={"date": _today, "sleep_quality": 1, "fatigue": 5, "stress": 5, "soreness": 5, "mood": 1},
+        headers=auth_headers,
+    )
     resp = client.get("/api/wellness/readiness", headers=auth_headers)
     data = resp.get_json()["data"]
     # 即使主观分最低，无训练时 load_score=50，总分不会太低
@@ -139,6 +144,19 @@ def test_delete_nonexistent(client, auth_headers):
 
     resp = client.delete(f"/api/wellness/{ObjectId()}", headers=auth_headers)
     assert resp.status_code == 404
+
+
+def test_weight_and_notes_roundtrip(client, auth_headers):
+    """体重和备注字段正确保存和返回。"""
+    client.post(
+        "/api/wellness",
+        json={"date": _today, "weight": 70.5, "notes": "感觉不错"},
+        headers=auth_headers,
+    )
+    resp = client.get("/api/wellness?days=1", headers=auth_headers)
+    entry = resp.get_json()["data"][0]
+    assert entry["weight"] == 70.5
+    assert entry["notes"] == "感觉不错"
 
 
 def test_wellness_cross_user_isolation(client, app):
