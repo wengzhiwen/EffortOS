@@ -87,6 +87,16 @@
         </tbody>
     </table>
 </div>
+
+<div class="card" id="weekly-report-card">
+    <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>AI 训练周报</span>
+        <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">生成本周报告</button>
+    </div>
+    <div id="weekly-report-content">
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">点击按钮，AI 教练将基于本周训练数据生成个性化周报。</p>
+    </div>
+</div>
 {% endblock %}
 
 {% block script %}
@@ -183,8 +193,6 @@ authFetch('/api/dashboard')
 
         // 周训练量趋势
         if (d.weekly_trend && d.weekly_trend.length > 0) {
-            const wtLabels = d.weekly_trend.map(w => w.week.slice(5));
-            new Chart(document.getElementById('weekly-trend-chart'), {
             const wtLabels = d.weekly_trend.map(w => w.week.slice(5));
             new Chart(document.getElementById('weekly-trend-chart'), {
                 type: 'bar',
@@ -350,6 +358,40 @@ function renderTypeChart(breakdown) {
             cutout: '60%',
         }
     });
+}
+
+function generateReport() {
+    const btn = document.getElementById('gen-report-btn');
+    const content = document.getElementById('weekly-report-content');
+    btn.disabled = true;
+    btn.textContent = '生成中...';
+    content.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析本周训练数据...</div>';
+
+    authFetch('/api/ai/weekly-report', { method: 'POST' })
+        .then(r => r.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.textContent = '重新生成';
+            if (res.code !== 200) {
+                content.innerHTML = `<p style="color: var(--danger);">生成失败: ${res.message}</p>`;
+                return;
+            }
+            const d = res.data;
+            content.innerHTML = `
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    <span>Fitness: ${d.ctl.toFixed(1)}</span>
+                    <span>Fatigue: ${d.atl.toFixed(1)}</span>
+                    <span>Form: ${d.tsb.toFixed(1)}</span>
+                    <span>本周 ${d.week_activities} 次训练</span>
+                </div>
+                <div class="md-content">${marked.parse(d.report)}</div>
+            `;
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.textContent = '生成本周报告';
+            content.innerHTML = `<p style="color: var(--danger);">请求失败: ${err.message}</p>`;
+        });
 }
 </script>
 {% endblock %}
