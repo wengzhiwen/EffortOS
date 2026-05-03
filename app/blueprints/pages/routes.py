@@ -73,6 +73,12 @@ def profile():
     return _require_login_for("profile.html")
 
 
+@pages_bp.route("/gear")
+def gear():
+    """装备管理（需登录）。"""
+    return _require_login_for("gear.html")
+
+
 @pages_bp.route("/help")
 def help_page():
     """帮助页（公开）。"""
