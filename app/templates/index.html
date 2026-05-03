@@ -359,6 +359,7 @@ function renderCalendar(calendarData) {
     const maxTss = Math.max(...Object.values(calendarData), 1);
     const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
+    // 月份标签
     const weekMonths = weeks.map(w => {
         const d = w.find(x => x);
         return d ? d.date.slice(0, 7) : null;
@@ -380,14 +381,17 @@ function renderCalendar(calendarData) {
         const pct = (ms.weekCount / totalWeeks * 100).toFixed(1);
         html += `<span class="cal-month" style="width:${pct}%;">${ms.label}</span>`;
     }
-    html += '</div><div class="cal-grid">';
+    html += '</div>';
+
+    // CSS grid: 7行 × (1标签列 + N周列)
+    const cols = `22px repeat(${totalWeeks}, 1fr)`;
+    html += `<div class="cal-grid" style="grid-template-columns:${cols};">`;
 
     const dayLabels = ['日','一','二','三','四','五','六'];
-    html += '<div class="cal-dow">' + dayLabels.map(l => `<span>${l}</span>`).join('') + '</div>';
-
-    for (const w of weeks) {
-        html += '<div class="cal-week">';
-        for (const day of w) {
+    for (let row = 0; row < 7; row++) {
+        html += `<span class="cal-dow-label">${dayLabels[row]}</span>`;
+        for (let w = 0; w < totalWeeks; w++) {
+            const day = weeks[w][row];
             if (!day) {
                 html += '<div class="cal-cell cal-empty"></div>';
             } else {
@@ -395,24 +399,14 @@ function renderCalendar(calendarData) {
                 html += `<div class="cal-cell cal-level-${level}" title="${day.date}: ${day.tss.toFixed(0)} TSS"></div>`;
             }
         }
-        html += '</div>';
     }
     html += '</div>';
 
     html += '<div class="cal-legend"><span>少 TSS</span>';
-    for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;"></div>`;
+    for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;flex-shrink:0;"></div>`;
     html += '<span>多 TSS</span></div>';
 
     container.innerHTML = html;
-
-    // 对齐星期标签高度与日历格子
-    requestAnimationFrame(() => {
-        const cell = container.querySelector('.cal-cell:not(.cal-empty)');
-        if (cell) {
-            const h = cell.offsetHeight + 'px';
-            container.querySelectorAll('.cal-dow span').forEach(s => s.style.height = h);
-        }
-    });
 }
 
 function renderTypeChart(breakdown) {
