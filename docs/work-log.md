@@ -4,6 +4,20 @@
 
 ---
 
+## Sprint 74 — 2025-05-03
+
+**安全加固 + 功能增强**
+
+1. Wellness 历史表格补充体重和备注列（之前只保存不展示），修复 Chart.js 在重复 loadHistory 时内存泄漏
+2. XSS 全面加固：在 base.html 添加全局 `esc()` 函数，修复活动名、装备名、备注等 innerHTML 注入漏洞（涉及 activity_detail/compare/activities/index/gear 共 6 个模板）
+3. 移除 API 层 `html.escape` 双重转义（之前 API 和前端各转义一次导致显示问题），统一由前端 `esc()` 处理
+4. 新增批量装备分配：`POST /api/activities/batch-gear` API + 活动列表页「分配装备」按钮 + DOM-based 装备选择弹窗
+5. 活动编辑弹层增加装备选择下拉框，PUT API 支持 `gear_id` 字段更新
+6. 帮助页面修复 HTML div 嵌套问题，补充搜索排序和批量操作功能说明
+7. 新增测试：wellness 体重/备注往返、装备 PUT 更新、批量装备分配（219 → 221 passed）
+
+---
+
 *（自驱动循环启动后，每次迭代在此追加记录）*
 
 ---
