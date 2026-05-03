@@ -102,7 +102,7 @@
     <div class="card-title">历史记录</div>
     <table>
         <thead><tr>
-            <th>日期</th><th>睡眠</th><th>疲劳</th><th>压力</th><th>酸痛</th><th>心情</th><th>HRV</th><th>静息心率</th>
+            <th>日期</th><th>睡眠</th><th>疲劳</th><th>压力</th><th>酸痛</th><th>心情</th><th>HRV</th><th>静息心率</th><th>体重</th><th>备注</th>
         </tr></thead>
         <tbody id="wellness-history"></tbody>
     </table>
@@ -191,7 +191,10 @@ document.getElementById('wellness-form').addEventListener('submit', e => {
 });
 
 // 趋势图 + 历史记录
+let _wellnessCharts = [];
 function loadHistory() {
+    _wellnessCharts.forEach(c => c.destroy());
+    _wellnessCharts = [];
     authFetch('/api/wellness?days=30')
         .then(r => r.json())
         .then(res => {
@@ -202,7 +205,7 @@ function loadHistory() {
                 const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
                 const labels = sorted.map(e => e.date.slice(5));
 
-                new Chart(document.getElementById('wellness-chart'), {
+                _wellnessCharts.push(new Chart(document.getElementById('wellness-chart'), {
                     type: 'line',
                     data: {
                         labels,
@@ -223,7 +226,7 @@ function loadHistory() {
                 // HRV / 静息心率趋势
                 const hrvData = sorted.filter(e => e.hrv || e.resting_hr);
                 if (hrvData.length > 0) {
-                    new Chart(document.getElementById('hrv-chart'), {
+                    _wellnessCharts.push(new Chart(document.getElementById('hrv-chart'), {
                         type: 'line',
                         data: {
                             labels: hrvData.map(e => e.date.slice(5)),
@@ -247,7 +250,7 @@ function loadHistory() {
             // 历史表格
             const tbody = document.getElementById('wellness-history');
             if (entries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">暂无记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-secondary);">暂无记录</td></tr>';
                 return;
             }
             tbody.innerHTML = entries.map(e => `<tr>
@@ -259,6 +262,8 @@ function loadHistory() {
                 <td>${e.mood || '—'}</td>
                 <td>${e.hrv || '—'}</td>
                 <td>${e.resting_hr || '—'}</td>
+                <td>${e.weight || '—'}</td>
+                <td>${e.notes || '—'}</td>
             </tr>`).join('');
         });
 }
