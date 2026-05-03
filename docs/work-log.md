@@ -8,6 +8,28 @@
 
 ---
 
+### Sprint 45 完成 — 2026-05-03
+
+Bug 大扫除（每 5 个 Sprint 一次）：
+- 桌面端逐页 Playwright 截图审查（仪表盘、活动列表、活动详情、设置、AI 教练、装备、Wellness、对比、帮助、关于、个人资料）
+- 移动端逐页截图审查（375x812 viewport），无溢出/布局问题
+- 深色模式桌面+移动端审查，对比度正常
+- **关键修复**：活动列表 API 500 错误 — `_calc_pb_markers` 遍历 `best_efforts` 错误层级（BaseDict vs 数值比较）
+- 测试总数：202 全部通过
+
+---
+
+### Sprint 44 完成 — 2026-05-03
+
+SEO 基础设施 + 代码质量：
+- 添加 /robots.txt 路由（允许公开页面，禁止私有和 API 路径）
+- 添加 /sitemap.xml 路由（列出公开页面 URL、更新频率和优先级）
+- base.html 增加 meta description、og:title、og:description 可覆写块
+- landing/help/about 页面添加定制 SEO meta 标签
+- 测试总数：202 全部通过
+
+---
+
 ### Sprint 43 完成 — 2026-05-03
 
 Dashboard 周报卡片 + 测试补全 + 深色模式优化：
