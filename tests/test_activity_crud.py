@@ -1,5 +1,4 @@
 import io
-import pytest
 
 
 def _upload_sample(client, auth_headers, activity_type="cycling", name="测试"):
@@ -96,6 +95,7 @@ def test_delete_no_auth(client, auth_headers):
 
 def test_update_activity(client, auth_headers):
     from tests.test_upload_api import MINIMAL_TCX
+
     """测试更新活动名称。"""
     # 先上传一个活动
     data = {
@@ -118,7 +118,6 @@ def test_update_activity(client, auth_headers):
 
 
 def test_update_activity_no_auth(client, auth_headers):
-    from tests.test_upload_api import MINIMAL_TCX
     """测试未认证更新。"""
     resp = client.put("/api/activities/000000000000000000000000", json={"name": "test"})
     assert resp.status_code == 401
@@ -126,6 +125,7 @@ def test_update_activity_no_auth(client, auth_headers):
 
 def test_update_activity_invalid_type(client, auth_headers):
     from tests.test_upload_api import MINIMAL_TCX
+
     """测试更新无效运动类型。"""
     data = {
         "file": (io.BytesIO(MINIMAL_TCX.encode()), "test.tcx"),
@@ -162,3 +162,45 @@ def test_list_activities_search_by_name(client, auth_headers):
     resp3 = client.get("/api/activities?search=ftp")
     result3 = resp3.get_json()
     assert result3["data"]["total"] == 1
+
+
+def test_update_activity_gear(client, auth_headers):
+    """测试通过 PUT 更新活动的装备。"""
+    from app.models.gear import Gear
+
+    user = _get_user(client, auth_headers)
+    gear = Gear(user=user, name="Test Bike", gear_type="bike").save()
+    uploaded = _upload_sample(client, auth_headers)
+    aid = uploaded["id"]
+
+    resp = client.put(
+        f"/api/activities/{aid}",
+        json={"gear_id": str(gear.id)},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["data"]["gear_id"] == str(gear.id)
+
+
+def test_update_activity_clear_gear(client, auth_headers):
+    """测试清除活动装备。"""
+    from app.models.gear import Gear
+
+    user = _get_user(client, auth_headers)
+    gear = Gear(user=user, name="Test Bike", gear_type="bike").save()
+    uploaded = _upload_sample(client, auth_headers)
+    aid = uploaded["id"]
+
+    # 先分配
+    client.put(f"/api/activities/{aid}", json={"gear_id": str(gear.id)}, headers=auth_headers)
+    # 再清除
+    resp = client.put(f"/api/activities/{aid}", json={"gear_id": ""}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.get_json()["data"]["gear_id"] is None
+
+
+def _get_user(client, auth_headers):
+    from app.models.user import User
+
+    token = auth_headers["Authorization"].replace("Bearer ", "")
+    return User.objects(session_token=token).first()
