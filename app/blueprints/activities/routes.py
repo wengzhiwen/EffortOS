@@ -762,4 +762,9 @@ def get_power_curve():
     for metric in curve:
         curve[metric] = dict(sorted(curve[metric].items(), key=lambda x: int(x[0])))
 
-    return jsonify({"code": 200, "message": "ok", "data": curve})
+    import json as _json
+
+    return Response(
+        _json.dumps({"code": 200, "message": "ok", "data": curve}, ensure_ascii=False),
+        mimetype="application/json",
+    )

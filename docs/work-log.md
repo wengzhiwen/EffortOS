@@ -8,6 +8,16 @@
 
 ---
 
+### Sprint 53 完成 — 2026-05-03
+
+Power Curve 测试 + 清理：
+- Power Curve API 4 个新测试：未认证401、空数据、多活动聚合取最大值、窗口按时间排序
+- 修复 Flask jsonify sort_keys=True 导致字典键重新排序问题，改用 Response + json.dumps
+- 清理项目根目录 16 个遗留 .png 截图文件
+- 测试总数：215 全部通过（+4）
+
+---
+
 ### Sprint 52 完成 — 2026-05-03
 
 Power Curve 功率曲线（参考 intervals.icu）：
