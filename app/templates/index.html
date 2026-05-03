@@ -404,6 +404,15 @@ function renderCalendar(calendarData) {
     html += '<span>多 TSS</span></div>';
 
     container.innerHTML = html;
+
+    // 对齐星期标签高度与日历格子
+    requestAnimationFrame(() => {
+        const cell = container.querySelector('.cal-cell:not(.cal-empty)');
+        if (cell) {
+            const h = cell.offsetHeight + 'px';
+            container.querySelectorAll('.cal-dow span').forEach(s => s.style.height = h);
+        }
+    });
 }
 
 function renderTypeChart(breakdown) {
