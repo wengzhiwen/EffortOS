@@ -20,6 +20,14 @@ Bug 大扫除（每 5 个 Sprint 一次）：
 
 ---
 
+### Sprint 57 完成 — 2026-05-03
+
+持续优化：
+- Activity 查询性能优化：列表/详情/仪表盘等 API 添加 .exclude("trackpoints", "raw_data_path")，避免加载大数据字段
+- 测试总数：215 全部通过
+
+---
+
 ### Sprint 56 完成 — 2026-05-03
 
 XSS 安全修复：
