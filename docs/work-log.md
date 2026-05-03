@@ -28,6 +28,15 @@ Bug 大扫除（每 5 个 Sprint 一次）：
 
 ---
 
+### Sprint 62 完成 — 2026-05-03
+
+持续优化：
+- confirmDialog XSS 修复：改用 DOM API 替代 innerHTML 拼接消息
+- 添加 SVG emoji favicon（浏览器标签页图标）
+- 测试总数：215 全部通过
+
+---
+
 ### Sprint 61 完成 — 2026-05-03
 
 持续优化：
