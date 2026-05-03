@@ -452,3 +452,12 @@ a:hover { text-decoration: underline; }
 .md-content strong { color: var(--text); }
 .md-content code { background: var(--bg-secondary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
 .md-content blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; margin: 0.5rem 0; color: var(--text-secondary); }
+
+/* Skeleton loading */
+.skeleton { background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+.skeleton-text { height: 14px; margin-bottom: 8px; }
+.skeleton-title { height: 20px; width: 60%; margin-bottom: 12px; }
+.skeleton-value { height: 32px; width: 40%; }
+.skeleton-row { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.skeleton-cell { height: 14px; flex: 1; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
