@@ -90,6 +90,7 @@ def _serialize_activity(activity):
     """将 Activity 序列化为字典。"""
     return {
         "id": str(activity.id),
+        "gear_id": str(activity.gear.id) if activity.gear else None,
         "activity_type": activity.activity_type,
         "name": html.escape(activity.name or ""),
         "start_time": activity.start_time.isoformat(),
@@ -346,6 +347,7 @@ def upload_activity():
     trackpoints = parsed["trackpoints"]
     data_summary = _build_data_summary(parsed["laps"], trackpoints)
     name = request.form.get("name") or file.filename
+    gear_id = request.form.get("gear_id")
 
     activity = Activity(
         activity_type=activity_type,
@@ -375,6 +377,18 @@ def upload_activity():
 
     _compute_metrics(activity, parsed["trackpoints"])
     activity.save()
+
+    # 装备里程累计
+    if gear_id:
+        from app.models.gear import Gear
+
+        gear = Gear.objects(id=gear_id, user=user).first()
+        if gear:
+            dist_km = (data_summary.total_distance or 0) / 1000
+            gear.total_distance_km = (gear.total_distance_km or 0) + dist_km
+            activity.gear = gear
+            activity.save()
+            gear.save()
 
     return jsonify(
         {
