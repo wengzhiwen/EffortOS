@@ -59,11 +59,22 @@
             <label>结束日期</label>
             <input type="date" id="filter-end">
         </div>
-        <div style="display: flex; gap: 0.5rem;" class="filter-buttons">
-            <button class="btn btn-primary" onclick="loadActivities(0)">筛选</button>
-            <button class="btn btn-secondary" onclick="exportData('csv')">导出 CSV</button>
-            <button class="btn btn-secondary" onclick="exportData('json')">导出 JSON</button>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>强度等级</label>
+            <select id="filter-intensity">
+                <option value="">全部</option>
+                <option value="recovery">恢复</option>
+                <option value="endurance">有氧耐力</option>
+                <option value="tempo">节奏</option>
+                <option value="threshold">阈值</option>
+                <option value="vo2max">VO2max</option>
+            </select>
         </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;" class="filter-buttons">
+        <button class="btn btn-primary" onclick="loadActivities(0)">筛选</button>
+        <button class="btn btn-secondary" onclick="exportData('csv')">导出 CSV</button>
+        <button class="btn btn-secondary" onclick="exportData('json')">导出 JSON</button>
     </div>
 </div>
 
@@ -165,9 +176,11 @@ function getFilterParams() {
     const type = document.getElementById('filter-type').value;
     const start = document.getElementById('filter-start').value;
     const end = document.getElementById('filter-end').value;
+    const intensity = document.getElementById('filter-intensity').value;
     if (type) params.set('activity_type', type);
     if (start) params.set('start_date', start);
     if (end) params.set('end_date', end);
+    if (intensity) params.set('intensity_level', intensity);
     return params.toString();
 }
 
@@ -227,6 +240,7 @@ function clearFilters() {
     document.getElementById('filter-type').value = '';
     document.getElementById('filter-start').value = '';
     document.getElementById('filter-end').value = '';
+    document.getElementById('filter-intensity').value = '';
     loadActivities(0);
 }
 

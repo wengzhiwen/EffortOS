@@ -55,6 +55,14 @@ def _date_range_filter(qs):
     return qs
 
 
+def _intensity_level_filter(qs):
+    """按请求参数过滤强度等级。"""
+    level = request.args.get("intensity_level")
+    if level:
+        qs = qs.filter(computed_metrics__intensity_level=level)
+    return qs
+
+
 # ============================================================
 # 序列化辅助
 # ============================================================
@@ -394,6 +402,7 @@ def list_activities():
     qs = _user_filter(Activity.objects())
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
+    qs = _intensity_level_filter(qs)
 
     total = qs.count()
     activities = qs.order_by("-start_time").skip(offset).limit(limit)
@@ -409,6 +418,7 @@ def export_activities():
     qs = _user_filter(Activity.objects())
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
+    qs = _intensity_level_filter(qs)
     activities = qs.order_by("-start_time")
 
     fmt = request.args.get("format", "csv")
