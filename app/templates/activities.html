@@ -42,8 +42,19 @@
 
 <div class="card">
     <div class="card-title">筛选</div>
-    <div class="form-group" style="margin-bottom: 0.5rem;">
-        <input type="text" id="filter-search" placeholder="搜索活动名称..." style="max-width: 300px;" onkeydown="if(event.key==='Enter')loadActivities(0)">
+    <div style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <input type="text" id="filter-search" placeholder="搜索活动名称..." style="max-width: 300px;" onkeydown="if(event.key==='Enter')loadActivities(0)">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>排序</label>
+            <select id="filter-sort" onchange="loadActivities(0)">
+                <option value="-start_time">最新优先</option>
+                <option value="start_time">最早优先</option>
+                <option value="-created_at">最近上传</option>
+                <option value="name">名称 A-Z</option>
+            </select>
+        </div>
     </div>
     <div class="grid grid-4" style="align-items: end;">
         <div class="form-group" style="margin-bottom: 0;">
@@ -202,6 +213,8 @@ function getFilterParams() {
     if (end) params.set('end_date', end);
     if (intensity) params.set('intensity_level', intensity);
     if (search) params.set('search', search);
+    const sort = document.getElementById('filter-sort').value;
+    if (sort && sort !== '-start_time') params.set('sort', sort);
     return params.toString();
 }
 
@@ -263,6 +276,7 @@ function clearFilters() {
     document.getElementById('filter-end').value = '';
     document.getElementById('filter-intensity').value = '';
     document.getElementById('filter-search').value = '';
+    document.getElementById('filter-sort').value = '-start_time';
     loadActivities(0);
 }
 
