@@ -470,7 +470,7 @@ def list_activities():
     limit = min(request.args.get("limit", 20, type=int), 100)
     offset = request.args.get("offset", 0, type=int)
 
-    qs = _user_filter(Activity.objects())
+    qs = _user_filter(Activity.objects().exclude("trackpoints", "raw_data_path"))
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
     qs = _intensity_level_filter(qs)
@@ -493,7 +493,7 @@ def list_activities():
 @activities_bp.route("/activities/export", methods=["GET"])
 def export_activities():
     """导出活动列表为 CSV 或 JSON。"""
-    qs = _user_filter(Activity.objects())
+    qs = _user_filter(Activity.objects().exclude("trackpoints", "raw_data_path"))
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
     qs = _intensity_level_filter(qs)
@@ -542,7 +542,7 @@ def export_activities():
 @activities_bp.route("/activities/<activity_id>", methods=["GET"])
 def get_activity(activity_id):
     """获取单次运动记录详情。"""
-    activity = Activity.objects(id=activity_id).first()
+    activity = Activity.objects(id=activity_id).exclude("trackpoints", "raw_data_path").first()
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
 

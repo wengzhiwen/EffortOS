@@ -36,7 +36,11 @@ def get_pmc():
     except ValueError:
         return jsonify({"code": 400, "message": "日期格式无效，应为 YYYY-MM-DD", "data": None}), 400
 
-    activities = _filter_user(Activity.objects(start_time__gte=start_date, start_time__lte=_end_of_day(end_date)))
+    activities = _filter_user(
+        Activity.objects(start_time__gte=start_date, start_time__lte=_end_of_day(end_date)).exclude(
+            "trackpoints", "raw_data_path"
+        )
+    )
     daily = calc_daily_tss(list(activities))
     pmc_data = calc_pmc(daily, start_date, end_date)
 
@@ -51,7 +55,9 @@ def get_dashboard():
     end = today.strftime("%Y-%m-%d")
     end_dt = _end_of_day(end)
 
-    activities_all = _filter_user(Activity.objects(start_time__gte=start, start_time__lte=end_dt))
+    activities_all = _filter_user(
+        Activity.objects(start_time__gte=start, start_time__lte=end_dt).exclude("trackpoints", "raw_data_path")
+    )
     daily = calc_daily_tss(list(activities_all))
     pmc_data = calc_pmc(daily, start, end)
 
@@ -61,12 +67,20 @@ def get_dashboard():
 
     recent_list = [
         _serialize_activity(a)
-        for a in _filter_user(Activity.objects(start_time__lte=end_dt)).order_by("-start_time").limit(5)
+        for a in _filter_user(Activity.objects(start_time__lte=end_dt).exclude("trackpoints", "raw_data_path"))
+        .order_by("-start_time")
+        .limit(5)
     ]
 
     # 滚动窗口：近 7 天 / 近 30 天（比自然周/月更有训练参考价值）
     rolling_30d = (today - timedelta(days=29)).strftime("%Y-%m-%d")
-    month_activities = list(_filter_user(Activity.objects(start_time__gte=rolling_30d, start_time__lte=end_dt)))
+    month_activities = list(
+        _filter_user(
+            Activity.objects(start_time__gte=rolling_30d, start_time__lte=end_dt).exclude(
+                "trackpoints", "raw_data_path"
+            )
+        )
+    )
     rolling_7d = (today - timedelta(days=6)).strftime("%Y-%m-%d")
     week_activities = [a for a in month_activities if a.start_time.strftime("%Y-%m-%d") >= rolling_7d]
 
