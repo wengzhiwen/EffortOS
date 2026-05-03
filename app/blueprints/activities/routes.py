@@ -63,6 +63,14 @@ def _intensity_level_filter(qs):
     return qs
 
 
+def _name_filter(qs):
+    """按名称关键词搜索。"""
+    keyword = request.args.get("search", "").strip()
+    if keyword:
+        qs = qs.filter(name__icontains=keyword)
+    return qs
+
+
 # ============================================================
 # 序列化辅助
 # ============================================================
@@ -474,6 +482,7 @@ def list_activities():
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
     qs = _intensity_level_filter(qs)
+    qs = _name_filter(qs)
 
     total = qs.count()
     activities = list(qs.order_by("-start_time").skip(offset).limit(limit))
@@ -497,6 +506,7 @@ def export_activities():
     qs = _activity_type_filter(qs)
     qs = _date_range_filter(qs)
     qs = _intensity_level_filter(qs)
+    qs = _name_filter(qs)
     activities = qs.order_by("-start_time")
 
     fmt = request.args.get("format", "csv")

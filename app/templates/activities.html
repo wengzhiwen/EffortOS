@@ -42,6 +42,9 @@
 
 <div class="card">
     <div class="card-title">筛选</div>
+    <div class="form-group" style="margin-bottom: 0.5rem;">
+        <input type="text" id="filter-search" placeholder="搜索活动名称..." style="max-width: 300px;" onkeydown="if(event.key==='Enter')loadActivities(0)">
+    </div>
     <div class="grid grid-4" style="align-items: end;">
         <div class="form-group" style="margin-bottom: 0;">
             <label>运动类型</label>
@@ -193,10 +196,12 @@ function getFilterParams() {
     const start = document.getElementById('filter-start').value;
     const end = document.getElementById('filter-end').value;
     const intensity = document.getElementById('filter-intensity').value;
+    const search = document.getElementById('filter-search').value.trim();
     if (type) params.set('activity_type', type);
     if (start) params.set('start_date', start);
     if (end) params.set('end_date', end);
     if (intensity) params.set('intensity_level', intensity);
+    if (search) params.set('search', search);
     return params.toString();
 }
 
@@ -259,6 +264,7 @@ function clearFilters() {
     document.getElementById('filter-start').value = '';
     document.getElementById('filter-end').value = '';
     document.getElementById('filter-intensity').value = '';
+    document.getElementById('filter-search').value = '';
     loadActivities(0);
 }
 

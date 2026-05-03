@@ -140,3 +140,25 @@ def test_update_activity_invalid_type(client, auth_headers):
         headers=auth_headers,
     )
     assert resp.status_code == 400
+
+
+def test_list_activities_search_by_name(client, auth_headers):
+    _upload_sample(client, auth_headers, "cycling", "周末长距离骑行")
+    _upload_sample(client, auth_headers, "running", "晨跑5公里")
+
+    # 搜索"骑行"应只匹配第一个
+    resp = client.get("/api/activities?search=骑行")
+    result = resp.get_json()
+    assert result["data"]["total"] == 1
+    assert "骑行" in result["data"]["items"][0]["name"]
+
+    # 搜索不存在的关键词应返回空
+    resp2 = client.get("/api/activities?search=游泳")
+    result2 = resp2.get_json()
+    assert result2["data"]["total"] == 0
+
+    # 不区分大小写搜索
+    _upload_sample(client, auth_headers, "cycling", "FTP Test Ride")
+    resp3 = client.get("/api/activities?search=ftp")
+    result3 = resp3.get_json()
+    assert result3["data"]["total"] == 1
