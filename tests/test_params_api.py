@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_create_params(client, auth_headers):
     resp = client.post(
         "/api/params",

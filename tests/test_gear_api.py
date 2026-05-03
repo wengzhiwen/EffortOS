@@ -1,5 +1,3 @@
-import pytest
-
 from app.models.gear import Gear
 from app.models.user import User
 

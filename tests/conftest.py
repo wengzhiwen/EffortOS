@@ -40,10 +40,10 @@ def auth_headers(auth_token):
 def _clean_db(app):
     """每个测试前后清理测试数据库中的数据。"""
     from app.models.activity import Activity
+    from app.models.athlete_settings import AthleteParams
     from app.models.gear import Gear
     from app.models.user import User
     from app.models.verification_code import VerificationCode
-    from app.models.athlete_settings import AthleteParams
 
     for col in (Activity, User, VerificationCode, AthleteParams, Gear):
         col.drop_collection()

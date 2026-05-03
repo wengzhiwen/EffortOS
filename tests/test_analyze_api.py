@@ -1,7 +1,5 @@
 import io
 
-import pytest
-
 MINIMAL_TCX = """<?xml version="1.0" encoding="UTF-8"?>
 <TrainingCenterDatabase
   xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
@@ -110,6 +108,7 @@ def test_analyze_no_heart_rate(client, auth_headers):
 def test_analyze_temp_file_cleaned(client, auth_headers):
     """验证临时文件被清理（不会累积在 upload 目录）。"""
     import os
+
     upload_dir = client.application.config["UPLOAD_FOLDER"]
     before = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
     data = {

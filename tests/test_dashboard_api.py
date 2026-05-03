@@ -1,8 +1,6 @@
 import io
 from datetime import datetime
 
-import pytest
-
 from tests.test_upload_api import MINIMAL_TCX
 
 _today = datetime.now().strftime("%Y-%m-%d")

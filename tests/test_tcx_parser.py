@@ -1,9 +1,9 @@
 import os
 import tempfile
+
 import pytest
 
 from app.services.parse_service import parse_tcx
-
 
 # 最小化的 TCX 文件，包含一个 Lap 和三个 Trackpoint
 MINIMAL_TCX = """<?xml version="1.0" encoding="UTF-8"?>

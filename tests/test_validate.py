@@ -1,6 +1,5 @@
 import os
 import tempfile
-import pytest
 
 from app.services.validate_service import validate_activity_file
 

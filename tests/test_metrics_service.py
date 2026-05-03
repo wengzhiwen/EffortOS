@@ -1,21 +1,19 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.services.metrics_service import (
-    calc_daily_tss,
     calc_hr_efficiency_factor,
     calc_hr_intensity_factor,
     calc_hr_tss,
     calc_intensity_factor,
     calc_normalized_power,
+    calc_pmc,
     calc_power_efficiency_factor,
     calc_power_tss,
-    calc_pmc,
     calc_variability_index,
     calc_work_kj,
     calc_zone_times,
     compute_activity_metrics,
 )
-
 
 # ============================================================
 # 功率衍生指标测试
@@ -160,14 +158,16 @@ def _make_trackpoints(duration_minutes=5, power=200, hr=150, speed=8.0):
     base_time = datetime(2026, 4, 27, 8, 0, 0, tzinfo=timezone.utc)
     tps = []
     for i in range(duration_minutes * 60):
-        tps.append({
-            "time": base_time + timedelta(seconds=i),
-            "power": power,
-            "heart_rate": hr,
-            "speed": speed,
-            "cadence": 80,
-            "distance": float(i * speed),
-        })
+        tps.append(
+            {
+                "time": base_time + timedelta(seconds=i),
+                "power": power,
+                "heart_rate": hr,
+                "speed": speed,
+                "cadence": 80,
+                "distance": float(i * speed),
+            }
+        )
     return tps
 
 

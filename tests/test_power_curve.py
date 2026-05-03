@@ -1,9 +1,7 @@
-import pytest
-
-from app.models.activity import Activity, ComputedMetrics, DataSummary, Trackpoint
-from app.models.user import User
-
 from datetime import datetime, timezone
+
+from app.models.activity import Activity, ComputedMetrics, DataSummary
+from app.models.user import User
 
 
 def _make_activity(user, tss=50, best_efforts=None, start_time=None):

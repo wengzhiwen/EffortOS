@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from app.models.athlete_settings import AthleteParams
 
 

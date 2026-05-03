@@ -1,7 +1,5 @@
 import io
 
-import pytest
-
 from tests.test_upload_api import MINIMAL_TCX
 
 

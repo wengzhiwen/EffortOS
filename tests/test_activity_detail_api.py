@@ -1,6 +1,6 @@
 import pytest
 
-from app.models.activity import Activity, ComputedMetrics, DataSummary, Trackpoint
+from app.models.activity import Activity, DataSummary, Trackpoint
 from app.models.user import User
 
 

@@ -1,9 +1,9 @@
 import os
 import tempfile
+
 import pytest
 
-from app.services.parse_service import parse_gpx, parse_activity_file
-
+from app.services.parse_service import parse_activity_file, parse_gpx
 
 # 带完整 trackpoint 数据的 GPX
 GPX_WITH_TRACKPOINTS = """<?xml version="1.0" encoding="UTF-8"?>

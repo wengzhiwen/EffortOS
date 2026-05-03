@@ -60,14 +60,20 @@ def test_save_params_with_change(test_user):
 
 def test_get_effective_params(test_user):
     # 两个不同日期的参数
-    save_params(test_user, {
-        "effective_date": datetime(2026, 3, 1, tzinfo=timezone.utc),
-        "ftp": 240,
-    })
-    save_params(test_user, {
-        "effective_date": datetime(2026, 4, 1, tzinfo=timezone.utc),
-        "ftp": 250,
-    })
+    save_params(
+        test_user,
+        {
+            "effective_date": datetime(2026, 3, 1, tzinfo=timezone.utc),
+            "ftp": 240,
+        },
+    )
+    save_params(
+        test_user,
+        {
+            "effective_date": datetime(2026, 4, 1, tzinfo=timezone.utc),
+            "ftp": 250,
+        },
+    )
 
     # 查询 3 月中旬的参数 → 应返回 3 月的
     params_march = get_effective_params(test_user, datetime(2026, 3, 15, tzinfo=timezone.utc))
