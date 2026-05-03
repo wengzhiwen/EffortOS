@@ -1,5 +1,4 @@
 import csv
-import html
 import io
 import os
 import uuid
@@ -109,7 +108,7 @@ def _serialize_activity(activity):
         "id": str(activity.id),
         "gear_id": gear_id,
         "activity_type": activity.activity_type,
-        "name": html.escape(activity.name or ""),
+        "name": activity.name or "",
         "start_time": activity.start_time.isoformat(),
         "source_format": activity.source_format,
         "notes": activity.notes or "",
@@ -463,7 +462,7 @@ def upload_activity():
             "data": {
                 "id": str(activity.id),
                 "activity_type": activity.activity_type,
-                "name": html.escape(activity.name or ""),
+                "name": activity.name or "",
                 "start_time": activity.start_time.isoformat(),
                 "data_summary": _serialize_summary(data_summary),
                 "computed_metrics": _serialize_metrics(activity.computed_metrics),
