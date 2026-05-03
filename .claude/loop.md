@@ -15,6 +15,11 @@
 
 ### Step 3: 执行模式判断
 
+**每次确定本轮优化目标后**，通过 Bark 推送通知报告本轮目标：
+```
+venv/bin/python -c "from app.utils.notify import bark_notify; bark_notify('EffortOS 循环开始', 'Sprint N: 任务描述')"
+```
+
 **模式 A — 有未完成任务：**
 1. 从 sprint.md 选取下一个 `[ ]` 状态的任务
 2. 将其标记为 `[~]`（进行中）
@@ -60,6 +65,10 @@ Roadmap 中的 milestone 全部完成后，**不是终点，而是新的起点**
 - 每次迭代只完成 **一个** 小任务
 - commit message 要清晰描述做了什么
 - 如果本次迭代触发了新 sprint 规划，下个迭代从新 sprint 第一个任务开始
+- **迭代完成后推送简报**：
+  ```
+  venv/bin/python -c "from app.utils.notify import bark_notify; bark_notify('EffortOS 循环完成', '简报内容')"
+  ```
 
 ## 核心原则：永不停止优化
 
