@@ -53,14 +53,16 @@ def get_dashboard():
 
     from app.blueprints.activities.routes import _serialize_activity
 
-    recent_list = [_serialize_activity(a) for a in _filter_user(Activity.objects()).order_by("-start_time").limit(5)]
+    recent_list = [
+        _serialize_activity(a)
+        for a in _filter_user(Activity.objects(start_time__lte=end_dt)).order_by("-start_time").limit(5)
+    ]
 
     # 滚动窗口：近 7 天 / 近 30 天（比自然周/月更有训练参考价值）
-    rolling_7d = (today - timedelta(days=6)).strftime("%Y-%m-%d")
     rolling_30d = (today - timedelta(days=29)).strftime("%Y-%m-%d")
-
-    week_activities = list(_filter_user(Activity.objects(start_time__gte=rolling_7d, start_time__lte=end_dt)))
     month_activities = list(_filter_user(Activity.objects(start_time__gte=rolling_30d, start_time__lte=end_dt)))
+    rolling_7d = (today - timedelta(days=6)).strftime("%Y-%m-%d")
+    week_activities = [a for a in month_activities if a.start_time.strftime("%Y-%m-%d") >= rolling_7d]
 
     def _calc_stats(activities):
         total_tss = sum(a.computed_metrics.tss for a in activities if a.computed_metrics and a.computed_metrics.tss)

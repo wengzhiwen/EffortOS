@@ -90,9 +90,15 @@ def _serialize_summary(summary):
 
 def _serialize_activity(activity):
     """将 Activity 序列化为字典。"""
+    gear_id = None
+    gear_ref = activity._data.get("gear")
+    if gear_ref is not None:
+        from bson import ObjectId
+
+        gear_id = str(gear_ref) if isinstance(gear_ref, ObjectId) else str(gear_ref.pk)
     return {
         "id": str(activity.id),
-        "gear_id": str(activity.gear.id) if activity.gear else None,
+        "gear_id": gear_id,
         "activity_type": activity.activity_type,
         "name": html.escape(activity.name or ""),
         "start_time": activity.start_time.isoformat(),
