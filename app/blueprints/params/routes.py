@@ -9,6 +9,26 @@ from app.utils.auth import require_user, user_filter
 params_bp = Blueprint("params", __name__)
 
 
+def _clamp_int(val, lo, hi):
+    if val is None:
+        return None
+    try:
+        v = int(val)
+    except (ValueError, TypeError):
+        return None
+    return max(lo, min(hi, v))
+
+
+def _clamp_float(val, lo, hi):
+    if val is None:
+        return None
+    try:
+        v = float(val)
+    except (ValueError, TypeError):
+        return None
+    return max(lo, min(hi, v))
+
+
 def _serialize_params(params):
     """将 AthleteParams 序列化为字典。"""
     if not params:
@@ -45,12 +65,12 @@ def create_params():
 
     params_data = {
         "effective_date": effective_date,
-        "ftp": data.get("ftp"),
-        "cycling_lthr": data.get("cycling_lthr"),
-        "running_lthr": data.get("running_lthr"),
-        "walking_lthr": data.get("walking_lthr"),
-        "max_heart_rate": data.get("max_heart_rate"),
-        "weight": data.get("weight"),
+        "ftp": _clamp_int(data.get("ftp"), 50, 600),
+        "cycling_lthr": _clamp_int(data.get("cycling_lthr"), 60, 220),
+        "running_lthr": _clamp_int(data.get("running_lthr"), 60, 220),
+        "walking_lthr": _clamp_int(data.get("walking_lthr"), 60, 220),
+        "max_heart_rate": _clamp_int(data.get("max_heart_rate"), 60, 250),
+        "weight": _clamp_float(data.get("weight"), 20, 300),
     }
 
     params = save_params(user, params_data)
