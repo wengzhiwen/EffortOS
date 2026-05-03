@@ -167,6 +167,7 @@ authFetch('/api/wellness/today')
 // 保存
 document.getElementById('wellness-form').addEventListener('submit', e => {
     e.preventDefault();
+    const btn = document.getElementById('save-btn');
     const data = {
         date: today,
         ...formData,
@@ -175,6 +176,7 @@ document.getElementById('wellness-form').addEventListener('submit', e => {
         weight: document.getElementById('wellness-weight').value ? parseFloat(document.getElementById('wellness-weight').value) : null,
         notes: document.getElementById('wellness-notes').value || null,
     };
+    btn.disabled = true;
     authFetch('/api/wellness', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,7 +186,8 @@ document.getElementById('wellness-form').addEventListener('submit', e => {
         .then(res => {
             if (res.code === 200) { showToast('已保存', 'success'); loadHistory(); }
             else showToast(res.message, 'error');
-        });
+        })
+        .finally(() => { btn.disabled = false; });
 });
 
 // 趋势图 + 历史记录
