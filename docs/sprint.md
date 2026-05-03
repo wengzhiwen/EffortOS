@@ -1,16 +1,15 @@
-# Sprint 46: 性能优化 + 用户体验微调
+# Sprint 47: 错误处理 + 边界用例测试
 
 **状态**: 已完成
-**目标**: 持续优化 — API 查询效率优化
+**目标**: 持续优化 — API 错误处理健壮性 + 边界用例测试
 
 ## 任务清单
 
-- [x] **活动列表查询优化** — 修复 gear ReferenceField 懒加载 N+1 问题
-- [x] **Dashboard API 性能优化** — recent activities 添加日期过滤；合并 7d/30d 重叠查询
-- [ ] ~~前端加载骨架屏~~ — 推迟到后续 sprint
+- [x] **API 错误处理审查** — PMC 端点添加日期格式校验，无效日期返回 400
+- [x] **边界用例测试补充** — dashboard 新增 4 个测试，auth 新增 5 个测试
+- [ ] ~~前端错误提示优化~~ — 推迟到后续 sprint
 
-## 优化详情
+## 新增测试
 
-- Dashboard recent activities: `Activity.objects()` → `Activity.objects(start_time__lte=end_dt)` 避免全表扫描
-- Dashboard 7d/30d: 从 2 个独立查询合并为 1 个 30d 查询 + 内存过滤
-- Activities gear 序列化: 通过 `_data["gear"]` 直接取 ObjectId 避免触发懒加载
+Dashboard (4): no_auth, weekly_trend 结构, calendar 结构, invalid_date → 400
+Auth (5): missing_email, missing_verify_fields, profile_no_auth, logout_no_auth(幂等), invalid_token

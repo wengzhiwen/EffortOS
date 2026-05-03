@@ -126,3 +126,35 @@ def test_update_profile_empty_nickname(client):
                       content_type="application/json",
                       headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 400
+
+
+def test_request_code_missing_email(client):
+    resp = client.post("/api/auth/request-code",
+                       data=json.dumps({}),
+                       content_type="application/json")
+    assert resp.status_code == 400
+
+
+def test_verify_missing_fields(client):
+    resp = client.post("/api/auth/verify",
+                       data=json.dumps({}),
+                       content_type="application/json")
+    assert resp.status_code == 400
+
+
+def test_update_profile_no_auth(client):
+    resp = client.put("/api/auth/profile",
+                      data=json.dumps({"nickname": "hacker"}),
+                      content_type="application/json")
+    assert resp.status_code == 401
+
+
+def test_logout_no_auth(client):
+    """未登录登出也应成功（幂等）。"""
+    resp = client.post("/api/auth/logout")
+    assert resp.status_code == 200
+
+
+def test_invalid_token(client):
+    resp = client.get("/api/auth/me", headers={"Authorization": "Bearer invalid-token"})
+    assert resp.status_code == 401

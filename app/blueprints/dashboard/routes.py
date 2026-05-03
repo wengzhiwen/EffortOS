@@ -30,6 +30,12 @@ def get_pmc():
         (dt.now() - timedelta(days=60)).strftime("%Y-%m-%d"),
     )
 
+    try:
+        dt.strptime(start_date, "%Y-%m-%d")
+        dt.strptime(end_date, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"code": 400, "message": "日期格式无效，应为 YYYY-MM-DD", "data": None}), 400
+
     activities = _filter_user(Activity.objects(start_time__gte=start_date, start_time__lte=_end_of_day(end_date)))
     daily = calc_daily_tss(list(activities))
     pmc_data = calc_pmc(daily, start_date, end_date)

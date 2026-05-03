@@ -97,3 +97,42 @@ def test_dashboard_stats_values(client, auth_headers):
     assert stats["count"] == 1
     assert "total_duration_minutes" in stats
     assert "total_distance_km" in stats
+
+
+def test_dashboard_no_auth(client):
+    """未登录用户也应能获取空 dashboard。"""
+    resp = client.get("/api/dashboard")
+    assert resp.status_code == 200
+    data = resp.get_json()["data"]
+    assert data["ctl"] == 0
+    assert data["recent_activities"] == []
+
+
+def test_dashboard_weekly_trend(client, auth_headers):
+    """周趋势数据结构正确。"""
+    _upload_activity(client, auth_headers)
+    resp = client.get("/api/dashboard", headers=auth_headers)
+    data = resp.get_json()["data"]
+    trend = data["weekly_trend"]
+    assert isinstance(trend, list)
+    assert len(trend) == 12
+    assert "week" in trend[0]
+    assert "tss" in trend[0]
+    assert "count" in trend[0]
+
+
+def test_dashboard_calendar_structure(client, auth_headers):
+    """日历数据为 dict 且 key 为日期格式。"""
+    _upload_activity(client, auth_headers)
+    resp = client.get("/api/dashboard", headers=auth_headers)
+    data = resp.get_json()["data"]
+    cal = data["calendar"]
+    assert isinstance(cal, dict)
+    for key in cal:
+        assert len(key) == 10  # YYYY-MM-DD
+
+
+def test_pmc_date_range_invalid(client):
+    """PMC 无效日期格式应返回 400。"""
+    resp = client.get("/api/pmc?start_date=not-a-date&end_date=also-bad")
+    assert resp.status_code == 400
