@@ -246,7 +246,7 @@ function loadActivities(offset = 0) {
                     <td><input type="checkbox" class="activity-check" data-id="${a.id}"></td>
                     <td><span title="${a.start_time}">${a.start_time.slice(0, 10)}</span><span style="color: var(--text-secondary); font-size: 0.75rem; margin-left: 4px;">${'日一二三四五六'[new Date(a.start_time).getDay()]}</span></td>
                     <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
-                    <td><a href="/activities/${a.id}">${a.name || '—'}</a>${pbBadge}</td>
+                    <td><a href="/activities/${a.id}">${esc(a.name || '—')}</a>${pbBadge}</td>
                     <td>${duration}</td>
                     <td>${dist}</td>
                     <td>${hr}</td>

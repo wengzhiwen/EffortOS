@@ -58,7 +58,7 @@ authFetch('/api/activities?limit=50')
     .then(r => r.json())
     .then(res => {
         const items = res.data.items || [];
-        const options = items.map(a => `<option value="${a.id}">${a.start_time.slice(0,10)} ${a.name || '(未命名)'} [${typeNames[a.activity_type] || a.activity_type}]</option>`).join('');
+        const options = items.map(a => `<option value="${a.id}">${a.start_time.slice(0,10)} ${esc(a.name || '(未命名)')} [${typeNames[a.activity_type] || a.activity_type}]</option>`).join('');
         document.getElementById('select-a').innerHTML += options;
         document.getElementById('select-b').innerHTML += options;
     });
@@ -134,8 +134,8 @@ function renderResult(a, b) {
         _compareCharts.push(new Chart(document.getElementById('compare-hr'), {
             type: 'line',
             data: { labels, datasets: [
-                { label: a.name || 'A', data: hrA, borderColor: '#2563eb' },
-                { label: b.name || 'B', data: hrB, borderColor: '#dc2626' },
+                { label: esc(a.name || 'A'), data: hrA, borderColor: '#2563eb' },
+                { label: esc(b.name || 'B'), data: hrB, borderColor: '#dc2626' },
             ]},
             options: { ...chartOpts, scales: { ...chartOpts.scales, y: { title: { display: true, text: 'bpm' } } } },
         });
@@ -147,8 +147,8 @@ function renderResult(a, b) {
         _compareCharts.push(new Chart(document.getElementById('compare-power'), {
             type: 'line',
             data: { labels, datasets: [
-                { label: a.name || 'A', data: pwA, borderColor: '#2563eb' },
-                { label: b.name || 'B', data: pwB, borderColor: '#dc2626' },
+                { label: esc(a.name || 'A'), data: pwA, borderColor: '#2563eb' },
+                { label: esc(b.name || 'B'), data: pwB, borderColor: '#dc2626' },
             ]},
             options: { ...chartOpts, scales: { ...chartOpts.scales, y: { title: { display: true, text: 'W' } } } },
         });
@@ -159,7 +159,7 @@ function summaryCard(act, color) {
     const s = act.summary || {};
     const m = act.metrics || {};
     return `<div style="border-left: 4px solid ${color}; padding-left: 0.75rem;">
-        <div style="font-weight: 600; font-size: 1.05rem;">${act.name || '未命名'}</div>
+        <div style="font-weight: 600; font-size: 1.05rem;">${esc(act.name || '未命名')}</div>
         <div style="font-size: 0.85rem; color: var(--text-secondary);">${typeNames[act.type] || act.type}</div>
         <div style="margin-top: 0.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; font-size: 0.9rem;">
             <div><div style="color: var(--text-secondary);">时长</div>${fmtDur(s.duration_seconds)}</div>

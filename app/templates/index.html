@@ -304,7 +304,7 @@ authFetch('/api/dashboard')
             return `<tr>
                 <td>${a.start_time.slice(0, 10)}</td>
                 <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
-                <td><a href="/activities/${a.id}">${a.name || '—'}</a></td>
+                <td><a href="/activities/${a.id}">${esc(a.name || '—')}</a></td>
                 <td>${durationStr}</td>
                 <td>${tss != null ? tss.toFixed(1) : '—'}</td>
                 <td>${intensityBadge}</td>

@@ -41,13 +41,13 @@ Promise.all([
         authFetch('/api/gear').then(r => r.json()).then(res => {
             const gear = (res.data || []).find(g => g.id === a.gear_id);
             const el = document.getElementById('gear-info');
-            if (el && gear) el.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-secondary);">🚴 ${gear.name}</span>`;
+            if (el && gear) el.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-secondary);">🚴 ${esc(gear.name)}</span>`;
             else if (el) el.innerHTML = '';
         });
     }
 
     document.getElementById('activity-detail').innerHTML = `
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${a.name || '未命名活动'}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${esc(a.name || '未命名活动')}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
             <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>

@@ -26,6 +26,7 @@
     <script>
     // 全局常量和工具
     window.TYPE_NAMES = { cycling: '骑行', indoor_cycling: '室内骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行', swimming: '游泳', other: '其他' };
+    window.esc = function(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
     </script>
     <script>
     // 全局认证工具（必须在子模板 script 之前加载）
