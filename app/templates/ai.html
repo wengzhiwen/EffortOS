@@ -39,7 +39,7 @@ function generateReport() {
 
     resultCard.style.display = 'block';
     resultTitle.textContent = '训练周报';
-    resultContent.textContent = '正在生成...';
+    resultContent.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
     resultMeta.textContent = '';
 
     authFetch('/api/ai/weekly-report', { method: 'POST' })
@@ -64,7 +64,7 @@ function getSuggestion() {
 
     resultCard.style.display = 'block';
     resultTitle.textContent = '训练建议';
-    resultContent.textContent = '正在生成...';
+    resultContent.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
     resultMeta.textContent = '';
 
     authFetch('/api/ai/suggestion', {
