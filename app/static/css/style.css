@@ -209,7 +209,9 @@ body {
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
 
 @media (max-width: 768px) {
-    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
 }
 
 /* 加载动画 */
@@ -233,14 +235,12 @@ body {
 
 /* 移动端表格 */
 @media (max-width: 768px) {
-    table { font-size: 0.85rem; }
+    table { font-size: 0.85rem; display: block; overflow-x: auto; }
     th, td { padding: 0.5rem 0.25rem; }
     .metric-value { font-size: 1.5rem; }
-    .grid-4 { grid-template-columns: 1fr 1fr; }
     .card { padding: 1rem; }
     .container { padding: 1rem; }
     canvas { max-width: 100%; height: auto !important; }
-    table { display: block; overflow-x: auto; }
     .filter-buttons { flex-wrap: wrap; }
 }
 
