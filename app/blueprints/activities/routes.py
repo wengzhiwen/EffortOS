@@ -506,6 +506,47 @@ def get_trackpoints(activity_id):
     )
 
 
+@activities_bp.route("/activities/<activity_id>/laps", methods=["GET"])
+def get_lap_splits(activity_id):
+    """获取活动的分段分析。"""
+    from app.services.metrics_service import calc_lap_splits
+
+    activity = Activity.objects(id=activity_id).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    tps = activity.trackpoints
+    if not tps or len(tps) < 2:
+        return jsonify({"code": 200, "message": "ok", "data": []})
+
+    # 重建带时间的 trackpoint 数据
+    from datetime import datetime, timedelta
+
+    base_time = activity.start_time or datetime.now()
+    raw_tps = []
+    for tp in tps:
+        raw_tps.append(
+            {
+                "time": base_time + timedelta(seconds=tp.elapsed),
+                "distance": tp.distance,
+                "heart_rate": tp.hr,
+                "power": tp.power,
+                "speed": tp.speed,
+                "cadence": tp.cadence,
+                "altitude": tp.altitude,
+            }
+        )
+
+    mode = request.args.get("mode", "distance")
+    interval = request.args.get("interval", 1000, type=float)
+
+    if mode == "time":
+        interval = request.args.get("interval", 300, type=float)
+
+    laps = calc_lap_splits(raw_tps, mode=mode, interval=interval)
+    return jsonify({"code": 200, "message": "ok", "data": laps})
+
+
 @activities_bp.route("/activities/<activity_id>", methods=["PUT"])
 def update_activity(activity_id):
     """更新运动记录（名称/类型）。"""

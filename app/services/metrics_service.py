@@ -392,3 +392,119 @@ def calc_pmc(daily_tss: dict[str, float], start_date: str, end_date: str) -> lis
         current += timedelta(days=1)
 
     return result
+
+
+# ============================================================
+# 分段分析（Lap Splits）
+# ============================================================
+
+
+def calc_lap_splits(
+    trackpoints: list[dict],
+    mode: str = "distance",
+    interval: float = 1000,
+) -> list[dict]:
+    """将活动按距离或时间分段，每段独立统计。
+
+    参数:
+        trackpoints: 解析后的时间序列数据（需有 time, distance 字段）
+        mode: "distance" 按距离分段（interval 单位米），"time" 按时间分段（interval 单位秒）
+        interval: 分段间隔
+
+    返回: [
+        {
+            "lap": 1,
+            "start_elapsed": 秒,
+            "end_elapsed": 秒,
+            "duration_seconds": 秒,
+            "distance_meters": 米,
+            "avg_speed_kmh": km/h,
+            "avg_hr": bpm,
+            "max_hr": bpm,
+            "avg_power": W,
+            "max_power": W,
+            "avg_cadence": rpm,
+        },
+        ...
+    ]
+    """
+    if not trackpoints or len(trackpoints) < 2:
+        return []
+
+    n = len(trackpoints)
+    laps = []
+    lap_idx = 1
+
+    if mode == "distance":
+        next_boundary = interval
+        lap_start = 0
+
+        for i in range(1, n):
+            dist = trackpoints[i].get("distance")
+            if dist is not None and dist >= next_boundary:
+                laps.append(_extract_lap_stats(trackpoints, lap_start, i, lap_idx))
+                lap_idx += 1
+                lap_start = i
+                next_boundary += interval
+
+        # 最后一段
+        if lap_start < n - 1:
+            lap = _extract_lap_stats(trackpoints, lap_start, n - 1, lap_idx)
+            if lap["duration_seconds"] > 0:
+                laps.append(lap)
+
+    elif mode == "time":
+        next_boundary = interval
+        lap_start = 0
+        start_time = trackpoints[0]["time"]
+
+        for i in range(1, n):
+            elapsed = (trackpoints[i]["time"] - start_time).total_seconds()
+            if elapsed >= next_boundary:
+                laps.append(_extract_lap_stats(trackpoints, lap_start, i, lap_idx))
+                lap_idx += 1
+                lap_start = i
+                next_boundary += interval
+
+        if lap_start < n - 1:
+            lap = _extract_lap_stats(trackpoints, lap_start, n - 1, lap_idx)
+            if lap["duration_seconds"] > 0:
+                laps.append(lap)
+
+    return laps
+
+
+def _extract_lap_stats(trackpoints: list[dict], start: int, end: int, lap_idx: int) -> dict:
+    """提取一个分段内的统计数据。"""
+    t_start = trackpoints[start]["time"]
+    t_end = trackpoints[end]["time"]
+    duration = (t_end - t_start).total_seconds()
+
+    dist_start = trackpoints[start].get("distance") or 0
+    dist_end = trackpoints[end].get("distance") or 0
+    distance = dist_end - dist_start
+
+    hrs = [trackpoints[i].get("heart_rate") for i in range(start, end + 1)]
+    hrs = [v for v in hrs if v is not None]
+
+    powers = [trackpoints[i].get("power") for i in range(start, end + 1)]
+    powers = [v for v in powers if v is not None]
+
+    cadences = [trackpoints[i].get("cadence") for i in range(start, end + 1)]
+    cadences = [v for v in cadences if v is not None]
+
+    avg_speed = (distance / duration * 3.6) if duration > 0 and distance > 0 else None
+
+    return {
+        "lap": lap_idx,
+        "start_elapsed": (t_start - trackpoints[0]["time"]).total_seconds(),
+        "end_elapsed": (t_end - trackpoints[0]["time"]).total_seconds(),
+        "duration_seconds": round(duration, 1),
+        "distance_meters": round(distance, 1),
+        "avg_speed_kmh": round(avg_speed, 1) if avg_speed else None,
+        "avg_hr": round(sum(hrs) / len(hrs)) if hrs else None,
+        "max_hr": max(hrs) if hrs else None,
+        "avg_power": round(sum(powers) / len(powers)) if powers else None,
+        "max_power": max(powers) if powers else None,
+        "avg_cadence": round(sum(cadences) / len(cadences)) if cadences else None,
+    }
