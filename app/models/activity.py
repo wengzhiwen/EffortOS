@@ -64,6 +64,7 @@ class Trackpoint(EmbeddedDocument):
 
 class Activity(BaseDocument):
     user = ReferenceField("User")
+    gear = ReferenceField("Gear")  # 关联装备
     activity_type = StringField(
         required=True,
         choices=["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"],
