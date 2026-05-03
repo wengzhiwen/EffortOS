@@ -8,6 +8,16 @@
 
 ---
 
+### Sprint 50 完成 — 2026-05-03
+
+Bug 大扫除 #2（每 5 个 Sprint 一次）：
+- Playwright 遍历 7 个页面检查 console error，全部为 0
+- Activities API 正常返回（验证 Sprint 45 PB 修复有效）
+- 全部 211 测试通过，无回归
+- 无新 bug 发现 — 代码库健康状态良好
+
+---
+
 ### Sprint 49 完成 — 2026-05-03
 
 前端加载体验 + 代码清理：
