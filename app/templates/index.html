@@ -158,26 +158,33 @@ authFetch('/api/dashboard')
         renderTypeChart(d.type_breakdown);
 
         // PMC 图表
-        const labels = d.pmc.map(p => p.date);
-        new Chart(document.getElementById('pmc-chart'), {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'CTL (Fitness)', data: d.pmc.map(p => p.ctl), borderColor: '#2563eb', fill: false, tension: 0.3 },
-                    { label: 'ATL (Fatigue)', data: d.pmc.map(p => p.atl), borderColor: '#dc2626', fill: false, tension: 0.3 },
-                    { label: 'TSB (Form)', data: d.pmc.map(p => p.tsb), borderColor: '#16a34a', fill: false, tension: 0.3, borderDash: [5, 5] },
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: false } },
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+        const pmcEl = document.getElementById('pmc-chart');
+        if (d.pmc && d.pmc.length > 0) {
+            const labels = d.pmc.map(p => p.date);
+            new Chart(pmcEl, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'CTL (Fitness)', data: d.pmc.map(p => p.ctl), borderColor: '#2563eb', fill: false, tension: 0.3 },
+                        { label: 'ATL (Fatigue)', data: d.pmc.map(p => p.atl), borderColor: '#dc2626', fill: false, tension: 0.3 },
+                        { label: 'TSB (Form)', data: d.pmc.map(p => p.tsb), borderColor: '#16a34a', fill: false, tension: 0.3, borderDash: [5, 5] },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: false } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        } else {
+            pmcEl.parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">上传运动数据后，PMC 趋势将在此显示</p>';
+        }
 
         // 周训练量趋势
         if (d.weekly_trend && d.weekly_trend.length > 0) {
+            const wtLabels = d.weekly_trend.map(w => w.week.slice(5));
+            new Chart(document.getElementById('weekly-trend-chart'), {
             const wtLabels = d.weekly_trend.map(w => w.week.slice(5));
             new Chart(document.getElementById('weekly-trend-chart'), {
                 type: 'bar',
@@ -204,9 +211,10 @@ authFetch('/api/dashboard')
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '天' } } }
                 }
             });
+        } else {
+            document.getElementById('weekly-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
+            document.getElementById('weekly-count-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
         }
-
-        // 最近活动列表
         const tbody = document.getElementById('recent-activities');
         if (!hasActivities) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">暂无活动记录，<a href="/activities">去上传</a></td></tr>';
@@ -236,7 +244,10 @@ authFetch('/api/dashboard')
     });
 
 function renderStats(elId, stats) {
-    if (!stats) return;
+    if (!stats || stats.count === 0) {
+        document.getElementById(elId).innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">暂无数据</p>';
+        return;
+    }
     document.getElementById(elId).innerHTML = `
         <div class="stat-item"><div class="stat-value">${stats.count}</div><div class="stat-label">活动次数</div></div>
         <div class="stat-item"><div class="stat-value">${stats.total_tss.toFixed(0)}</div><div class="stat-label">总 TSS</div></div>

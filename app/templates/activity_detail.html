@@ -218,10 +218,46 @@ Promise.all([
             return min + ':' + (sec < 10 ? '0' : '') + sec;
         });
 
+        // 垂直十字准线插件
+        const crosshairPlugin = {
+            id: 'crosshair',
+            afterDraw(chart) {
+                if (chart.tooltip && chart.tooltip._active && chart.tooltip._active.length) {
+                    const x = chart.tooltip._active[0].element.x;
+                    const yAxis = chart.scales.y;
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(x, yAxis.top);
+                    ctx.lineTo(x, yAxis.bottom);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(150,150,150,0.4)';
+                    ctx.setLineDash([4, 4]);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        };
+
         const chartOpts = {
             responsive: true,
+            interaction: { mode: 'index', intersect: false },
             scales: { x: { display: true, ticks: { maxTicksLimit: 10 } }, y: { beginAtZero: false } },
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: { size: 12 },
+                    bodyFont: { size: 12 },
+                    padding: 8,
+                    displayColors: false,
+                    callbacks: {
+                        title: function(items) { return '时间: ' + items[0].label; },
+                        label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) : '—'); }
+                    }
+                }
+            },
             elements: { point: { radius: 0 }, line: { borderWidth: 1.5 } },
         };
 
@@ -230,6 +266,7 @@ Promise.all([
         if (hrData.some(v => v != null)) {
             new Chart(document.getElementById('hr-chart'), {
                 type: 'line',
+                plugins: [crosshairPlugin],
                 data: { labels, datasets: [{ label: '心率', data: hrData, borderColor: '#dc2626', fill: true, backgroundColor: 'rgba(220,38,38,0.1)' }] },
                 options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'bpm' } } } },
             });
@@ -242,6 +279,7 @@ Promise.all([
             if (el) {
                 new Chart(el, {
                     type: 'line',
+                    plugins: [crosshairPlugin],
                     data: { labels, datasets: [{ label: '功率', data: powerData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37,99,235,0.1)' }] },
                     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'W' } } } },
                 });
@@ -255,6 +293,7 @@ Promise.all([
             if (el) {
                 new Chart(el, {
                     type: 'line',
+                    plugins: [crosshairPlugin],
                     data: { labels, datasets: [{ label: '速度', data: speedData, borderColor: '#16a34a', fill: true, backgroundColor: 'rgba(22,163,74,0.1)' }] },
                     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'km/h' } } } },
                 });
@@ -268,6 +307,7 @@ Promise.all([
             if (el) {
                 new Chart(el, {
                     type: 'line',
+                    plugins: [crosshairPlugin],
                     data: { labels, datasets: [{ label: '踏频', data: cadenceData, borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139,92,246,0.1)' }] },
                     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'rpm' } } } },
                 });
@@ -281,6 +321,7 @@ Promise.all([
             if (el) {
                 new Chart(el, {
                     type: 'line',
+                    plugins: [crosshairPlugin],
                     data: { labels, datasets: [{ label: '海拔', data: altData, borderColor: '#d97706', fill: true, backgroundColor: 'rgba(217,119,6,0.1)' }] },
                     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'm' } } } },
                 });
