@@ -4,6 +4,9 @@ from typing import Optional
 
 from app.models.activity import ComputedMetrics
 
+# 暂停间隔阈值：连续两个打点间隔超过此值视为暂停，不计入运动时长
+PAUSE_GAP_SECONDS = 30
+
 # ============================================================
 # 功率衍生指标
 # ============================================================
@@ -475,6 +478,106 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
 
 
 # ============================================================
+# 活跃时段与暂停检测
+# ============================================================
+
+
+def _calc_active_duration(trackpoints, gap_threshold=PAUSE_GAP_SECONDS):
+    """计算活跃运动时长（排除暂停间隔）。
+
+    相邻打点间隔 > gap_threshold 视为暂停，不计入运动时长。
+    返回 (active_seconds, gap_seconds)。
+    """
+    if not trackpoints or len(trackpoints) < 2:
+        return 0.0, 0.0
+    active = 0.0
+    gap = 0.0
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > gap_threshold:
+            gap += dt
+        else:
+            active += dt
+    return active, gap
+
+
+def _split_segments(trackpoints, gap_threshold=PAUSE_GAP_SECONDS):
+    """将 trackpoints 按暂停间隔拆分为活跃段列表。
+
+    返回 list[list[dict]]，每个子列表是一段连续活跃数据。
+    """
+    if not trackpoints:
+        return []
+    segments = [[trackpoints[0]]]
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > gap_threshold:
+            segments.append([])
+        segments[-1].append(trackpoints[i])
+    return [s for s in segments if len(s) >= 2]
+
+
+def _calc_work_kj_time_aware(trackpoints):
+    """使用实际时间间隔计算总做功（kJ）。"""
+    work_j = 0.0
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > PAUSE_GAP_SECONDS:
+            continue
+        p0 = trackpoints[i - 1].get("power")
+        p1 = trackpoints[i].get("power")
+        if p0 is not None and p1 is not None:
+            work_j += (p0 + p1) / 2 * dt
+        elif p0 is not None:
+            work_j += p0 * dt
+        elif p1 is not None:
+            work_j += p1 * dt
+    return round(work_j / 1000, 1) if work_j > 0 else None
+
+
+def _calc_zone_times_time_aware(trackpoints, field, zones):
+    """使用实际时间间隔计算分区时间分布。"""
+    result = {z["name"]: 0.0 for z in zones}
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > PAUSE_GAP_SECONDS:
+            continue
+        val = trackpoints[i].get(field)
+        if val is None:
+            continue
+        for zone in zones:
+            if zone["min"] <= val < zone["max"]:
+                result[zone["name"]] += dt
+                break
+    return {k: round(v, 1) for k, v in result.items()}
+
+
+def _calc_segmented_np(trackpoints, power_field="power"):
+    """按活跃段分别计算 NP，合并时按段时长加权。
+
+    避免 30s 滚动窗口跨越暂停间隔。
+    """
+    segments = _split_segments(trackpoints)
+    if not segments:
+        return None
+
+    all_rolling = []
+    for seg in segments:
+        pvs = [tp.get(power_field) for tp in seg if tp.get(power_field) is not None]
+        if len(pvs) < 30:
+            # 不足 30s，直接加入原始值
+            all_rolling.extend(pvs)
+            continue
+        for i in range(len(pvs) - 29):
+            all_rolling.append(sum(pvs[i : i + 30]) / 30)
+
+    if not all_rolling:
+        return None
+    fourth_power_sum = sum(v**4 for v in all_rolling)
+    return round((fourth_power_sum / len(all_rolling)) ** 0.25, 1)
+
+
+# ============================================================
 # 统一计算入口
 # ============================================================
 
@@ -508,7 +611,7 @@ def compute_activity_metrics(
     power_values = [tp["power"] for tp in trackpoints if tp.get("power") is not None]
     hr_values = [tp["heart_rate"] for tp in trackpoints if tp.get("heart_rate") is not None]
 
-    duration = (trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds()
+    active_duration, _gap_duration = _calc_active_duration(trackpoints)
     avg_hr = sum(hr_values) // len(hr_values) if hr_values else None
 
     has_power = len(power_values) > 0
@@ -521,9 +624,9 @@ def compute_activity_metrics(
 
     # 功率衍生指标（仅骑行且有可靠功率数据时）
     if power_reliable and is_cycling:
-        metrics.normalized_power = calc_normalized_power(power_values)
+        metrics.normalized_power = _calc_segmented_np(trackpoints, "power")
         avg_power = sum(power_values) / len(power_values)
-        metrics.work_kj = calc_work_kj(power_values)
+        metrics.work_kj = _calc_work_kj_time_aware(trackpoints)
 
         if metrics.normalized_power:
             metrics.variability_index = calc_variability_index(metrics.normalized_power, avg_power)
@@ -533,25 +636,25 @@ def compute_activity_metrics(
 
         if ftp and metrics.normalized_power:
             metrics.intensity_factor = calc_intensity_factor(metrics.normalized_power, ftp)
-            metrics.tss = calc_power_tss(duration, metrics.normalized_power, ftp)
+            metrics.tss = calc_power_tss(active_duration, metrics.normalized_power, ftp)
             metrics.tss_method = "power"
 
     # 心率衍生指标
     if has_hr and lthr:
         metrics.hr_intensity_factor = calc_hr_intensity_factor(avg_hr, lthr)
-        metrics.hr_tss = calc_hr_tss(duration, avg_hr, lthr)
+        metrics.hr_tss = calc_hr_tss(active_duration, avg_hr, lthr)
 
         # TSS 策略：功率未算出 或 功率数据不可靠 → 心率兜底
         if metrics.tss is None and metrics.hr_tss is not None:
             metrics.tss = metrics.hr_tss
             metrics.tss_method = "hr"
 
-    # 分区时间统计
+    # 分区时间统计（使用实际时间间隔）
     if has_hr and hr_zones:
-        metrics.hr_zones_time = calc_zone_times(hr_values, hr_zones)
+        metrics.hr_zones_time = _calc_zone_times_time_aware(trackpoints, "heart_rate", hr_zones)
 
     if has_power and power_zones:
-        metrics.power_zones_time = calc_zone_times(power_values, power_zones)
+        metrics.power_zones_time = _calc_zone_times_time_aware(trackpoints, "power", power_zones)
 
     # Best Efforts：不同时长的峰值功率和峰值心率
     best_efforts = calc_best_efforts(trackpoints)

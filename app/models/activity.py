@@ -18,7 +18,8 @@ from app.models.base import BaseDocument
 class DataSummary(EmbeddedDocument):
     """原始数据摘要：时间序列的关键统计值。"""
 
-    duration_seconds = IntField()  # 总时长（秒）
+    duration_seconds = IntField()  # 总时长（秒，含暂停）
+    active_seconds = IntField()  # 活跃运动时长（秒，排除暂停）
     total_distance = FloatField()  # 总距离（米）
     avg_heart_rate = IntField()  # 平均心率
     max_heart_rate = IntField()  # 最大心率
