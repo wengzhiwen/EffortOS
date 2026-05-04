@@ -188,12 +188,16 @@ def _serialize_activity(activity):
 
 def _serialize_metrics(metrics):
     """将 ComputedMetrics 序列化为字典。"""
-    if not metrics or metrics.tss is None:
+    if not metrics:
+        return None
+    has_any = metrics.tss is not None or metrics.hr_tss is not None or metrics.manual_tss is not None
+    if not has_any and not metrics.normalized_power and not metrics.intensity_level:
         return None
     return {
         "tss": metrics.tss,
         "tss_method": metrics.tss_method,
         "hr_tss": metrics.hr_tss,
+        "manual_tss": metrics.manual_tss,
         "intensity_factor": metrics.intensity_factor,
         "hr_intensity_factor": metrics.hr_intensity_factor,
         "normalized_power": metrics.normalized_power,
@@ -646,7 +650,7 @@ def export_activities():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["日期", "类型", "名称", "时长(秒)", "距离(m)", "平均心率", "平均功率", "TSS", "TSS方法", "强度"])
+    writer.writerow(["日期", "类型", "名称", "时长(秒)", "距离(m)", "平均功率", "TSS", "hrTSS", "强度"])
 
     for a in activities:
         s = a.data_summary
@@ -658,10 +662,9 @@ def export_activities():
                 a.name or "",
                 s.duration_seconds if s else "",
                 round(s.total_distance, 1) if s and s.total_distance else "",
-                s.avg_heart_rate if s else "",
                 round(s.avg_power, 0) if s and s.avg_power else "",
                 round(m.tss, 1) if m and m.tss else "",
-                m.tss_method if m else "",
+                round(m.hr_tss, 1) if m and m.hr_tss else "",
                 m.intensity_level if m else "",
             ]
         )
@@ -907,6 +910,15 @@ def update_activity(activity_id):
 
     if "notes" in data:
         activity.notes = data["notes"][:2000] if data["notes"] else None
+
+    if "manual_tss" in data:
+        if not activity.computed_metrics:
+            from app.models.activity import ComputedMetrics
+
+            activity.computed_metrics = ComputedMetrics()
+        activity.computed_metrics.manual_tss = (
+            round(float(data["manual_tss"]), 1) if data["manual_tss"] is not None else None
+        )
 
     if "gear_id" in data:
         if data["gear_id"]:

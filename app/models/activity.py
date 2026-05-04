@@ -37,8 +37,9 @@ class DataSummary(EmbeddedDocument):
 class ComputedMetrics(EmbeddedDocument):
     """计算得出的运动指标。"""
 
-    tss = FloatField()  # 训练压力分数（实际使用的值）
+    tss = FloatField()  # 功率 TSS（仅功率有效时有值）
     hr_tss = FloatField()  # 基于心率的 TSS
+    manual_tss = FloatField()  # 用户手动设定的 TSS（优先于计算值）
     intensity_factor = FloatField()  # 强度因子（IF = NP/FTP）
     hr_intensity_factor = FloatField()  # 心率强度因子（HR_IF = avg_hr/LTHR）
     normalized_power = FloatField()  # 标准化功率（NP）

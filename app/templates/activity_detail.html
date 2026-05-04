@@ -69,10 +69,31 @@ Promise.all([
                 <div class="card-title">距离</div>
                 <div class="metric-value">${dist}</div>
             </div>
+            <div class="card" id="tss-card">
+                <div class="card-title metric-title">
+                    TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量此活动对身体的负荷量。点击数值可手动修改。</span></span>
+                </div>
+                <div class="metric-value" id="tss-display" style="cursor:pointer" title="点击修改 TSS">
+                    ${m.manual_tss != null ? m.manual_tss.toFixed(1) : m.tss != null ? m.tss.toFixed(1) : '—'}
+                </div>
+                <div class="metric-unit" id="tss-sub">
+                    ${m.manual_tss != null
+                        ? `手动设定${m.tss != null ? '（计算值 ' + m.tss.toFixed(1) + '）' : ''}`
+                        : m.tss_method === 'power' ? '基于功率' : ''}
+                </div>
+                <div id="tss-editor" style="display:none; margin-top:0.5rem;">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="number" step="0.1" id="tss-input" style="width:80px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; background:var(--input-bg); color:var(--text);" value="${m.manual_tss != null ? m.manual_tss : m.tss != null ? m.tss.toFixed(1) : ''}">
+                        <button class="btn btn-sm btn-primary" onclick="saveTss()">保存</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelTssEdit()">取消</button>
+                        ${m.manual_tss != null ? `<button class="btn btn-sm btn-secondary" onclick="clearTss()" style="color:var(--danger)">清除手动值</button>` : ''}
+                    </div>
+                </div>
+            </div>
             <div class="card">
-                <div class="card-title metric-title">TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量此活动对身体的负荷量</span></span></div>
-                <div class="metric-value">${m.tss != null ? m.tss.toFixed(1) : '—'}</div>
-                <div class="metric-unit">${m.tss_method === 'power' ? '基于功率' : m.tss_method === 'hr' ? '基于心率' : ''}</div>
+                <div class="card-title metric-title">hrTSS <span class="metric-help">?<span class="metric-tooltip">基于心率的训练压力分数 = 时长(h) × (avgHR/LTHR)² × 100</span></span></div>
+                <div class="metric-value">${m.hr_tss != null ? m.hr_tss.toFixed(1) : '—'}</div>
+                <div class="metric-unit">基于心率</div>
             </div>
             <div class="card">
                 <div class="card-title metric-title">NP / IF <span class="metric-help">?<span class="metric-tooltip">NP: 标准化功率，考虑变速的等效功率。IF: 强度因子 = NP/FTP</span></span></div>
@@ -549,6 +570,37 @@ function switchLapMode(btn) {
                 body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">数据不足</td></tr>';
             }
         });
+}
+
+// TSS 手动编辑
+const tssDisplay = document.getElementById('tss-display');
+const tssEditor = document.getElementById('tss-editor');
+if (tssDisplay) {
+    tssDisplay.addEventListener('click', () => { tssEditor.style.display = 'block'; tssDisplay.style.cursor = 'default'; });
+}
+function cancelTssEdit() { tssEditor.style.display = 'none'; tssDisplay.style.cursor = 'pointer'; }
+function saveTss() {
+    const val = document.getElementById('tss-input').value;
+    const num = val !== '' ? parseFloat(val) : null;
+    if (val !== '' && isNaN(num)) { showToast('请输入有效数字', 'error'); return; }
+    authFetch('/api/activities/' + activityId, {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({manual_tss: num})
+    }).then(r => r.json()).then(res => {
+        if (res.code === 200) {
+            showToast('TSS 已更新', 'success');
+            tssEditor.style.display = 'none';
+            location.reload();
+        } else { showToast(res.message, 'error'); }
+    });
+}
+function clearTss() {
+    authFetch('/api/activities/' + activityId, {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({manual_tss: null})
+    }).then(r => r.json()).then(res => {
+        if (res.code === 200) { location.reload(); } else { showToast(res.message, 'error'); }
+    });
 }
 </script>
 {% endblock %}

@@ -224,9 +224,8 @@ def test_compute_running_hr_tss():
         lthr=170,
     )
 
-    assert metrics.tss is not None
-    assert metrics.tss_method == "hr"
-    assert metrics.hr_tss is not None
+    assert metrics.tss is None  # 跑步无功率，tss 为空
+    assert metrics.hr_tss is not None  # hr_tss 有值
     assert metrics.normalized_power is None  # 无功率数据
 
 

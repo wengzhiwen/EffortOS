@@ -644,11 +644,6 @@ def compute_activity_metrics(
         metrics.hr_intensity_factor = calc_hr_intensity_factor(avg_hr, lthr)
         metrics.hr_tss = calc_hr_tss(active_duration, avg_hr, lthr)
 
-        # TSS 策略：功率未算出 或 功率数据不可靠 → 心率兜底
-        if metrics.tss is None and metrics.hr_tss is not None:
-            metrics.tss = metrics.hr_tss
-            metrics.tss_method = "hr"
-
     # 分区时间统计（使用实际时间间隔）
     if has_hr and hr_zones:
         metrics.hr_zones_time = _calc_zone_times_time_aware(trackpoints, "heart_rate", hr_zones)
@@ -689,9 +684,14 @@ def calc_daily_tss(activities: list) -> dict[str, float]:
     """
     daily = defaultdict(float)
     for activity in activities:
-        if activity.computed_metrics and activity.computed_metrics.tss:
+        m = activity.computed_metrics
+        if not m:
+            continue
+        # 优先级：手动 > 功率 TSS > hrTSS
+        tss = m.manual_tss or m.tss or m.hr_tss
+        if tss:
             date_str = activity.start_time.strftime("%Y-%m-%d")
-            daily[date_str] += activity.computed_metrics.tss
+            daily[date_str] += tss
     return dict(daily)
 
 

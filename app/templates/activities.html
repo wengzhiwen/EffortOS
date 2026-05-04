@@ -139,8 +139,8 @@
                 <th>名称</th>
                 <th>时长</th>
                 <th>距离</th>
-                <th>平均心率</th>
                 <th>TSS</th>
+                <th>hrTSS</th>
                 <th>强度</th>
                 <th></th>
             </tr>
@@ -283,8 +283,10 @@ function loadActivities(offset = 0) {
                 const m = a.computed_metrics || {};
                 const duration = fmtDur(s.duration_seconds);
                 const dist = s.total_distance ? (s.total_distance / 1000).toFixed(1) + ' km' : '—';
-                const hr = s.avg_heart_rate || '—';
-                const tss = m.tss != null ? m.tss.toFixed(1) : '—';
+                const displayTss = m.manual_tss != null ? m.manual_tss : m.tss;
+                const tss = displayTss != null ? displayTss.toFixed(1) : '—';
+                const tssTag = m.manual_tss != null ? ' <span style="font-size:0.7rem;color:var(--text-secondary)">手动</span>' : '';
+                const hrTss = m.hr_tss != null ? m.hr_tss.toFixed(1) : '—';
                 const il = m.intensity_level;
                 const intensityBadge = il ? `<span style="color: ${intensityColors[il] || '#999'}; font-weight: 600;">${intensityNames[il] || il}</span>` : '—';
                 const pbWindows = a.pb_windows || [];
@@ -296,8 +298,8 @@ function loadActivities(offset = 0) {
                     <td><a href="/activities/${a.id}">${esc(a.name || '—')}</a>${pbBadge}</td>
                     <td>${duration}</td>
                     <td>${dist}</td>
-                    <td>${hr}</td>
-                    <td>${tss}</td>
+                    <td>${tss}${tssTag}</td>
+                    <td>${hrTss}</td>
                     <td>${intensityBadge}</td>
                     <td><button onclick="deleteActivity('${a.id}')" style="color: var(--danger); background: none; border: none; cursor: pointer;">删除</button></td>
                 </tr>`;
