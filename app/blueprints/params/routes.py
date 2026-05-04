@@ -115,6 +115,66 @@ def get_params_history():
     )
 
 
+@params_bp.route("/params/<params_id>", methods=["PUT"])
+def update_params(params_id):
+    """编辑历史参数记录。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    params = AthleteParams.objects(id=params_id, user=user).first()
+    if not params:
+        return jsonify({"code": 404, "message": "参数记录不存在", "data": None}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"code": 400, "message": "缺少请求体", "data": None}), 400
+
+    if "effective_date" in data:
+        try:
+            params.effective_date = datetime.fromisoformat(data["effective_date"].replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return jsonify({"code": 400, "message": "日期格式错误", "data": None}), 400
+
+    if "ftp" in data:
+        params.ftp = _clamp_int(data["ftp"], 50, 600)
+    if "cycling_lthr" in data:
+        params.cycling_lthr = _clamp_int(data["cycling_lthr"], 60, 220)
+    if "running_lthr" in data:
+        params.running_lthr = _clamp_int(data["running_lthr"], 60, 220)
+    if "walking_lthr" in data:
+        params.walking_lthr = _clamp_int(data["walking_lthr"], 60, 220)
+    if "max_heart_rate" in data:
+        params.max_heart_rate = _clamp_int(data["max_heart_rate"], 60, 250)
+    if "weight" in data:
+        params.weight = _clamp_float(data["weight"], 20, 300)
+
+    params.save()
+    mark_activities_for_recalc(user, params.effective_date)
+
+    return jsonify({"code": 200, "message": "已更新", "data": _serialize_params(params)})
+
+
+@params_bp.route("/params/<params_id>", methods=["DELETE"])
+def delete_params(params_id):
+    """删除历史参数记录。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    params = AthleteParams.objects(id=params_id, user=user).first()
+    if not params:
+        return jsonify({"code": 404, "message": "参数记录不存在", "data": None}), 404
+
+    effective_date = params.effective_date
+    params.delete()
+
+    # 删除后重算受影响的活动
+    mark_activities_for_recalc(user, effective_date)
+
+    return jsonify({"code": 200, "message": "已删除", "data": None})
+
+
 @params_bp.route("/params/recalc-status", methods=["GET"])
 def get_recalc_status():
     """获取数据重算进度。"""

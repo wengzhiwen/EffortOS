@@ -72,9 +72,51 @@
 <div class="card">
     <div class="card-title">历史参数变更</div>
     <table>
-        <thead><tr><th>生效日期</th><th>FTP</th><th>骑行 LTHR</th><th>跑步 LTHR</th><th>最大心率</th><th>体重</th></tr></thead>
-        <tbody id="params-history"><tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
+        <thead><tr><th>生效日期</th><th>FTP</th><th>骑行 LTHR</th><th>跑步 LTHR</th><th>最大心率</th><th>体重</th><th>操作</th></tr></thead>
+        <tbody id="params-history"><tr><td colspan="7"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
     </table>
+</div>
+
+<!-- 编辑弹窗 -->
+<div id="edit-overlay" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box" style="max-width: 520px;">
+        <h3 style="margin-bottom: 1rem;">编辑参数</h3>
+        <form id="edit-form">
+            <input type="hidden" id="edit-id">
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>生效日期</label>
+                    <input type="date" id="edit-effective-date" required>
+                </div>
+                <div class="form-group">
+                    <label>FTP（瓦特）</label>
+                    <input type="number" id="edit-ftp" min="0">
+                </div>
+                <div class="form-group">
+                    <label>最大心率（bpm）</label>
+                    <input type="number" id="edit-max-heart-rate" min="0">
+                </div>
+            </div>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>骑行 LTHR（bpm）</label>
+                    <input type="number" id="edit-cycling-lthr" min="0">
+                </div>
+                <div class="form-group">
+                    <label>跑步 LTHR（bpm）</label>
+                    <input type="number" id="edit-running-lthr" min="0">
+                </div>
+                <div class="form-group">
+                    <label>体重（kg）</label>
+                    <input type="number" step="0.1" id="edit-weight" min="0">
+                </div>
+            </div>
+            <div class="btn-row" style="margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary" id="edit-cancel">取消</button>
+                <button type="submit" class="btn btn-primary" id="edit-save">保存</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
@@ -134,16 +176,20 @@ function loadParams() {
         .then(res => {
             const tbody = document.getElementById('params-history');
             if (!res.data || res.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">暂无历史记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7">暂无历史记录</td></tr>';
                 return;
             }
-            tbody.innerHTML = res.data.map(p => `<tr>
+            tbody.innerHTML = res.data.map(p => `<tr data-id="${p.id}">
                 <td>${p.effective_date}</td>
                 <td>${p.ftp || '—'}</td>
                 <td>${p.cycling_lthr || '—'}</td>
                 <td>${p.running_lthr || '—'}</td>
                 <td>${p.max_heart_rate || '—'}</td>
                 <td>${p.weight || '—'}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary edit-btn" data-id="${p.id}" style="margin-right:0.25rem;">编辑</button>
+                    <button class="btn btn-sm btn-secondary delete-btn" data-id="${p.id}" style="color:var(--danger);">删除</button>
+                </td>
             </tr>`).join('');
         });
 }
@@ -209,6 +255,84 @@ function pollRecalcStatus() {
     };
     setTimeout(poll, 500);
 }
+
+// 编辑弹窗
+const editOverlay = document.getElementById('edit-overlay');
+document.getElementById('edit-cancel').addEventListener('click', () => editOverlay.style.display = 'none');
+editOverlay.addEventListener('click', e => { if (e.target === editOverlay) editOverlay.style.display = 'none'; });
+
+document.getElementById('params-history').addEventListener('click', e => {
+    const btn = e.target.closest('.edit-btn, .delete-btn');
+    if (!btn) return;
+    const id = btn.dataset.id;
+
+    if (btn.classList.contains('edit-btn')) {
+        const row = btn.closest('tr');
+        const cells = row.querySelectorAll('td');
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-effective-date').value = cells[0].textContent;
+        document.getElementById('edit-ftp').value = cells[1].textContent === '—' ? '' : cells[1].textContent;
+        document.getElementById('edit-cycling-lthr').value = cells[2].textContent === '—' ? '' : cells[2].textContent;
+        document.getElementById('edit-running-lthr').value = cells[3].textContent === '—' ? '' : cells[3].textContent;
+        document.getElementById('edit-max-heart-rate').value = cells[4].textContent === '—' ? '' : cells[4].textContent;
+        document.getElementById('edit-weight').value = cells[5].textContent === '—' ? '' : cells[5].textContent;
+        editOverlay.style.display = 'flex';
+    }
+
+    if (btn.classList.contains('delete-btn')) {
+        confirmDialog('确定删除这条参数记录？删除后将自动重算受影响的活动。').then(ok => {
+            if (!ok) return;
+            authFetch('/api/params/' + id, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.code === 200) {
+                        showToast('已删除，数据重算中...', 'success');
+                        loadParams();
+                    } else {
+                        showToast(res.message, 'error');
+                    }
+                });
+        });
+    }
+});
+
+document.getElementById('edit-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = document.getElementById('edit-id').value;
+    const data = {
+        effective_date: document.getElementById('edit-effective-date').value + 'T00:00:00Z',
+        ftp: document.getElementById('edit-ftp').value ? Number(document.getElementById('edit-ftp').value) : null,
+        cycling_lthr: document.getElementById('edit-cycling-lthr').value ? Number(document.getElementById('edit-cycling-lthr').value) : null,
+        running_lthr: document.getElementById('edit-running-lthr').value ? Number(document.getElementById('edit-running-lthr').value) : null,
+        max_heart_rate: document.getElementById('edit-max-heart-rate').value ? Number(document.getElementById('edit-max-heart-rate').value) : null,
+        weight: document.getElementById('edit-weight').value ? Number(document.getElementById('edit-weight').value) : null,
+    };
+    const btn = document.getElementById('edit-save');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+    authFetch('/api/params/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+        .then(r => r.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.textContent = '保存';
+            if (res.code === 200) {
+                editOverlay.style.display = 'none';
+                showToast('已更新，数据重算中...', 'success');
+                loadParams();
+            } else {
+                showToast(res.message, 'error');
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '保存';
+            showToast('网络错误', 'error');
+        });
+});
 
 loadParams();
 </script>
