@@ -1,5 +1,5 @@
 import math
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Optional
 
 from app.models.activity import ComputedMetrics
@@ -112,6 +112,251 @@ def calc_power_tss(duration_seconds: int, np_val: float, ftp: int) -> Optional[f
 # ============================================================
 # 分区时间统计
 # ============================================================
+
+
+# ============================================================
+# 强度等级判断
+# ============================================================
+
+
+def _rolling_average(series, window_sec=10):
+    """对 (elapsed, value) 序列做时间窗口滚动平均，None 值跳过但不中断窗口。
+
+    仅输出 raw value 非 None 的点（保持与原始时间轴对齐）。
+    """
+    result = []
+    window = deque()  # (elapsed, value)
+    for elapsed, value in series:
+        while window and elapsed - window[0][0] > window_sec:
+            window.popleft()
+        if value is not None:
+            window.append((elapsed, value))
+        if value is not None and window:
+            result.append((elapsed, sum(v for _, v in window) / len(window)))
+    return result
+
+
+def _assign_zones(smoothed, zones):
+    """将平滑后的 (elapsed, value) 序列映射为 (elapsed, zone_name)。"""
+    result = []
+    for elapsed, value in smoothed:
+        zone = None
+        for z in zones:
+            if z["min"] <= value < z["max"]:
+                zone = z["name"]
+                break
+        result.append((elapsed, zone))
+    return result
+
+
+def _zone_times(zone_series):
+    """从 zone 序列计算各区间的累计时长（秒）。"""
+    zt = {}
+    for i in range(1, len(zone_series)):
+        dt = zone_series[i][0] - zone_series[i - 1][0]
+        z = zone_series[i][1]
+        if z:
+            zt[z] = zt.get(z, 0) + dt
+    return zt
+
+
+def _continuous_zone_durations(zone_series, target_zones):
+    """返回 zone_series 中连续处于 target_zones 的每段时长列表（秒）。"""
+    durations = []
+    block_start = None
+    prev_t = None
+    for t, z in zone_series:
+        if z in target_zones:
+            if block_start is None:
+                block_start = t
+        else:
+            if block_start is not None:
+                durations.append(prev_t - block_start)
+                block_start = None
+        prev_t = t
+    if block_start is not None and prev_t is not None:
+        durations.append(prev_t - block_start)
+    return durations
+
+
+def _continuous_above_durations(smoothed, threshold):
+    """返回 smoothed 中连续 >= threshold 的每段时长列表（秒）。"""
+    durations = []
+    block_start = None
+    prev_t = None
+    for t, v in smoothed:
+        if v is not None and v >= threshold:
+            if block_start is None:
+                block_start = t
+        else:
+            if block_start is not None:
+                durations.append(prev_t - block_start)
+                block_start = None
+        prev_t = t
+    if block_start is not None and prev_t is not None:
+        durations.append(prev_t - block_start)
+    return durations
+
+
+def _fmt_min(seconds):
+    """将秒格式化为可读的时间字符串。"""
+    if seconds < 60:
+        return f"{int(seconds)}秒"
+    m = seconds / 60
+    if m == int(m):
+        return f"{int(m)}分钟"
+    return f"{m:.1f}分钟"
+
+
+def _classify_smoothed(smoothed, zones, high_threshold):
+    """对已平滑的序列按运动科学标准判断强度等级。
+
+    返回 (level, reason_dict) 或 (None, reason_dict)。
+    reason_dict 包含 method/strict/zone_times/matched 等字段。
+    """
+    total_duration = smoothed[-1][0] - smoothed[0][0] if len(smoothed) >= 2 else 0
+    zone_series = _assign_zones(smoothed, zones) if smoothed else []
+    zt = _zone_times(zone_series) if zone_series else {}
+
+    def _reason(strict, matched):
+        return {"strict": strict, "zone_times": {k: round(v, 0) for k, v in zt.items()}, "matched": matched}
+
+    if len(smoothed) < 2:
+        return None, _reason(False, "数据不足")
+
+    high_zones = {"Z5", "Z6", "Z7"}
+    zone_cn = {
+        "Z1": "Z1 恢复",
+        "Z2": "Z2 有氧",
+        "Z3": "Z3 节奏",
+        "Z4": "Z4 阈值",
+        "Z5": "Z5 VO2max",
+        "Z6": "Z6 无氧",
+        "Z7": "Z7 神经肌肉",
+    }
+
+    # VO2max: Z5+ ≥ 15 min，≥ 3 段连续 3+ min
+    vo2_time = sum(zt.get(z, 0) for z in high_zones)
+    if vo2_time >= 900:
+        blocks = _continuous_zone_durations(zone_series, high_zones)
+        long_blocks = [b for b in blocks if b >= 180]
+        if len(long_blocks) >= 3:
+            return "vo2max", _reason(
+                True,
+                f"Z5+ 累计 {_fmt_min(vo2_time)}（≥15分钟），"
+                f"连续3分钟以上间歇 {len(long_blocks)} 组（≥3组），最长 {_fmt_min(max(long_blocks))}",
+            )
+
+    # Threshold: Z4 ≥ 25 min，≥ 1 段连续 8+ min
+    z4_time = zt.get("Z4", 0)
+    if z4_time >= 1500:
+        blocks = _continuous_zone_durations(zone_series, {"Z4"})
+        longest = max(blocks) if blocks else 0
+        if longest >= 480:
+            return "threshold", _reason(
+                True,
+                f"Z4 累计 {_fmt_min(z4_time)}（≥25分钟），最长连续 {_fmt_min(longest)}（≥8分钟）",
+            )
+
+    # Tempo: Z3 ≥ 30 min，≥ 1 段连续 15+ min
+    z3_time = zt.get("Z3", 0)
+    if z3_time >= 1800:
+        blocks = _continuous_zone_durations(zone_series, {"Z3"})
+        longest = max(blocks) if blocks else 0
+        if longest >= 900:
+            return "tempo", _reason(
+                True,
+                f"Z3 累计 {_fmt_min(z3_time)}（≥30分钟），最长连续 {_fmt_min(longest)}（≥15分钟）",
+            )
+
+    # Endurance: 总时长 ≥ 45 min，Z2 ≥ 30 min，Z3+ < 10%
+    above_z2_zones = {"Z3", "Z4", "Z5", "Z6", "Z7"}
+    above_z2 = sum(zt.get(z, 0) for z in above_z2_zones)
+    z2_time = zt.get("Z2", 0)
+    if total_duration >= 2700 and z2_time >= 1800 and above_z2 < total_duration * 0.10:
+        return "endurance", _reason(
+            True,
+            f"总时长 {_fmt_min(total_duration)}（≥45分钟），"
+            f"Z2 {_fmt_min(z2_time)}（≥30分钟），Z3以上仅占 {above_z2 / total_duration * 100:.0f}%",
+        )
+
+    # Recovery: Z1 ≥ 70% 总时长，且无连续 3+ min 超过 high_threshold
+    z1_time = zt.get("Z1", 0)
+    if total_duration > 0 and z1_time >= total_duration * 0.70:
+        blocks = _continuous_above_durations(smoothed, high_threshold)
+        if not any(b >= 180 for b in blocks):
+            return "recovery", _reason(
+                True,
+                f"Z1 占总时长 {z1_time / total_duration * 100:.0f}%（≥70%），无连续3分钟以上高强度段",
+            )
+
+    # Fallback: 按非 Z1 区域的主导区间粗略归类
+    if total_duration >= 600:
+        non_z1 = {z: t for z, t in zt.items() if z not in (None, "Z1") and t > 0}
+        if non_z1:
+            dominant = max(non_z1, key=non_z1.get)
+            zone_level = {
+                "Z5": "vo2max",
+                "Z6": "vo2max",
+                "Z7": "vo2max",
+                "Z4": "threshold",
+                "Z3": "tempo",
+                "Z2": "endurance",
+            }
+            if dominant in zone_level and non_z1[dominant] >= 300:
+                label = zone_cn.get(dominant, dominant)
+                return (
+                    zone_level[dominant],
+                    _reason(False, f"按主导区间归类：{label} 累计 {_fmt_min(non_z1[dominant])}（占比最高）"),
+                )
+        if zt.get("Z1", 0) >= total_duration * 0.50:
+            return "recovery", _reason(False, f"Z1 占总时长 {zt['Z1'] / total_duration * 100:.0f}%（≥50%）")
+
+    return None, _reason(False, "未满足任何分类标准")
+
+
+def _calc_intensity_level(
+    trackpoints: list,
+    activity_type: str,
+    power_zones: list[dict],
+    hr_zones: list[dict],
+    ftp: Optional[int] = None,
+    lthr: Optional[int] = None,
+):
+    """基于 10 秒平滑功率/心率的区间停留时长判断强度等级。
+
+    优先功率（骑行），无可靠功率时心率兜底。
+    返回 (level, reason_dict)。
+    """
+    if not trackpoints or len(trackpoints) < 2:
+        return None, {}
+
+    start_time = trackpoints[0]["time"]
+    is_cycling = activity_type in ("cycling", "indoor_cycling")
+
+    # 构建 (elapsed, value) 序列
+    power_series = [((tp["time"] - start_time).total_seconds(), tp.get("power")) for tp in trackpoints]
+    hr_series = [((tp["time"] - start_time).total_seconds(), tp.get("heart_rate")) for tp in trackpoints]
+
+    # 功率路径（骑行 + 有功率区 + 有 FTP）
+    if is_cycling and power_zones and ftp:
+        smoothed = _rolling_average(power_series, 10)
+        # 至少 10 min 有效功率数据
+        if len(smoothed) >= 600:
+            result, reason = _classify_smoothed(smoothed, power_zones, ftp * 0.90)
+            if result is not None:
+                reason["method"] = "power"
+                return result, reason
+
+    # 心率路径
+    if hr_zones and lthr:
+        smoothed = _rolling_average(hr_series, 10)
+        if len(smoothed) >= 600:
+            result, reason = _classify_smoothed(smoothed, hr_zones, lthr * 0.94)
+            reason["method"] = "hr"
+            return result, reason
+
+    return None, {}
 
 
 def calc_zone_times(
@@ -313,19 +558,15 @@ def compute_activity_metrics(
     if best_efforts:
         metrics.best_efforts = best_efforts
 
-    # 强度评级：基于 IF（功率优先，心率兜底）
-    if_val = metrics.intensity_factor or metrics.hr_intensity_factor
-    if if_val:
-        if if_val < 0.65:
-            metrics.intensity_level = "recovery"
-        elif if_val < 0.80:
-            metrics.intensity_level = "endurance"
-        elif if_val < 0.90:
-            metrics.intensity_level = "tempo"
-        elif if_val < 1.05:
-            metrics.intensity_level = "threshold"
-        else:
-            metrics.intensity_level = "vo2max"
+    # 强度评级：基于有效训练时间的区间占比
+    metrics.intensity_level, metrics.intensity_reason = _calc_intensity_level(
+        trackpoints=trackpoints,
+        activity_type=activity_type,
+        power_zones=power_zones if power_reliable and is_cycling else [],
+        hr_zones=hr_zones,
+        ftp=ftp,
+        lthr=lthr,
+    )
 
     return metrics
 
