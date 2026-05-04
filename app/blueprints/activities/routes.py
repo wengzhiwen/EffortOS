@@ -150,7 +150,6 @@ def _serialize_summary(summary):
         return None
     return {
         "duration_seconds": summary.duration_seconds,
-        "active_seconds": summary.active_seconds,
         "total_distance": summary.total_distance,
         "avg_heart_rate": summary.avg_heart_rate,
         "max_heart_rate": summary.max_heart_rate,
@@ -270,15 +269,15 @@ def _build_data_summary(laps, trackpoints):
     if not trackpoints:
         return summary
 
-    summary.duration_seconds = int((trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds())
-
-    # 计算活跃运动时长（排除暂停）
+    # 运动时长：相邻打点间隔 ≤30s 的累计（排除暂停）
     active = 0.0
     for i in range(1, len(trackpoints)):
         dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
         if dt <= 30:
             active += dt
-    summary.active_seconds = int(active) if active > 0 else summary.duration_seconds
+    summary.duration_seconds = (
+        int(active) if active > 0 else int((trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds())
+    )
 
     distances = [tp["distance"] for tp in trackpoints if tp.get("distance") is not None]
     if distances:
@@ -445,7 +444,14 @@ def analyze_activity():
     total_dist = 0
     avg_hr = 0
     if trackpoints:
-        duration = int((trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds())
+        active = 0.0
+        for i in range(1, len(trackpoints)):
+            dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+            if dt <= 30:
+                active += dt
+        duration = (
+            int(active) if active > 0 else int((trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds())
+        )
         distances = [tp["distance"] for tp in trackpoints if tp.get("distance") is not None]
         if distances:
             total_dist = distances[-1]
