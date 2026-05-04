@@ -221,6 +221,7 @@ fileInput.addEventListener('change', function() {
                     <span>数据点: ${d.trackpoint_count}</span>
                     <span>心率: ${d.has_heart_rate ? '✓' : '✗'}</span>
                     <span>功率: ${d.has_power ? '✓' : '✗'}</span>
+                    <span>GPS: ${d.has_gps ? (d.gps_tag === 'low_quality' ? '<span style="color:var(--warning);">⚠ 低质量</span>' : '✓') : '✗'}</span>
                 </div>`;
             if (d.warnings.length > 0) {
                 html += `<div style="margin-top: 0.5rem; color: var(--warning);"><strong>注意:</strong> ${esc(d.warnings.join('；'))}</div>`;

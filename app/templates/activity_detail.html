@@ -48,6 +48,12 @@ Promise.all([
 
     document.getElementById('activity-detail').innerHTML = `
         <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${esc(a.name || '未命名活动')}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
+        ${a.suggested_type ? `
+        <div id="type-suggestion" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1rem;margin-bottom:0.75rem;background:var(--primary-light);border:1px solid var(--primary);border-radius:8px;font-size:0.9rem;">
+            <span>当前标记为 <strong>${typeNames[a.activity_type] || a.activity_type}</strong>，但数据特征更像是 <strong>${typeNames[a.suggested_type] || a.suggested_type}</strong></span>
+            <button class="btn btn-primary btn-sm" onclick="applySuggestedType('${a.suggested_type}')">修正为${typeNames[a.suggested_type] || a.suggested_type}</button>
+            <button class="btn btn-secondary btn-sm" onclick="dismissSuggestion()" style="padding:0.25rem 0.5rem;font-size:0.8rem;">忽略</button>
+        </div>` : ''}
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
             <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>
@@ -76,12 +82,21 @@ Promise.all([
         </div>
 
         ${m.intensity_level ? `
-        <div class="card" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: ${intensityColors[m.intensity_level] || '#999'}; flex-shrink: 0;"></div>
-            <div>
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${intensityColors[m.intensity_level] || '#999'}; flex-shrink: 0;"></div>
                 <span style="font-weight: 600; color: ${intensityColors[m.intensity_level] || 'var(--text-primary)'};">${intensityNames[m.intensity_level] || m.intensity_level}</span>
-                <span class="metric-unit" style="margin-left: 0.5rem;">强度等级</span>
+                <span class="metric-unit">强度等级</span>
+                ${m.intensity_reason && m.intensity_reason.method ? `<span class="metric-unit">（基于${m.intensity_reason.method === 'power' ? '功率' : '心率'}）</span>` : ''}
+                ${m.intensity_reason && m.intensity_reason.strict === false ? `<span class="metric-unit" style="color: var(--text-secondary);">近似</span>` : ''}
             </div>
+            ${m.intensity_reason && m.intensity_reason.matched ? `<div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.4rem; padding-left: 1.5rem;">${m.intensity_reason.matched}</div>` : ''}
+            ${m.intensity_reason && m.intensity_reason.zone_times && Object.keys(m.intensity_reason.zone_times).length > 0 ? `
+            <div style="margin-top: 0.5rem; padding-left: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+                ${Object.entries(m.intensity_reason.zone_times).filter(([,v]) => v > 0).sort((a,b) => a[0].localeCompare(b[0])).map(([z,t]) =>
+                    `<span>${z}: ${t >= 60 ? Math.round(t/60) + 'min' : Math.round(t) + 's'}</span>`
+                ).join('')}
+            </div>` : ''}
         </div>` : ''}
 
         <div class="grid grid-4" style="margin-bottom: 1rem;">
@@ -471,6 +486,28 @@ function saveEdit() {
             if (res.code === 200) location.reload();
             else showToast(res.message, 'error');
         });
+}
+
+function applySuggestedType(suggestedType) {
+    authFetch(`/api/activities/${activityId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activity_type: suggestedType }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.code === 200) {
+                showToast('运动类型已修正', 'success');
+                location.reload();
+            } else {
+                showToast(res.message, 'error');
+            }
+        });
+}
+
+function dismissSuggestion() {
+    const el = document.getElementById('type-suggestion');
+    if (el) el.remove();
 }
 
 function lapRow(lap) {

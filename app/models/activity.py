@@ -45,6 +45,7 @@ class ComputedMetrics(EmbeddedDocument):
     work_kj = FloatField()  # 总做功（kJ）
     tss_method = StringField()  # TSS 方法标记："power" / "hr" / null
     intensity_level = StringField()  # 强度分类："recovery"/"endurance"/"tempo"/"threshold"/"vo2max"
+    intensity_reason = DictField()  # 分类依据 {"method":"power|hr","strict":bool,"zone_times":{...},"matched":描述}
     hr_zones_time = DictField()  # 心率区间时间分布 {"Z1": 秒数, ...}
     power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
     best_efforts = DictField()  # 最佳表现 {"power": {5: 450, ...}, "heart_rate": {5: 178, ...}}
@@ -60,6 +61,8 @@ class Trackpoint(EmbeddedDocument):
     cadence = IntField()  # 踏频
     altitude = FloatField()  # 海拔
     distance = FloatField()  # 累计距离
+    latitude = FloatField()  # 纬度
+    longitude = FloatField()  # 经度
 
 
 class Activity(BaseDocument):
@@ -95,35 +98,21 @@ class Activity(BaseDocument):
         if not tps:
             return []
         total = len(tps)
+        fields = {
+            "elapsed": lambda tp: tp.elapsed,
+            "hr": lambda tp: tp.hr,
+            "power": lambda tp: tp.power,
+            "speed": lambda tp: tp.speed,
+            "cadence": lambda tp: tp.cadence,
+            "altitude": lambda tp: tp.altitude,
+            "distance": lambda tp: tp.distance,
+            "latitude": lambda tp: tp.latitude,
+            "longitude": lambda tp: tp.longitude,
+        }
         if total <= max_points:
-            return [
-                {
-                    "elapsed": tp.elapsed,
-                    "hr": tp.hr,
-                    "power": tp.power,
-                    "speed": tp.speed,
-                    "cadence": tp.cadence,
-                    "altitude": tp.altitude,
-                    "distance": tp.distance,
-                }
-                for tp in tps
-            ]
+            return [{k: fn(tp) for k, fn in fields.items()} for tp in tps]
         step = total / max_points
-        result = []
-        for i in range(max_points):
-            tp = tps[int(i * step)]
-            result.append(
-                {
-                    "elapsed": tp.elapsed,
-                    "hr": tp.hr,
-                    "power": tp.power,
-                    "speed": tp.speed,
-                    "cadence": tp.cadence,
-                    "altitude": tp.altitude,
-                    "distance": tp.distance,
-                }
-            )
-        return result
+        return [{k: fn(tps[int(i * step)]) for k, fn in fields.items()} for i in range(max_points)]
 
     def __str__(self):
         return f"Activity({self.activity_type} @ {self.start_time})"

@@ -25,10 +25,78 @@ SPORT_DISPLAY = {
     "other": "其他",
 }
 
+# 室内/室外配对关系
+INDOOR_PAIRS = {
+    "cycling": "indoor_cycling",
+    "running": "indoor_running",
+    "indoor_cycling": "cycling",
+    "indoor_running": "running",
+}
+
 
 def _user_filter(qs):
     """按当前用户过滤查询集（无用户时返回全集）。"""
     return user_filter(qs)
+
+
+def _suggest_activity_type(activity):
+    """基于 Trackpoint 中的 GPS 数据判断运动类型是否可能有误，返回建议类型。
+
+    判断逻辑与 parse_service.detect_indoor_activity 一致：
+    1. 当前是室外，但 GPS 覆盖率极低或 GPS 累计移动距离极短 → 建议室内
+    2. 当前是室内，但 GPS 覆盖率高且 GPS 累计移动距离显著 → 建议室外
+    """
+    from math import cos, radians, sqrt
+
+    current = activity.activity_type
+    pair = INDOOR_PAIRS.get(current)
+    if not pair:
+        return None
+
+    tps = activity.trackpoints
+    if not tps or len(tps) < 2:
+        return None
+
+    duration = tps[-1].elapsed - tps[0].elapsed
+    if duration < 120:
+        return None
+
+    gps_points = [tp for tp in tps if tp.latitude is not None and tp.longitude is not None]
+    gps_ratio = len(gps_points) / len(tps)
+    has_gps = gps_ratio >= 0.1
+
+    # 计算 GPS 累计移动距离
+    gps_distance = 0.0
+    if has_gps and len(gps_points) >= 2:
+        prev = gps_points[0]
+        for tp in gps_points[1:]:
+            dlat = tp.latitude - prev.latitude
+            dlon = (tp.longitude - prev.longitude) * cos(radians(tp.latitude))
+            gps_distance += sqrt((dlat * 111320) ** 2 + (dlon * 111320) ** 2)
+            prev = tp
+
+    is_outdoor = current in ("cycling", "running")
+
+    if is_outdoor:
+        # 室外但没 GPS 或 GPS 几乎没动 → 建议室内
+        if not has_gps:
+            return pair
+        avg_gps_speed = gps_distance / duration
+        if current == "cycling" and (avg_gps_speed < 0.56 or gps_distance < 200):
+            return "indoor_cycling"
+        if current == "running" and (avg_gps_speed < 0.28 or gps_distance < 100):
+            return "indoor_running"
+    else:
+        # 室内但有可靠 GPS 且 GPS 移动显著 → 建议室外
+        base = current.replace("indoor_", "")
+        if has_gps:
+            avg_gps_speed = gps_distance / duration
+            if base == "cycling" and avg_gps_speed > 3 and gps_distance > 1000:
+                return "cycling"
+            if base == "running" and avg_gps_speed > 1.5 and gps_distance > 500:
+                return "running"
+
+    return None
 
 
 def _activity_type_filter(qs):
@@ -133,6 +201,7 @@ def _serialize_metrics(metrics):
         "efficiency_factor": metrics.efficiency_factor,
         "work_kj": metrics.work_kj,
         "intensity_level": metrics.intensity_level,
+        "intensity_reason": metrics.intensity_reason,
         "hr_zones_time": metrics.hr_zones_time,
         "power_zones_time": metrics.power_zones_time,
         "best_efforts": metrics.best_efforts,
@@ -319,6 +388,34 @@ def analyze_activity():
     speed_count = sum(1 for tp in trackpoints if tp.get("speed") is not None)
     dist_count = sum(1 for tp in trackpoints if tp.get("distance") is not None)
 
+    # GPS 分析
+    gps_count = sum(1 for tp in trackpoints if tp.get("latitude") is not None and tp.get("longitude") is not None)
+    has_gps = total > 0 and gps_count / total >= 0.1
+    gps_tag = None
+    if has_gps and sport in ("cycling", "running") and total >= 2:
+        from math import cos, radians, sqrt
+
+        duration_sec = (trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds()
+        if duration_sec >= 120:
+            gps_points = [
+                tp for tp in trackpoints if tp.get("latitude") is not None and tp.get("longitude") is not None
+            ]
+            gps_dist = 0.0
+            prev = gps_points[0]
+            for tp in gps_points[1:]:
+                dlat = tp["latitude"] - prev["latitude"]
+                dlon = (tp["longitude"] - prev["longitude"]) * cos(radians(tp["latitude"]))
+                gps_dist += sqrt((dlat * 111320) ** 2 + (dlon * 111320) ** 2)
+                prev = tp
+            avg_gps_speed = gps_dist / duration_sec
+            if (
+                sport == "cycling"
+                and (avg_gps_speed < 0.56 or gps_dist < 200)
+                or sport == "running"
+                and (avg_gps_speed < 0.28 or gps_dist < 100)
+            ):
+                gps_tag = "low_quality"
+
     warnings = []
     if total == 0:
         warnings.append("文件中没有轨迹数据点")
@@ -331,6 +428,8 @@ def analyze_activity():
             warnings.append("功率数据缺失，将使用心率计算 TSS")
         if dist_count == 0 and speed_count == 0:
             warnings.append("无距离和速度数据")
+        if gps_tag == "low_quality":
+            warnings.append("GPS 移动距离极短，疑似室内活动（GPS 飘星）")
 
     # 基础摘要
     duration = 0
@@ -360,6 +459,8 @@ def analyze_activity():
                 "trackpoint_count": total,
                 "has_heart_rate": hr_count > total * 0.5,
                 "has_power": power_count > total * 0.5,
+                "has_gps": has_gps,
+                "gps_tag": gps_tag,
                 "warnings": warnings,
             },
         }
@@ -436,6 +537,8 @@ def upload_activity():
                 cadence=tp.get("cadence"),
                 altitude=tp.get("altitude"),
                 distance=tp.get("distance"),
+                latitude=tp.get("latitude"),
+                longitude=tp.get("longitude"),
             )
             for tp in trackpoints
         ]
@@ -562,7 +665,13 @@ def get_activity(activity_id):
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
 
-    return jsonify({"code": 200, "message": "ok", "data": _serialize_activity(activity)})
+    data = _serialize_activity(activity)
+
+    # 单独查询 trackpoints 用于运动类型建议判断
+    activity_for_check = Activity.objects(id=activity_id).first()
+    data["suggested_type"] = _suggest_activity_type(activity_for_check)
+
+    return jsonify({"code": 200, "message": "ok", "data": data})
 
 
 @activities_bp.route("/activities/<activity_id>/trackpoints", methods=["GET"])
@@ -671,6 +780,74 @@ def compare_activities():
     )
 
 
+@activities_bp.route("/activities/<activity_id>/recalculate", methods=["POST"])
+def recalculate_activity(activity_id):
+    """重新计算单次活动的指标（含强度等级）。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    activity = Activity.objects(id=activity_id, user=user).first()
+    if not activity:
+        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+
+    if not activity.trackpoints:
+        return jsonify({"code": 400, "message": "活动无轨迹数据", "data": None}), 400
+
+    from datetime import datetime, timedelta
+
+    base_time = activity.start_time or datetime.now()
+    raw_tps = [
+        {
+            "time": base_time + timedelta(seconds=tp.elapsed),
+            "distance": tp.distance,
+            "heart_rate": tp.hr,
+            "power": tp.power,
+            "speed": tp.speed,
+            "cadence": tp.cadence,
+            "altitude": tp.altitude,
+        }
+        for tp in activity.trackpoints
+    ]
+    _compute_metrics(activity, raw_tps)
+    activity.save()
+    return jsonify({"code": 200, "message": "已重新计算", "data": _serialize_activity(activity)})
+
+
+@activities_bp.route("/activities/recalculate-all", methods=["POST"])
+def recalculate_all_activities():
+    """批量重新计算所有活动的指标。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    from datetime import datetime, timedelta
+
+    qs = Activity.objects(user=user)
+    count = 0
+    for activity in qs:
+        if not activity.trackpoints:
+            continue
+        base_time = activity.start_time or datetime.now()
+        raw_tps = [
+            {
+                "time": base_time + timedelta(seconds=tp.elapsed),
+                "distance": tp.distance,
+                "heart_rate": tp.hr,
+                "power": tp.power,
+                "speed": tp.speed,
+                "cadence": tp.cadence,
+                "altitude": tp.altitude,
+            }
+            for tp in activity.trackpoints
+        ]
+        _compute_metrics(activity, raw_tps)
+        activity.save()
+        count += 1
+
+    return jsonify({"code": 200, "message": f"已重新计算 {count} 条活动", "data": {"count": count}})
+
+
 @activities_bp.route("/activities/<activity_id>", methods=["PUT"])
 def update_activity(activity_id):
     """更新运动记录（名称/类型）。"""
@@ -692,7 +869,26 @@ def update_activity(activity_id):
     if "activity_type" in data:
         if data["activity_type"] not in VALID_ACTIVITY_TYPES:
             return jsonify({"code": 400, "message": f"不支持的运动类型: {data['activity_type']}", "data": None}), 400
+        old_type = activity.activity_type
         activity.activity_type = data["activity_type"]
+        # 运动类型变更时重新计算指标（心率区间等可能不同）
+        if old_type != data["activity_type"] and activity.trackpoints:
+            from datetime import datetime, timedelta
+
+            base_time = activity.start_time or datetime.now()
+            raw_tps = [
+                {
+                    "time": base_time + timedelta(seconds=tp.elapsed),
+                    "distance": tp.distance,
+                    "heart_rate": tp.hr,
+                    "power": tp.power,
+                    "speed": tp.speed,
+                    "cadence": tp.cadence,
+                    "altitude": tp.altitude,
+                }
+                for tp in activity.trackpoints
+            ]
+            _compute_metrics(activity, raw_tps)
 
     if "notes" in data:
         activity.notes = data["notes"][:2000] if data["notes"] else None
