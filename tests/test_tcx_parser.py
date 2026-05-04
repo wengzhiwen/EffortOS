@@ -78,7 +78,8 @@ def minimal_tcx_file():
 def test_parse_minimal_tcx(minimal_tcx_file):
     result = parse_tcx(minimal_tcx_file)
 
-    assert result["sport"] == "cycling"
+    # 无 GPS 数据 → 自动识别为室内骑行
+    assert result["sport"] == "indoor_cycling"
     assert len(result["trackpoints"]) == 3
     assert len(result["laps"]) == 1
 
@@ -104,9 +105,9 @@ def test_parse_tcx_lap_summary(minimal_tcx_file):
 
 
 def test_parse_tcx_sport_mapping(minimal_tcx_file):
-    """测试运动类型映射（直接修改 XML 太复杂，只验证已知映射）。"""
+    """测试运动类型映射：无 GPS 数据自动识别为室内。"""
     result = parse_tcx(minimal_tcx_file)
-    assert result["sport"] == "cycling"  # Biking -> cycling
+    assert result["sport"] == "indoor_cycling"  # Biking -> cycling -> 无GPS -> indoor_cycling
 
 
 def test_parse_tcx_invalid_file():
@@ -127,6 +128,7 @@ def test_parse_real_tcx():
         pytest.skip("真实 TCX 样本文件不存在")
 
     result = parse_tcx(sample)
-    assert result["sport"] == "cycling"
+    # GPS 检测会根据实际数据判断室内/室外
+    assert result["sport"] in ("cycling", "indoor_cycling")
     assert len(result["trackpoints"]) > 100
     assert result["trackpoints"][0]["power"] is not None

@@ -80,9 +80,9 @@ def test_analyze_valid_tcx(client, auth_headers):
     result = resp.get_json()
     assert result["code"] == 200
     d = result["data"]
-    assert d["sport"] == "cycling"
-    assert d["sport_display"] == "骑行"
-    assert "骑行" in d["name_suggestion"]
+    assert d["sport"] == "indoor_cycling"
+    assert d["sport_display"] == "室内骑行"
+    assert "室内骑行" in d["name_suggestion"]
     assert d["duration_seconds"] == 2
     assert d["total_distance"] == 16.0
     assert d["trackpoint_count"] == 2

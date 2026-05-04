@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as _ET
 from datetime import datetime, timezone
+from math import cos, radians, sqrt
 from typing import Optional
 
 import defusedxml.ElementTree as ET
@@ -51,6 +52,54 @@ def _safe_int(element: _ET.Element, path: str, namespaces: dict) -> Optional[int
     if node is not None and node.text:
         return int(node.text)
     return None
+
+
+def detect_indoor_activity(trackpoints: list[dict], sport: str) -> str:
+    """根据 GPS 数据质量智能判断是否为室内运动。
+
+    判断逻辑：
+    1. sport 已经是 indoor 类型 → 不再修改
+    2. 几乎没有 GPS 数据（覆盖率 < 10%）→ 判定为室内
+    3. 有 GPS 但总移动距离极短（飘星）→ 判定为室内
+    """
+    if sport not in ("cycling", "running"):
+        return sport
+
+    total = len(trackpoints)
+    if total < 2:
+        return sport
+
+    # 统计有效 GPS 数据点
+    gps_points = [tp for tp in trackpoints if tp.get("latitude") is not None and tp.get("longitude") is not None]
+    gps_ratio = len(gps_points) / total
+
+    # GPS 覆盖率极低 → 没有GPS传感器或在室内，判定为室内
+    if gps_ratio < 0.1:
+        return f"indoor_{sport}"
+
+    # 有 GPS 数据，计算逐点累计移动距离
+    total_gps_distance = 0.0
+    prev = gps_points[0]
+    for tp in gps_points[1:]:
+        dlat = tp["latitude"] - prev["latitude"]
+        dlon = (tp["longitude"] - prev["longitude"]) * cos(radians(tp["latitude"]))
+        total_gps_distance += sqrt((dlat * 111320) ** 2 + (dlon * 111320) ** 2)
+        prev = tp
+
+    duration_seconds = (trackpoints[-1]["time"] - trackpoints[0]["time"]).total_seconds()
+    if duration_seconds < 120:  # 不到2分钟，难以判断
+        return sport
+
+    avg_gps_speed = total_gps_distance / duration_seconds  # m/s
+
+    if sport == "cycling" and (avg_gps_speed < 0.56 or total_gps_distance < 200):
+        # 室内骑行：GPS 平均速度 < 2 km/h 或总 GPS 移动距离 < 200m
+        return "indoor_cycling"
+    if sport == "running" and (avg_gps_speed < 0.28 or total_gps_distance < 100):
+        # 室内跑步：GPS 平均速度 < 1 km/h 或总 GPS 移动距离 < 100m
+        return "indoor_running"
+
+    return sport
 
 
 def parse_tcx(file_path: str) -> dict:
@@ -155,7 +204,7 @@ def parse_tcx(file_path: str) -> dict:
         raise ValueError("TCX 文件中未找到有效的时间数据")
 
     return {
-        "sport": sport,
+        "sport": detect_indoor_activity(trackpoints, sport),
         "start_time": start_time,
         "trackpoints": trackpoints,
         "laps": laps,
@@ -211,11 +260,9 @@ def parse_gpx(file_path: str) -> dict:
         # 距离：从扩展数据获取，或根据 GPS 坐标累加
         distance = _safe_float(trkpt, ".//ns3:DistanceMeters", GPX_NS)
         if distance is None and prev_tp and lat is not None and prev_tp.get("latitude") is not None:
-            from math import cos, radians, sqrt
-
             dlat = lat - prev_tp["latitude"]
             dlon = (lon - prev_tp["longitude"]) * cos(radians(lat))
-            cumulative_distance += sqrt(dlat**2 + (dlon * 111320) ** 2) * 111320
+            cumulative_distance += sqrt((dlat * 111320) ** 2 + (dlon * 111320) ** 2)
             distance = cumulative_distance
 
         # 速度：从扩展数据获取，或根据时间差和距离差推算
@@ -245,7 +292,7 @@ def parse_gpx(file_path: str) -> dict:
         raise ValueError("GPX 文件中未找到有效的时间数据")
 
     return {
-        "sport": sport,
+        "sport": detect_indoor_activity(trackpoints, sport),
         "start_time": start_time,
         "trackpoints": trackpoints,
         "laps": [],
