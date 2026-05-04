@@ -16,6 +16,7 @@ def _require_login_for(template, **kwargs):
         if request.accept_mimetypes.accept_html:
             return redirect(url_for("pages.landing"))
         return redirect(url_for("pages.login"))
+    kwargs.setdefault("_server_user", {"nickname": user.nickname, "email": user.email})
     return render_template(template, **kwargs)
 
 
@@ -25,7 +26,7 @@ def index():
     user = get_authenticated_user()
     if not user:
         return render_template("landing.html")
-    return render_template("index.html")
+    return render_template("index.html", _server_user={"nickname": user.nickname, "email": user.email})
 
 
 @pages_bp.route("/landing")

@@ -156,11 +156,11 @@
         </div>
         <div class="navbar-right">
             <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">🌙</button>
-            <span id="user-info" style="display:none;">
-                <a href="/profile" id="user-nickname" style="color: var(--text); font-weight: 500;"></a>
+            <span id="user-info" style="display:{% if _server_user is defined and _server_user %}inline-flex{% else %}none{% endif %};">
+                <a href="/profile" id="user-nickname" style="color: var(--text); font-weight: 500;">{{ _server_user.nickname or _server_user.email if _server_user is defined and _server_user else '' }}</a>
                 <button id="btn-logout" class="btn btn-secondary btn-sm">登出</button>
             </span>
-            <a id="btn-login" href="/login" class="btn btn-primary btn-sm">登录</a>
+            <a id="btn-login" href="/login" class="btn btn-primary btn-sm" style="display:{% if _server_user is defined and _server_user %}none{% else %}inline-block{% endif %};">登录</a>
         </div>
     </nav>
     <div class="container">
