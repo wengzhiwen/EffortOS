@@ -101,11 +101,11 @@
 
 <div class="card" id="weekly-report-card">
     <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>AI 训练周报</span>
-        <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">生成本周报告</button>
+        <span>AI 训练报告</span>
+        <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">生成报告</button>
     </div>
     <div id="weekly-report-content">
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">点击按钮，AI 教练将基于本周训练数据生成个性化周报。</p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">基于最近 7 天训练数据和 42 天历史负荷，生成训练报告和未来 7 天计划。</p>
     </div>
 </div>
 {% endblock %}
@@ -436,7 +436,7 @@ function generateReport() {
     const content = document.getElementById('weekly-report-content');
     btn.disabled = true;
     btn.textContent = '生成中...';
-    content.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析本周训练数据...</div>';
+    content.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析最近 7 天训练数据...</div>';
 
     authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
@@ -457,14 +457,14 @@ function generateReport() {
                     <span>Fitness: ${d.ctl.toFixed(1)}</span>
                     <span>Fatigue: ${d.atl.toFixed(1)}</span>
                     <span>Form: ${d.tsb.toFixed(1)}</span>
-                    <span>本周 ${d.week_activities} 次训练</span>
+                    <span>近 7 天 ${d.week_activities} 次训练</span>
                 </div>
                 <div class="md-content">${marked.parse(d.report)}</div>
             `;
         })
         .catch(err => {
             btn.disabled = false;
-            btn.textContent = '生成本周报告';
+            btn.textContent = '重新生成';
             content.innerHTML = '';
             const errP2 = document.createElement('p');
             errP2.style.color = 'var(--danger)';

@@ -1,8 +1,16 @@
+import json
+import logging
 import os
 import time
+from datetime import datetime, timezone
 
 from flask import current_app
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
+
+# LLM 日志目录
+_LLM_LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "logs", "llm")
 
 
 def _get_client() -> OpenAI:
@@ -21,31 +29,72 @@ def _get_model() -> str:
         return os.environ.get("OPENAI_MODEL", "gpt-5.4-mini-2026-03-17")
 
 
+def _write_llm_log(log_data: dict):
+    """将 LLM 请求/响应日志写入 JSON 文件。"""
+    os.makedirs(_LLM_LOG_DIR, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+    filepath = os.path.join(_LLM_LOG_DIR, f"{ts}.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
+
+
 def chat(
     messages: list[dict],
-    max_tokens: int = 2000,
+    max_completion_tokens: int = 2000,
     temperature: float = 0.7,
     retries: int = 2,
 ) -> str:
-    """调用 OpenAI Chat API，带重试。
-
-    模型名称从配置中读取，不再硬编码。
-    """
+    """调用 OpenAI Chat API，带重试。完整的请求和响应记录到 logs/llm/ 目录。"""
     client = _get_client()
     model = _get_model()
 
+    log_data = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "model": model,
+        "params": {
+            "max_completion_tokens": max_completion_tokens,
+            "temperature": temperature,
+            "retries": retries,
+        },
+        "request": messages,
+        "response": None,
+        "error": None,
+        "usage": None,
+        "latency_ms": None,
+    }
+
     for attempt in range(retries + 1):
+        t0 = time.monotonic()
         try:
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_completion_tokens,
                 temperature=temperature,
             )
-            return response.choices[0].message.content
-        except Exception:
+            latency = int((time.monotonic() - t0) * 1000)
+
+            content = response.choices[0].message.content
+            log_data["response"] = content
+            log_data["latency_ms"] = latency
+            if response.usage:
+                log_data["usage"] = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens,
+                }
+
+            _write_llm_log(log_data)
+            return content
+        except Exception as e:
+            latency = int((time.monotonic() - t0) * 1000)
+            log_data["error"] = str(e)
+            log_data["latency_ms"] = latency
+            log_data["attempt"] = attempt
             if attempt == retries:
+                _write_llm_log(log_data)
                 raise
+            logger.warning("LLM 调用失败 (attempt %d/%d): %s", attempt + 1, retries, e)
             time.sleep(2**attempt)
 
     return ""
@@ -182,63 +231,98 @@ def analyze_activity_distribution(activities: list[dict]) -> dict:
 
 
 def generate_weekly_report(
-    week_activities: list[dict],
-    pmc_data: dict,
+    recent_activities: list[dict],
+    recent_pmc: list[dict],
+    latest_pmc: dict,
     params: dict,
+    future_days: list[str],
+    today_str: str,
 ) -> str:
-    """生成训练周报。
+    """生成训练报告。
 
-    核心改变：先基于运动科学理论计算出分析结论，再让 LLM 组织语言。
+    基于最近 7 天活动数据 + 每日 PMC 时间序列进行负荷评估，
+    并给出未来 7 天逐日训练建议。
     """
-    total_tss = sum(a.get("computed_metrics", {}).get("tss", 0) or 0 for a in week_activities)
+    total_tss = sum(a.get("computed_metrics", {}).get("tss", 0) or 0 for a in recent_activities)
 
-    # Step 1: 基于理论计算分析结论
-    load_analysis = analyze_training_load(pmc_data.get("ctl", 0), pmc_data.get("atl", 0), pmc_data.get("tsb", 0))
-    volume_analysis = analyze_weekly_volume(total_tss, len(week_activities))
-    distribution = analyze_activity_distribution(week_activities)
+    load_analysis = analyze_training_load(latest_pmc.get("ctl", 0), latest_pmc.get("atl", 0), latest_pmc.get("tsb", 0))
+    volume_analysis = analyze_weekly_volume(total_tss, len(recent_activities))
+    distribution = analyze_activity_distribution(recent_activities)
 
-    # Step 2: 构建活动摘要
-    activity_summary = "\n".join(
+    # 活动摘要
+    recent_summary = "\n".join(
         f"- {a.get('start_time', '')[:10]} {a.get('activity_type', '')} "
         f"「{a.get('name', '未命名')}」TSS: {a.get('computed_metrics', {}).get('tss', '—')} "
+        f"强度: {a.get('computed_metrics', {}).get('intensity_level', '—')} "
         f"时长: {a.get('data_summary', {}).get('duration_seconds', 0) // 60}分钟"
-        for a in week_activities
+        for a in recent_activities
     )
 
-    # Step 3: 将分析结论交给 LLM 组织语言
-    user_prompt = f"""请根据以下分析结论，组织一份训练周报。直接使用这些结论，不要重新分析原始数据。
+    # 最近 7 天每日 PMC 表格
+    pmc_table_header = "| 日期 | TSS | CTL | ATL | TSB |"
+    pmc_table_sep = "|------|-----|-----|-----|-----|"
+    pmc_table_rows = []
+    for entry in recent_pmc:
+        pmc_table_rows.append(
+            f"| {entry['date']} | {entry['tss']:.0f} | {entry['ctl']:.1f} | {entry['atl']:.1f} | {entry['tsb']:.1f} |"
+        )
+    pmc_table = "\n".join([pmc_table_header, pmc_table_sep] + pmc_table_rows)
 
-## 本周训练概况
+    # 未来 7 天日期列表
+    future_days_str = "\n".join(f"{i + 1}. {d}" for i, d in enumerate(future_days))
+
+    user_prompt = f"""请根据以下分析结论，组织一份训练报告。直接使用这些结论，不要重新分析原始数据。今天是 {today_str}。
+
+## 最近 7 天训练概况
 - 训练次数：{volume_analysis["training_count"]} 次
 - 总 TSS：{volume_analysis["total_tss"]:.0f}
 - {volume_analysis["frequency_assessment"]}
 - {volume_analysis["volume_change"]}
 
-## 活动明细
-{activity_summary if activity_summary else "本周无运动记录"}
+## 最近 7 天活动明细
+{recent_summary if recent_summary else "最近 7 天无运动记录"}
 
-## 训练负荷分析（PMC）
-- CTL (Fitness): {pmc_data.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
-- ATL (Fatigue): {pmc_data.get("atl", 0):.1f}
-- TSB (Form): {pmc_data.get("tsb", 0):.1f} — {load_analysis["tsb_level"]}
+## 最近 7 天每日 PMC 变化
+{pmc_table}
+
+## 当前负荷状态（{today_str}）
+- CTL (Fitness): {latest_pmc.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
+- ATL (Fatigue): {latest_pmc.get("atl", 0):.1f}
+- TSB (Form): {latest_pmc.get("tsb", 0):.1f} — {load_analysis["tsb_level"]}
 - ATL/CTL 比率: {load_analysis["atl_ctl_ratio"]} — {load_analysis["ratio_assessment"]}
-
-## 负荷状态评估
 - 风险等级：{load_analysis["tsb_risk"]}
-- CTL 评估：{load_analysis["ctl_advice"]}
-- TSB 建议：{load_analysis["tsb_advice"]}
 
 ## 运动类型分布
 - TSS 分布：{distribution["distribution"]}
 - {distribution["diversity"]}
 
-请组织成一份清晰的周报，包含：本周总结、负荷分析、风险评估、下周建议。使用 markdown 格式。"""
+## 运动强度分类体系（请在建议中使用以下分类）
+- Z1 恢复：心率 < 68% LTHR / 功率 < 55% FTP
+- Z2 有氧：心率 68%-83% LTHR / 功率 55%-75% FTP
+- Z3 节奏：心率 83%-94% LTHR / 功率 75%-90% FTP
+- Z4 阈值：心率 94%-105% LTHR / 功率 90%-105% FTP
+- Z5 VO2max：心率 > 105% LTHR / 功率 105%-120% FTP
+- Z6 无氧：功率 120%-150% FTP（仅功率）
+- Z7 神经肌肉：功率 > 150% FTP（仅功率）
+
+## 未来 7 天日期
+{future_days_str}
+
+请组织成一份清晰的训练报告，包含以下部分：
+1. **最近 7 天总结**：训练概况、负荷变化趋势（参考每日 PMC 表格）、风险评估
+2. **未来 7 天逐日训练计划**：针对列表中的每一天给出明确建议，格式为表格，包含：日期、运动类型、预计时长、强度区间（使用上述 Z1-Z7 分类）、预估 TSS。休息日也要明确标注。不要含糊地说"建议休息"或"适度训练"，要给出具体的运动类型和预计时长。
+使用 markdown 格式。"""
 
     return chat(
         [
             {
                 "role": "system",
-                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成流畅的中文训练周报。不要质疑或修改分析结论，只需将其以专业、友好的语气呈现给用户。使用 markdown 格式。",
+                "content": (
+                    "你是 EffortOS 运动分析平台的专业教练。你接收运动科学分析引擎已经计算好的结论和每日 PMC 数据，"
+                    "将其组织成流畅的中文训练报告。不要质疑或修改分析结论，只需以专业、友好的语气呈现给用户。"
+                    "训练计划中必须使用 Z1-Z7 强度分类体系标注强度区间，逐日给出明确、可执行的建议。"
+                    "使用 markdown 格式。"
+                ),
             },
             {"role": "user", "content": user_prompt},
         ]

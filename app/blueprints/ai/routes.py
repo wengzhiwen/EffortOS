@@ -12,21 +12,26 @@ ai_bp = Blueprint("ai", __name__)
 
 
 def _get_current_context(user=None):
-    """获取当前训练状态上下文。"""
+    """获取当前训练状态上下文。
+
+    返回 (latest_pmc, daily_tss, params_dict, pmc_series)
+    - latest_pmc: 最新的 CTL/ATL/TSB
+    - daily_tss: 每日 TSS 字典
+    - params_dict: 运动员参数
+    - pmc_series: 完整 PMC 时间序列（60 天）
+    """
     today = datetime.now(timezone.utc)
     start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
 
-    qs = Activity.objects(
-        start_time__gte=start,
-        start_time__lte=end + "T23:59:59",
-    )
+    qs = Activity.objects(start_time__gte=start)
     if user:
         qs = qs.filter(user=user)
-    activities = list(qs)
+    # start_time 存为 naive datetime，字符串 lte 比较有兼容问题，用 gte + 内存过滤
+    activities = [a for a in qs if a.start_time.strftime("%Y-%m-%d") <= end]
     daily = calc_daily_tss(activities)
-    pmc_data = calc_pmc(daily, start, end)
-    latest = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
+    pmc_series = calc_pmc(daily, start, end)
+    latest = pmc_series[-1] if pmc_series else {"ctl": 0, "atl": 0, "tsb": 0}
 
     params_qs = AthleteParams.objects()
     if user:
@@ -42,45 +47,74 @@ def _get_current_context(user=None):
             "weight": params.weight,
         }
 
-    return latest, daily, params_dict
+    return latest, daily, params_dict, pmc_series
+
+
+def _activity_to_dict(a):
+    """将 Activity 对象转为摘要字典。"""
+    act_dict = {
+        "name": a.name,
+        "activity_type": a.activity_type,
+        "start_time": a.start_time.isoformat(),
+        "data_summary": {},
+        "computed_metrics": {},
+    }
+    if a.data_summary:
+        act_dict["data_summary"] = {"duration_seconds": a.data_summary.duration_seconds}
+    if a.computed_metrics:
+        cm = a.computed_metrics
+        act_dict["computed_metrics"] = {
+            "tss": cm.tss,
+            "intensity_level": cm.intensity_level,
+        }
+    return act_dict
 
 
 @ai_bp.route("/ai/weekly-report", methods=["POST"])
 def weekly_report():
-    """生成训练周报。"""
+    """生成训练报告（最近 7 天回顾 + 未来 7 天逐日计划）。"""
     user, err = require_user()
     if err:
         return err
 
     try:
-        latest_pmc, daily_tss, params = _get_current_context(user)
+        latest_pmc, daily_tss, params, pmc_series = _get_current_context(user)
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 
     today = datetime.now(timezone.utc)
-    week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
-    week_activities = Activity.objects(
-        start_time__gte=week_start,
+    today_str = today.strftime("%Y-%m-%d")
+
+    # 最近 7 天活动（含今天）
+    seven_days_ago = (today - timedelta(days=6)).strftime("%Y-%m-%d")
+    recent_activities = Activity.objects(
+        start_time__gte=seven_days_ago,
         user=user,
     ).order_by("start_time")
+    recent_data = [_activity_to_dict(a) for a in recent_activities]
 
-    activities_data = []
-    for a in week_activities:
-        act_dict = {
-            "name": a.name,
-            "activity_type": a.activity_type,
-            "start_time": a.start_time.isoformat(),
-            "data_summary": {},
-            "computed_metrics": {},
-        }
-        if a.data_summary:
-            act_dict["data_summary"] = {"duration_seconds": a.data_summary.duration_seconds}
-        if a.computed_metrics:
-            act_dict["computed_metrics"] = {"tss": a.computed_metrics.tss}
-        activities_data.append(act_dict)
+    # 判断今天是否已有训练
+    has_training_today = any(a.start_time.strftime("%Y-%m-%d") == today_str for a in recent_activities)
+
+    # 最近 7 天每日 PMC（从完整序列中截取）
+    recent_pmc = []
+    for entry in pmc_series:
+        if entry["date"] >= seven_days_ago:
+            recent_pmc.append(entry)
+
+    # 未来 7 天日期标签：如果今天已有训练则从明天开始
+    weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    start_offset = 1 if has_training_today else 0
+    future_days = []
+    for i in range(start_offset, start_offset + 7):
+        d = today + timedelta(days=i)
+        label = f"{d.strftime('%m-%d')} {weekday_names[d.weekday()]}"
+        if i == 0:
+            label += "（今天）"
+        future_days.append(label)
 
     try:
-        report = generate_weekly_report(activities_data, latest_pmc, params)
+        report = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str)
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
@@ -92,7 +126,7 @@ def weekly_report():
             "message": "ok",
             "data": {
                 "report": report,
-                "week_activities": len(activities_data),
+                "week_activities": len(recent_data),
                 "ctl": latest_pmc["ctl"],
                 "atl": latest_pmc["atl"],
                 "tsb": latest_pmc["tsb"],
@@ -112,7 +146,7 @@ def suggestion():
     question = data.get("question", "")
 
     try:
-        latest_pmc, daily_tss, params = _get_current_context(user)
+        latest_pmc, daily_tss, params, _ = _get_current_context(user)
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
 

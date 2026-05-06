@@ -7,11 +7,11 @@
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">训练周报</div>
+        <div class="card-title">训练报告</div>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
-            基于本周训练数据和 PMC 状态，生成训练周报和建议。
+            基于最近 7 天训练数据和 42 天历史负荷，生成训练报告和未来 7 天计划。
         </p>
-        <button class="btn btn-primary" onclick="generateReport()">生成周报</button>
+        <button class="btn btn-primary" onclick="generateReport()">生成报告</button>
     </div>
     <div class="card">
         <div class="card-title">训练建议</div>
@@ -38,7 +38,7 @@ function generateReport() {
     const resultMeta = document.getElementById('result-meta');
 
     resultCard.style.display = 'block';
-    resultTitle.textContent = '训练周报';
+    resultTitle.textContent = '训练报告';
     resultContent.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
     resultMeta.textContent = '';
 
@@ -50,7 +50,7 @@ function generateReport() {
                 return;
             }
             resultContent.innerHTML = marked.parse(res.data.report || '');
-            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)} | 本周活动: ${res.data.week_activities} 次`;
+            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)} | 最近 7 天活动: ${res.data.week_activities} 次`;
         })
         .catch(e => resultContent.textContent = '请求失败: ' + e.message);
 }

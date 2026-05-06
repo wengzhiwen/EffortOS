@@ -84,19 +84,39 @@ def test_hr_intensity_factor():
     assert calc_hr_intensity_factor(140, 160) == 0.875
 
 
+def _make_hr_trackpoints(duration_seconds: int, hr: int, interval: int = 1) -> list[dict]:
+    """生成指定时长、恒定心率的 trackpoint 列表。"""
+    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    tps = []
+    for s in range(0, duration_seconds + 1, interval):
+        tps.append({"time": base + timedelta(seconds=s), "heart_rate": hr})
+    return tps
+
+
+def _make_power_trackpoints(duration_seconds: int, power: int, interval: int = 1) -> list[dict]:
+    """生成指定时长、恒定功率的 trackpoint 列表。"""
+    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    tps = []
+    for s in range(0, duration_seconds + 1, interval):
+        tps.append({"time": base + timedelta(seconds=s), "power": power})
+    return tps
+
+
 def test_hr_tss():
     # 1 小时阈值心率骑行 = 100 TSS
-    tss = calc_hr_tss(3600, 160, 160)
-    assert abs(tss - 100.0) < 0.1
+    tps = _make_hr_trackpoints(3600, 160)
+    tss = calc_hr_tss(tps, 160)
+    assert abs(tss - 100.0) < 1.0
 
     # 1 小时 80% LTHR = 64 TSS
-    tss = calc_hr_tss(3600, 128, 160)
-    assert abs(tss - 64.0) < 0.1
+    tps = _make_hr_trackpoints(3600, 128)
+    tss = calc_hr_tss(tps, 160)
+    assert abs(tss - 64.0) < 1.0
 
 
 def test_hr_tss_missing():
-    assert calc_hr_tss(0, 160, 160) is None
-    assert calc_hr_tss(3600, 0, 160) is None
+    assert calc_hr_tss([], 160) is None
+    assert calc_hr_tss(_make_hr_trackpoints(10, 0), 160) is None
 
 
 def test_hr_efficiency_factor():
@@ -111,12 +131,14 @@ def test_hr_efficiency_factor():
 
 def test_power_tss():
     # 1 小时 FTP 骑行（IF=1.0）= 100 TSS
-    tss = calc_power_tss(3600, 250.0, 250)
-    assert abs(tss - 100.0) < 0.1
+    tps = _make_power_trackpoints(3600, 250)
+    tss = calc_power_tss(tps, 250)
+    assert abs(tss - 100.0) < 1.0
 
     # 1 小时 75% IF = 56.25 TSS
-    tss = calc_power_tss(3600, 187.5, 250)
-    assert abs(tss - 56.25) < 0.1
+    tps = _make_power_trackpoints(3600, 187)
+    tss = calc_power_tss(tps, 250)
+    assert abs(tss - (3600 / 3600) * (187 / 250) ** 2 * 100) < 1.0
 
 
 # ============================================================

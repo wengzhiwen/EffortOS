@@ -82,13 +82,24 @@ def calc_hr_intensity_factor(avg_hr: int, lthr: int) -> Optional[float]:
     return round(avg_hr / lthr, 3)
 
 
-def calc_hr_tss(duration_seconds: int, avg_hr: int, lthr: int) -> Optional[float]:
-    """计算基于心率的 TSS = duration_hours * HR_IF^2 * 100。"""
-    if not duration_seconds or not avg_hr or not lthr:
+def calc_hr_tss(trackpoints: list[dict], lthr: int) -> Optional[float]:
+    """基于心率的 TSS — 逐打点积分，跳过暂停间隔。
+
+    TSS = Σ (dt_i / 3600) × (hr_i / LTHR)² × 100
+    仅对活跃间隔（dt ≤ PAUSE_GAP_SECONDS）累加。
+    """
+    if not trackpoints or not lthr:
         return None
-    hr_if = avg_hr / lthr
-    duration_hours = duration_seconds / 3600
-    return round(duration_hours * hr_if**2 * 100, 1)
+    tss = 0.0
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > PAUSE_GAP_SECONDS:
+            continue
+        hr = trackpoints[i].get("heart_rate") or trackpoints[i - 1].get("heart_rate")
+        if not hr:
+            continue
+        tss += (dt / 3600) * (hr / lthr) ** 2 * 100
+    return round(tss, 1) if tss > 0 else None
 
 
 def calc_hr_efficiency_factor(avg_speed: float, avg_hr: int) -> Optional[float]:
@@ -103,13 +114,24 @@ def calc_hr_efficiency_factor(avg_speed: float, avg_hr: int) -> Optional[float]:
 # ============================================================
 
 
-def calc_power_tss(duration_seconds: int, np_val: float, ftp: int) -> Optional[float]:
-    """计算基于功率的 TSS = duration_hours * IF^2 * 100。"""
-    if not duration_seconds or not np_val or not ftp:
+def calc_power_tss(trackpoints: list[dict], ftp: int) -> Optional[float]:
+    """基于功率的 TSS — 逐打点积分，跳过暂停间隔。
+
+    TSS = Σ (dt_i / 3600) × (power_i / FTP)² × 100
+    仅对活跃间隔（dt ≤ PAUSE_GAP_SECONDS）累加。
+    """
+    if not trackpoints or not ftp:
         return None
-    if_val = np_val / ftp
-    duration_hours = duration_seconds / 3600
-    return round(duration_hours * if_val**2 * 100, 1)
+    tss = 0.0
+    for i in range(1, len(trackpoints)):
+        dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
+        if dt > PAUSE_GAP_SECONDS:
+            continue
+        pw = trackpoints[i].get("power") or trackpoints[i - 1].get("power")
+        if not pw:
+            continue
+        tss += (dt / 3600) * (pw / ftp) ** 2 * 100
+    return round(tss, 1) if tss > 0 else None
 
 
 # ============================================================
@@ -634,15 +656,15 @@ def compute_activity_metrics(
             if avg_hr:
                 metrics.efficiency_factor = calc_power_efficiency_factor(metrics.normalized_power, avg_hr)
 
-        if ftp and metrics.normalized_power:
-            metrics.intensity_factor = calc_intensity_factor(metrics.normalized_power, ftp)
-            metrics.tss = calc_power_tss(active_duration, metrics.normalized_power, ftp)
+        if ftp:
+            metrics.intensity_factor = calc_intensity_factor(metrics.normalized_power or avg_power, ftp)
+            metrics.tss = calc_power_tss(trackpoints, ftp)
             metrics.tss_method = "power"
 
     # 心率衍生指标
     if has_hr and lthr:
         metrics.hr_intensity_factor = calc_hr_intensity_factor(avg_hr, lthr)
-        metrics.hr_tss = calc_hr_tss(active_duration, avg_hr, lthr)
+        metrics.hr_tss = calc_hr_tss(trackpoints, lthr)
 
     # 分区时间统计（使用实际时间间隔）
     if has_hr and hr_zones:
