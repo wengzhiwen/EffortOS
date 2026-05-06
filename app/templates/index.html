@@ -10,11 +10,7 @@
         <div class="card-title metric-title">今日 TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量单次训练对身体造成的负荷</span></span></div>
         <div class="metric-value" id="today-tss">—</div>
     </div>
-    <div class="card" onclick="location.href='/wellness'" style="cursor: pointer;">
-        <div class="card-title metric-title">Readiness <span class="metric-help">?<span class="metric-tooltip">准备度分数，综合主观感受和训练负荷，满分100</span></span></div>
-        <div class="metric-value" id="readiness">—</div>
-        <div class="metric-unit" id="readiness-label"></div>
-    </div>
+    <!-- Wellness/Readiness 暂时隐藏 -->
     <div class="card">
         <div class="card-title metric-title">Fitness (CTL) <span class="metric-help">?<span class="metric-tooltip">慢性训练负荷，42天TSS加权均值，反映长期体能水平</span></span></div>
         <div class="metric-value" id="ctl">—</div>
@@ -128,17 +124,7 @@ authFetch('/api/dashboard')
         document.getElementById('ctl').textContent = d.ctl.toFixed(1);
 
         // Readiness
-        authFetch('/api/wellness/readiness')
-            .then(r => r.json())
-            .then(rr => {
-                if (rr.data) {
-                    const r = rr.data;
-                    const colors = { excellent: '#16a34a', good: '#2563eb', moderate: '#f59e0b', low: '#f97316', rest: '#dc2626' };
-                    document.getElementById('readiness').textContent = r.score;
-                    document.getElementById('readiness').style.color = colors[r.level] || 'var(--text-primary)';
-                    document.getElementById('readiness-label').textContent = r.label;
-                }
-            });
+        // Wellness/Readiness 暂时隐藏
         document.getElementById('atl').textContent = d.atl.toFixed(1);
 
         const tsbEl = document.getElementById('tsb');
