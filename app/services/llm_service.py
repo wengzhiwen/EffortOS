@@ -231,17 +231,18 @@ def analyze_activity_distribution(activities: list[dict]) -> dict:
 
 
 def generate_weekly_report(
-    recent_activities: list[dict],
-    recent_pmc: list[dict],
+    recent_activities: list,
+    recent_pmc: list,
     latest_pmc: dict,
     params: dict,
-    future_days: list[str],
+    future_days: list,
     today_str: str,
+    recent_history: list = None,
 ) -> str:
     """生成训练报告。
 
     基于最近 7 天活动数据 + 每日 PMC 时间序列进行负荷评估，
-    并给出未来 7 天逐日训练建议。
+    并给出未来 7 天逐日训练建议（含 PMC 预测）。
     """
     total_tss = sum(a.get("computed_metrics", {}).get("tss", 0) or 0 for a in recent_activities)
 
@@ -259,19 +260,37 @@ def generate_weekly_report(
     )
 
     # 最近 7 天每日 PMC 表格
-    pmc_table_header = "| 日期 | TSS | CTL | ATL | TSB |"
-    pmc_table_sep = "|------|-----|-----|-----|-----|"
     pmc_table_rows = []
     for entry in recent_pmc:
         pmc_table_rows.append(
             f"| {entry['date']} | {entry['tss']:.0f} | {entry['ctl']:.1f} | {entry['atl']:.1f} | {entry['tsb']:.1f} |"
         )
-    pmc_table = "\n".join([pmc_table_header, pmc_table_sep] + pmc_table_rows)
+    pmc_table = "| 日期 | TSS | CTL | ATL | TSB |\n|------|-----|-----|-----|-----|\n" + "\n".join(pmc_table_rows)
 
     # 未来 7 天日期列表
     future_days_str = "\n".join(f"{i + 1}. {d}" for i, d in enumerate(future_days))
 
-    user_prompt = f"""请根据以下分析结论，组织一份训练报告。直接使用这些结论，不要重新分析原始数据。今天是 {today_str}。
+    ctl = latest_pmc.get("ctl", 0)
+    atl = latest_pmc.get("atl", 0)
+
+    # 最近训练历史表格
+    history_section = ""
+    if recent_history:
+        hist_rows = []
+        for h in recent_history:
+            tss_str = f"{h['tss']:.0f}" if h["tss"] else "—"
+            hr_tss_str = f"{h['hr_tss']:.0f}" if h["hr_tss"] else "—"
+            hist_rows.append(
+                f"| {h['date']} | {h['name']} | {h['type']} | {h['duration_min']}min | {tss_str} | {hr_tss_str} | {h['intensity'] or '—'} |"
+            )
+        history_section = (
+            "## 最近训练记录（参考复用）\n"
+            "以下为用户近期完成的训练，安排计划时可参考相似的课程达成相近训练效果：\n\n"
+            "| 日期 | 名称 | 类型 | 时长 | TSS | hrTSS | 强度 |\n"
+            "|------|------|------|------|-----|-------|------|\n" + "\n".join(hist_rows) + "\n\n---\n\n"
+        )
+
+    user_prompt = f"""今天是 {today_str}。请根据以下数据生成训练报告。
 
 ## 最近 7 天训练概况
 - 训练次数：{volume_analysis["training_count"]} 次
@@ -285,33 +304,81 @@ def generate_weekly_report(
 ## 最近 7 天每日 PMC 变化
 {pmc_table}
 
-## 当前负荷状态（{today_str}）
-- CTL (Fitness): {latest_pmc.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
-- ATL (Fatigue): {latest_pmc.get("atl", 0):.1f}
+## 当前负荷状态
+- CTL (Fitness): {ctl:.1f} — {load_analysis["ctl_level"]}
+- ATL (Fatigue): {atl:.1f}
 - TSB (Form): {latest_pmc.get("tsb", 0):.1f} — {load_analysis["tsb_level"]}
-- ATL/CTL 比率: {load_analysis["atl_ctl_ratio"]} — {load_analysis["ratio_assessment"]}
-- 风险等级：{load_analysis["tsb_risk"]}
+- ATL/CTL: {load_analysis["atl_ctl_ratio"]} — {load_analysis["ratio_assessment"]}
 
 ## 运动类型分布
 - TSS 分布：{distribution["distribution"]}
 - {distribution["diversity"]}
 
-## 运动强度分类体系（请在建议中使用以下分类）
-- Z1 恢复：心率 < 68% LTHR / 功率 < 55% FTP
-- Z2 有氧：心率 68%-83% LTHR / 功率 55%-75% FTP
-- Z3 节奏：心率 83%-94% LTHR / 功率 75%-90% FTP
-- Z4 阈值：心率 94%-105% LTHR / 功率 90%-105% FTP
-- Z5 VO2max：心率 > 105% LTHR / 功率 105%-120% FTP
-- Z6 无氧：功率 120%-150% FTP（仅功率）
-- Z7 神经肌肉：功率 > 150% FTP（仅功率）
+{history_section}---
+
+## PMC 预测公式（用于逐日预测）
+从当前值开始，每天按以下公式递推：
+- CTL_new = CTL + (当天TSS - CTL) × 0.02353
+- ATL_new = ATL + (当天TSS - ATL) × 0.13307
+- TSB = CTL - ATL
+
+当前起点：CTL={ctl:.1f}, ATL={atl:.1f}, TSB={ctl - atl:.1f}
+
+## 训练强度分类体系
+本系统将训练分为以下类型（按强度递增）：
+- **恢复**：Z1（心率<68%LTHR / 功率<55%FTP），TSS 约 15-25/h
+- **有氧耐力**：Z2 为主（心率68%-83%LTHR / 功率55%-75%FTP），Z3 以上 <10%，时长 ≥45min，TSS 约 30-50/h
+- **节奏**：Z3 累计 ≥30min（心率83%-94%LTHR / 功率75%-90%FTP），TSS 约 50-70/h
+- **阈值**：Z4 累计 ≥25min（心率94%-105%LTHR / 功率90%-105%FTP），TSS 约 60-80/h
+- **VO2max**：Z5+ 累计 ≥15min，≥3组连续3分钟以上间歇（心率>105%LTHR / 功率105%-120%FTP），TSS 约 70-100/h
 
 ## 未来 7 天日期
 {future_days_str}
 
-请组织成一份清晰的训练报告，包含以下部分：
-1. **最近 7 天总结**：训练概况、负荷变化趋势（参考每日 PMC 表格）、风险评估
-2. **未来 7 天逐日训练计划**：针对列表中的每一天给出明确建议，格式为表格，包含：日期、运动类型、预计时长、强度区间（使用上述 Z1-Z7 分类）、预估 TSS。休息日也要明确标注。不要含糊地说"建议休息"或"适度训练"，要给出具体的运动类型和预计时长。
-使用 markdown 格式。"""
+---
+
+## 训练计划约束规则（必须严格遵守）
+1. **TSB 控制线**：目标是让 TSB 在 -10 到 -15 之间波动，偶尔触及 -20 但不得持续低于 -20。7 天末 TSB 应在 -10 左右
+2. **ATL/CTL 比率**：可以瞬时超过 1.5（主课表日），但次日必须通过恢复日降回 1.5 以下，整体大部分时间 ≤ 1.5
+3. **VO2max 课表**：每周仅安排一次，且前后各一天不得安排阈值或 VO2max 等高强度课程
+4. **核心课表组合**：每周 3 次核心训练 = 1 次 VO2max + 1 次阈值 + 1 次节奏。若疲劳累积大（TSB < -15 或 ATL/CTL > 1.5），去掉 1 次阈值以充分恢复
+5. **有氧耐力填充**：核心课表之外的训练日安排有氧耐力（Z2），不要全部留空为休息日。7 天内至少 4 天有训练（3 次核心 + 1-2 次有氧耐力）
+6. **恢复日**：只标注「休息」，不提供运动建议，TSS=0
+7. **预测 PMC**：每天的计划必须包含预估 TSS，并用上述公式计算预测的 CTL、ATL、TSB
+8. **TSS 量级参考**（用于安排预估 TSS）：
+   - VO2max 课表：60-100 TSS（参考用户历史中 vo2max 分类的 TSS）
+   - 阈值课表：50-80 TSS
+   - 节奏课表：40-65 TSS
+   - 有氧耐力：30-55 TSS
+   - 安排 TSS 时应参考当前 CTL 值：日均 TSS ≈ CTL 时可维持，> CTL 时 CTL 会上升。要让 CTL 有可见的成长，7 天总 TSS 应显著大于 7 × CTL
+
+## 输出格式要求（严格遵守 JSON 格式）
+你必须返回一个 JSON 对象，不要输出任何 JSON 之外的内容。结构如下：
+
+```json
+{{
+  "summary": "最近 7 天总结的 markdown 文本（3-5 句话，必须重点分析 ATL/CTL 比值和 TSB 的联合变化趋势，判断疲劳累积或恢复状态）",
+  "plan": [
+    {{
+      "date": "05-07 周四",
+      "type": "indoor_cycling「LSD60」",
+      "intensity": "endurance",
+      "duration_min": 60,
+      "tss": 42,
+      "ctl": 25.6,
+      "atl": 29.3,
+      "tsb": -3.7
+    }}
+  ],
+  "outlook": "下周展望的 markdown 文本：如果按计划执行完 7 天，CTL 预计从 XX 变化到 XX，ATL/CTL 比值从 XX 变化到 XX，TSB 从 XX 变化到 XX。总结这周训练的主要目标和对体能的影响。"
+}}
+```
+
+字段说明：
+- summary: markdown 格式，重点分析 ATL/CTL 比值趋势和 TSB 变化，判断当前是疲劳积累期还是恢复期
+- plan: 7 天计划数组，intensity 使用以下英文值之一：rest / recovery / endurance / tempo / threshold / vo2max。休息日 intensity=rest，type="休息"，tss=0，duration_min=0
+- outlook: markdown 格式，总结计划执行后的 CTL、ATL/CTL、TSB 变化
+- 安排训练时参考「最近训练记录」中的历史课程，尽量复用用户已完成过的类似训练"""
 
     return chat(
         [
@@ -319,13 +386,13 @@ def generate_weekly_report(
                 "role": "system",
                 "content": (
                     "你是 EffortOS 运动分析平台的专业教练。你接收运动科学分析引擎已经计算好的结论和每日 PMC 数据，"
-                    "将其组织成流畅的中文训练报告。不要质疑或修改分析结论，只需以专业、友好的语气呈现给用户。"
-                    "训练计划中必须使用 Z1-Z7 强度分类体系标注强度区间，逐日给出明确、可执行的建议。"
-                    "使用 markdown 格式。"
+                    "据此制定未来 7 天训练计划。你必须严格遵守用户给出的训练约束规则（TSB、ATL/CTL、课表组合等），"
+                    "并使用 PMC 递推公式逐日预测 CTL/ATL/TSB。你只输出 JSON，不输出其他内容。"
                 ),
             },
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        max_completion_tokens=3000,
     )
 
 

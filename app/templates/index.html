@@ -104,9 +104,11 @@
         <span>AI 训练报告</span>
         <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">生成报告</button>
     </div>
-    <div id="weekly-report-content">
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">基于最近 7 天训练数据和 42 天历史负荷，生成训练报告和未来 7 天计划。</p>
-    </div>
+    <div id="weekly-report-date" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
+    <div id="weekly-report-summary" class="md-content" style="margin-bottom: 0.75rem;"></div>
+    <div id="weekly-report-plan"></div>
+    <div id="weekly-report-outlook" class="md-content" style="margin-top: 0.75rem;"></div>
+    <div id="weekly-report-meta" style="margin-top: 0.75rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
 </div>
 {% endblock %}
 
@@ -431,45 +433,97 @@ function renderTypeChart(breakdown) {
     });
 }
 
+const _reportIntensityNames = { rest: '休息', recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const _reportIntensityColors = { rest: '#9ca3af', recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
+
+function _renderPlanTable(plan) {
+    if (!plan || !plan.length) return '';
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:0.25rem;">';
+    html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">';
+    html += '<th style="padding:0.4rem;">日期</th><th style="padding:0.4rem;">训练类型</th>';
+    html += '<th style="padding:0.4rem;">强度</th><th style="padding:0.4rem;">时长</th>';
+    html += '<th style="padding:0.4rem;text-align:right;">TSS</th>';
+    html += '<th style="padding:0.4rem;text-align:right;">CTL</th>';
+    html += '<th style="padding:0.4rem;text-align:right;">ATL</th>';
+    html += '<th style="padding:0.4rem;text-align:right;">TSB</th>';
+    html += '</tr></thead><tbody>';
+    for (const r of plan) {
+        const il = r.intensity || 'rest';
+        const color = _reportIntensityColors[il] || '#999';
+        const name = _reportIntensityNames[il] || il;
+        const dur = il === 'rest' ? '—' : (r.duration_min + 'min');
+        const tss = il === 'rest' ? '—' : r.tss;
+        html += '<tr style="border-bottom:1px solid var(--border);">';
+        html += `<td style="padding:0.4rem;">${r.date}</td>`;
+        html += `<td style="padding:0.4rem;">${r.type}</td>`;
+        html += `<td style="padding:0.4rem;"><span style="color:${color};font-weight:600;">${name}</span></td>`;
+        html += `<td style="padding:0.4rem;">${dur}</td>`;
+        html += `<td style="padding:0.4rem;text-align:right;">${tss}</td>`;
+        html += `<td style="padding:0.4rem;text-align:right;">${r.ctl.toFixed(1)}</td>`;
+        html += `<td style="padding:0.4rem;text-align:right;">${r.atl.toFixed(1)}</td>`;
+        html += `<td style="padding:0.4rem;text-align:right;">${r.tsb.toFixed(1)}</td>`;
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+}
+
+function _renderDashboardReport(res) {
+    const btn = document.getElementById('gen-report-btn');
+    const dateEl = document.getElementById('weekly-report-date');
+    const summaryEl = document.getElementById('weekly-report-summary');
+    const planEl = document.getElementById('weekly-report-plan');
+    const outlookEl = document.getElementById('weekly-report-outlook');
+    const metaEl = document.getElementById('weekly-report-meta');
+    const d = res.data;
+
+    btn.textContent = '重新生成';
+    if (d.generated_at) {
+        const dt = new Date(d.generated_at);
+        dateEl.textContent = '生成于 ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    }
+    summaryEl.innerHTML = marked.parse(d.summary || '');
+    planEl.innerHTML = _renderPlanTable(d.plan);
+    outlookEl.innerHTML = marked.parse(d.outlook || '');
+    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 近 7 天活动: ${d.week_activities} 次`;
+}
+
+// 页面加载时加载已有报告
+authFetch('/api/ai/weekly-report')
+    .then(r => r.json())
+    .then(res => { if (res.code === 200 && res.data) _renderDashboardReport(res); })
+    .catch(() => {});
+
 function generateReport() {
     const btn = document.getElementById('gen-report-btn');
-    const content = document.getElementById('weekly-report-content');
+    const dateEl = document.getElementById('weekly-report-date');
+    const summaryEl = document.getElementById('weekly-report-summary');
+    const planEl = document.getElementById('weekly-report-plan');
+    const outlookEl = document.getElementById('weekly-report-outlook');
+    const metaEl = document.getElementById('weekly-report-meta');
     btn.disabled = true;
     btn.textContent = '生成中...';
-    content.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析最近 7 天训练数据...</div>';
+    dateEl.textContent = '';
+    summaryEl.innerHTML = '';
+    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析最近 7 天训练数据...</div>';
+    outlookEl.innerHTML = '';
+    metaEl.textContent = '';
 
     authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
         .then(res => {
             btn.disabled = false;
-            btn.textContent = '重新生成';
             if (res.code !== 200) {
-                content.innerHTML = '';
-                const errP = document.createElement('p');
-                errP.style.color = 'var(--danger)';
-                errP.textContent = '生成失败: ' + res.message;
-                content.appendChild(errP);
+                btn.textContent = '重新生成';
+                planEl.innerHTML = '<p style="color:var(--danger)">生成失败: ' + res.message + '</p>';
                 return;
             }
-            const d = res.data;
-            content.innerHTML = `
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
-                    <span>Fitness: ${d.ctl.toFixed(1)}</span>
-                    <span>Fatigue: ${d.atl.toFixed(1)}</span>
-                    <span>Form: ${d.tsb.toFixed(1)}</span>
-                    <span>近 7 天 ${d.week_activities} 次训练</span>
-                </div>
-                <div class="md-content">${marked.parse(d.report)}</div>
-            `;
+            _renderDashboardReport(res);
         })
         .catch(err => {
             btn.disabled = false;
             btn.textContent = '重新生成';
-            content.innerHTML = '';
-            const errP2 = document.createElement('p');
-            errP2.style.color = 'var(--danger)';
-            errP2.textContent = '请求失败: ' + err.message;
-            content.appendChild(errP2);
+            planEl.innerHTML = '<p style="color:var(--danger)">请求失败: ' + err.message + '</p>';
         });
 }
 </script>

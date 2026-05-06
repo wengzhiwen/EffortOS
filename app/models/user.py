@@ -1,9 +1,32 @@
 import secrets
 from datetime import datetime, timezone
 
-from mongoengine import DateTimeField, EmailField, StringField
+from mongoengine import (
+    DateTimeField,
+    EmailField,
+    EmbeddedDocument,
+    EmbeddedDocumentField,
+    FloatField,
+    IntField,
+    StringField,
+)
 
 from app.models.base import BaseDocument
+
+
+class WeeklyReport(EmbeddedDocument):
+    """存储用户最近一次生成的训练报告。"""
+
+    summary = StringField()
+    plan_json = StringField()
+    outlook = StringField()
+    ctl = FloatField()
+    atl = FloatField()
+    tsb = FloatField()
+    week_activities = IntField()
+    generated_at = DateTimeField()
+
+    meta = {"strict": False}
 
 
 class User(BaseDocument):
@@ -12,6 +35,7 @@ class User(BaseDocument):
     session_token = StringField(unique=True, sparse=True)
     last_login_at = DateTimeField()
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
+    weekly_report = EmbeddedDocumentField(WeeklyReport)
 
     meta = {
         "collection": "users",

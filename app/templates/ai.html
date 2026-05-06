@@ -22,50 +22,120 @@
     </div>
 </div>
 
-<div class="card" id="result-card" style="display: none;">
-    <div class="card-title" id="result-title"></div>
-    <div id="result-content" class="md-content"></div>
-    <div id="result-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
+<div class="card" id="report-card" style="display: none;">
+    <div class="card-title">训练报告</div>
+    <div id="report-date" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;"></div>
+    <div id="report-summary" class="md-content" style="margin-bottom: 1rem;"></div>
+    <div id="report-plan"></div>
+    <div id="report-outlook" class="md-content" style="margin-top: 1rem;"></div>
+    <div id="report-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
+</div>
+
+<div class="card" id="suggestion-card" style="display: none;">
+    <div class="card-title">训练建议</div>
+    <div id="suggestion-content" class="md-content"></div>
+    <div id="suggestion-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
 </div>
 {% endblock %}
 
 {% block script %}
 <script>
-function generateReport() {
-    const resultCard = document.getElementById('result-card');
-    const resultTitle = document.getElementById('result-title');
-    const resultContent = document.getElementById('result-content');
-    const resultMeta = document.getElementById('result-meta');
+const intensityNames = { rest: '休息', recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const intensityColors = { rest: '#9ca3af', recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
-    resultCard.style.display = 'block';
-    resultTitle.textContent = '训练报告';
-    resultContent.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
-    resultMeta.textContent = '';
+function _renderPlanTable(plan) {
+    if (!plan || !plan.length) return '';
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+    html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">';
+    html += '<th style="padding:0.5rem 0.4rem;">日期</th><th style="padding:0.5rem 0.4rem;">训练类型</th>';
+    html += '<th style="padding:0.5rem 0.4rem;">强度分类</th><th style="padding:0.5rem 0.4rem;">时长</th>';
+    html += '<th style="padding:0.5rem 0.4rem;text-align:right;">TSS</th>';
+    html += '<th style="padding:0.5rem 0.4rem;text-align:right;">CTL</th>';
+    html += '<th style="padding:0.5rem 0.4rem;text-align:right;">ATL</th>';
+    html += '<th style="padding:0.5rem 0.4rem;text-align:right;">TSB</th>';
+    html += '</tr></thead><tbody>';
+    for (const r of plan) {
+        const il = r.intensity || 'rest';
+        const color = intensityColors[il] || '#999';
+        const name = intensityNames[il] || il;
+        const dur = r.intensity === 'rest' ? '—' : (r.duration_min + 'min');
+        const tss = r.intensity === 'rest' ? '—' : r.tss;
+        html += '<tr style="border-bottom:1px solid var(--border);">';
+        html += `<td style="padding:0.5rem 0.4rem;">${r.date}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;">${r.type}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;"><span style="color:${color};font-weight:600;">${name}</span></td>`;
+        html += `<td style="padding:0.5rem 0.4rem;">${dur}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${tss}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${r.ctl.toFixed(1)}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${r.atl.toFixed(1)}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${r.tsb.toFixed(1)}</td>`;
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+}
+
+function _renderReport(res) {
+    const card = document.getElementById('report-card');
+    const dateEl = document.getElementById('report-date');
+    const summaryEl = document.getElementById('report-summary');
+    const planEl = document.getElementById('report-plan');
+    const outlookEl = document.getElementById('report-outlook');
+    const metaEl = document.getElementById('report-meta');
+    const d = res.data;
+
+    card.style.display = 'block';
+    if (d.generated_at) {
+        const dt = new Date(d.generated_at);
+        dateEl.textContent = '生成于 ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+    } else {
+        dateEl.textContent = '';
+    }
+    summaryEl.innerHTML = marked.parse(d.summary || '');
+    planEl.innerHTML = _renderPlanTable(d.plan);
+    outlookEl.innerHTML = marked.parse(d.outlook || '');
+    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 最近 7 天活动: ${d.week_activities} 次`;
+}
+
+// 页面加载时加载已有报告
+authFetch('/api/ai/weekly-report')
+    .then(r => r.json())
+    .then(res => { if (res.code === 200 && res.data) _renderReport(res); })
+    .catch(() => {});
+
+function generateReport() {
+    const card = document.getElementById('report-card');
+    const dateEl = document.getElementById('report-date');
+    const summaryEl = document.getElementById('report-summary');
+    const planEl = document.getElementById('report-plan');
+    const outlookEl = document.getElementById('report-outlook');
+    const metaEl = document.getElementById('report-meta');
+
+    card.style.display = 'block';
+    dateEl.textContent = '';
+    summaryEl.innerHTML = '';
+    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
+    outlookEl.innerHTML = '';
+    metaEl.textContent = '';
 
     authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
         .then(res => {
-            if (res.code !== 200) {
-                resultContent.textContent = res.message;
-                return;
-            }
-            resultContent.innerHTML = marked.parse(res.data.report || '');
-            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)} | 最近 7 天活动: ${res.data.week_activities} 次`;
+            if (res.code !== 200) { planEl.innerHTML = '<p style="color:var(--danger)">' + res.message + '</p>'; return; }
+            _renderReport(res);
         })
-        .catch(e => resultContent.textContent = '请求失败: ' + e.message);
+        .catch(e => planEl.innerHTML = '<p style="color:var(--danger)">请求失败: ' + e.message + '</p>');
 }
 
 function getSuggestion() {
     const question = document.getElementById('question').value;
-    const resultCard = document.getElementById('result-card');
-    const resultTitle = document.getElementById('result-title');
-    const resultContent = document.getElementById('result-content');
-    const resultMeta = document.getElementById('result-meta');
+    const card = document.getElementById('suggestion-card');
+    const content = document.getElementById('suggestion-content');
+    const meta = document.getElementById('suggestion-meta');
 
-    resultCard.style.display = 'block';
-    resultTitle.textContent = '训练建议';
-    resultContent.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
-    resultMeta.textContent = '';
+    card.style.display = 'block';
+    content.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
+    meta.textContent = '';
 
     authFetch('/api/ai/suggestion', {
         method: 'POST',
@@ -74,14 +144,11 @@ function getSuggestion() {
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code !== 200) {
-                resultContent.textContent = res.message;
-                return;
-            }
-            resultContent.innerHTML = marked.parse(res.data.suggestion || '');
-            resultMeta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
+            if (res.code !== 200) { content.textContent = res.message; return; }
+            content.innerHTML = marked.parse(res.data.suggestion || '');
+            meta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
         })
-        .catch(e => resultContent.textContent = '请求失败: ' + e.message);
+        .catch(e => content.textContent = '请求失败: ' + e.message);
 }
 </script>
 {% endblock %}

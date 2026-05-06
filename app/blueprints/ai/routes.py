@@ -1,14 +1,35 @@
+import json
+import re
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
+from app.models.user import WeeklyReport
 from app.services.llm_service import generate_suggestion, generate_weekly_report
 from app.services.metrics_service import calc_daily_tss, calc_pmc
 from app.utils.auth import require_user
 
 ai_bp = Blueprint("ai", __name__)
+
+_TYPE_NAMES = {
+    "cycling": "骑行",
+    "indoor_cycling": "室内骑行",
+    "running": "跑步",
+    "indoor_running": "室内跑步",
+    "walking": "步行",
+    "swimming": "游泳",
+    "other": "其他",
+}
+
+_INTENSITY_NAMES = {
+    "recovery": "恢复",
+    "endurance": "有氧耐力",
+    "tempo": "节奏",
+    "threshold": "阈值",
+    "vo2max": "VO2max",
+}
 
 
 def _get_current_context(user=None):
@@ -54,7 +75,7 @@ def _activity_to_dict(a):
     """将 Activity 对象转为摘要字典。"""
     act_dict = {
         "name": a.name,
-        "activity_type": a.activity_type,
+        "activity_type": _TYPE_NAMES.get(a.activity_type, a.activity_type),
         "start_time": a.start_time.isoformat(),
         "data_summary": {},
         "computed_metrics": {},
@@ -65,9 +86,30 @@ def _activity_to_dict(a):
         cm = a.computed_metrics
         act_dict["computed_metrics"] = {
             "tss": cm.tss,
-            "intensity_level": cm.intensity_level,
+            "intensity_level": _INTENSITY_NAMES.get(cm.intensity_level, cm.intensity_level),
         }
     return act_dict
+
+
+def _recent_history_list(user, limit=20):
+    """获取用户最近 N 次训练的简明列表，供 LLM 参考。"""
+    acts = Activity.objects(user=user).order_by("-start_time").limit(limit)
+    rows = []
+    for a in acts:
+        cm = a.computed_metrics
+        ds = a.data_summary
+        rows.append(
+            {
+                "date": a.start_time.strftime("%m-%d"),
+                "name": a.name,
+                "type": _TYPE_NAMES.get(a.activity_type, a.activity_type),
+                "duration_min": (ds.duration_seconds // 60) if ds else 0,
+                "tss": cm.tss if cm else None,
+                "hr_tss": cm.hr_tss if cm else None,
+                "intensity": _INTENSITY_NAMES.get(cm.intensity_level, cm.intensity_level) if cm else None,
+            }
+        )
+    return rows
 
 
 @ai_bp.route("/ai/weekly-report", methods=["POST"])
@@ -113,23 +155,82 @@ def weekly_report():
             label += "（今天）"
         future_days.append(label)
 
+    # 最近 20 次训练历史（供 LLM 参考复用）
+    history = _recent_history_list(user)
+
     try:
-        report = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str)
+        raw = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str, history)
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
         return jsonify({"code": 500, "message": f"生成失败: {str(e)}", "data": None}), 500
+
+    # 从 LLM 返回中提取 JSON
+    json_match = re.search(r"\{[\s\S]*\}", raw)
+    if not json_match:
+        return jsonify({"code": 500, "message": "LLM 返回格式异常", "data": None}), 500
+    try:
+        report_data = json.loads(json_match.group())
+    except json.JSONDecodeError:
+        return jsonify({"code": 500, "message": "LLM 返回 JSON 解析失败", "data": None}), 500
+
+    plan_json = json.dumps(report_data.get("plan", []), ensure_ascii=False)
+
+    # 持久化
+    user.weekly_report = WeeklyReport(
+        summary=report_data.get("summary", ""),
+        plan_json=plan_json,
+        outlook=report_data.get("outlook", ""),
+        ctl=latest_pmc["ctl"],
+        atl=latest_pmc["atl"],
+        tsb=latest_pmc["tsb"],
+        week_activities=len(recent_data),
+        generated_at=datetime.now(timezone.utc),
+    )
+    user.save()
 
     return jsonify(
         {
             "code": 200,
             "message": "ok",
             "data": {
-                "report": report,
+                "summary": report_data.get("summary", ""),
+                "plan": report_data.get("plan", []),
+                "outlook": report_data.get("outlook", ""),
                 "week_activities": len(recent_data),
                 "ctl": latest_pmc["ctl"],
                 "atl": latest_pmc["atl"],
                 "tsb": latest_pmc["tsb"],
+                "generated_at": user.weekly_report.generated_at.isoformat(),
+            },
+        }
+    )
+
+
+@ai_bp.route("/ai/weekly-report", methods=["GET"])
+def get_weekly_report():
+    """获取最近一次存储的训练报告。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    wr = user.weekly_report
+    if not wr or not wr.plan_json:
+        return jsonify({"code": 200, "message": "ok", "data": None})
+
+    return jsonify(
+        {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "summary": wr.summary or "",
+                "plan": json.loads(wr.plan_json) if wr.plan_json else [],
+                "outlook": wr.outlook or "",
+                "week_activities": wr.week_activities,
+                "ctl": wr.ctl,
+                "atl": wr.atl,
+                "tsb": wr.tsb,
+                "generated_at": wr.generated_at.isoformat() if wr.generated_at else None,
             },
         }
     )
