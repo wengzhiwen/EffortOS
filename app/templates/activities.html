@@ -12,53 +12,52 @@
 </h2>
 
 <div class="confirm-overlay" id="upload-modal" style="display: none;">
-    <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 560px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+    <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 860px; width: 95%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0; font-size: 1.1rem;" id="upload-title">上传运动数据</h3>
             <button onclick="closeUploadModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); line-height: 1;">&times;</button>
         </div>
-        <form id="upload-form" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".tcx,.gpx" required id="upload-file" style="display: none;">
 
-            <!-- Step 1: 选择文件 -->
-            <div id="upload-step1">
-                <div id="upload-dropzone" onclick="document.getElementById('upload-file').click()" style="border: 2px dashed var(--border); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-                    <div style="font-weight: 600; margin-bottom: 0.25rem;">点击或拖拽文件到这里</div>
-                    <div style="color: var(--text-secondary); font-size: 0.85rem;">支持 TCX / GPX 格式</div>
-                </div>
-                <div id="upload-loading" style="display: none; text-align: center; padding: 2rem;">
-                    <div class="spinner" style="margin: 0 auto 0.75rem;"></div>
-                    <div style="color: var(--text-secondary);">正在分析文件...</div>
-                </div>
+        <!-- Step 1: 选择文件 -->
+        <div id="upload-step1">
+            <input type="file" accept=".tcx,.gpx" multiple id="upload-file" style="display: none;">
+            <div id="upload-dropzone" onclick="document.getElementById('upload-file').click()" style="border: 2px dashed var(--border); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">点击或拖拽文件到这里（支持多选）</div>
+                <div style="color: var(--text-secondary); font-size: 0.85rem;">支持 TCX / GPX 格式</div>
             </div>
+            <div id="upload-loading" style="display: none; text-align: center; padding: 2rem;">
+                <div class="spinner" style="margin: 0 auto 0.75rem;"></div>
+                <div id="upload-loading-text" style="color: var(--text-secondary);">正在分析文件...</div>
+            </div>
+        </div>
 
-            <!-- Step 2: 确认信息 -->
-            <div id="upload-step2" style="display: none;">
-                <div id="upload-preview"></div>
-                <div class="grid grid-2" style="margin-top: 1rem;">
-                    <div class="form-group">
-                        <label>运动类型</label>
-                        <select name="activity_type" required id="upload-type">
-                            <option value="cycling">骑行</option>
-                            <option value="indoor_cycling">室内骑行</option>
-                            <option value="running">跑步</option>
-                            <option value="indoor_running">室内跑步</option>
-                            <option value="walking">步行</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>活动名称</label>
-                        <input type="text" name="name" id="upload-name">
-                    </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
-                    <button type="submit" class="btn btn-primary" id="upload-btn">确认上传</button>
-                    <button type="button" class="btn btn-secondary" onclick="resetUploadStep()">重新选择</button>
-                    <span id="upload-status" style="font-size: 0.85rem;"></span>
-                </div>
+        <!-- Step 2: 批量确认列表 -->
+        <div id="upload-step2" style="display: none;">
+            <div id="upload-preview"></div>
+            <div style="overflow-x: auto; margin-top: 0.75rem;">
+                <table id="batch-table" style="font-size: 0.85rem; min-width: 600px;">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;"><input type="checkbox" id="batch-select-all" checked></th>
+                            <th>文件名</th>
+                            <th>时间</th>
+                            <th>类型</th>
+                            <th>名称</th>
+                            <th>时长</th>
+                            <th>距离</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batch-tbody"></tbody>
+                </table>
             </div>
-        </form>
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
+                <button class="btn btn-primary" id="batch-save-btn">保存</button>
+                <button class="btn btn-secondary" onclick="resetUploadStep()">重新选择</button>
+                <span id="upload-status" style="font-size: 0.85rem;"></span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -170,7 +169,10 @@ function formatWindow(w) {
     return fmtDur(parseInt(w));
 }
 
-// 文件选择/拖拽后自动分析
+// ============ 批量上传逻辑 ============
+let batchData = null;
+let batchSessionId = null;
+
 const dropzone = document.getElementById('upload-dropzone');
 const fileInput = document.getElementById('upload-file');
 
@@ -187,15 +189,18 @@ dropzone.addEventListener('drop', e => {
 });
 
 fileInput.addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
+    const files = this.files;
+    if (!files || files.length === 0) return;
     document.getElementById('upload-step1').style.display = 'none';
     document.getElementById('upload-loading').style.display = 'block';
+    document.getElementById('upload-loading-text').textContent = `正在分析 ${files.length} 个文件...`;
 
     const formData = new FormData();
-    formData.append('file', file);
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+    }
 
-    authFetch('/api/activities/analyze', { method: 'POST', body: formData })
+    authFetch('/api/activities/batch-analyze', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(res => {
             if (res.code !== 200) {
@@ -204,34 +209,13 @@ fileInput.addEventListener('change', function() {
                 showToast(res.message || '分析失败', 'error');
                 return;
             }
-            const d = res.data;
-            const typeSelect = document.getElementById('upload-type');
-            const matchingOption = Array.from(typeSelect.options).find(o => o.value === d.sport);
-            if (matchingOption) typeSelect.value = d.sport;
-            document.getElementById('upload-name').value = d.name_suggestion;
-
-            const durationStr = d.duration_seconds ? formatWindow(d.duration_seconds) : '—';
-            const distStr = d.total_distance ? (d.total_distance / 1000).toFixed(1) + ' km' : '—';
-            let html = `<div style="padding: 0.75rem; background: var(--primary-light); border-radius: 6px; font-size: 0.85rem;">
-                <div style="font-weight: 600; margin-bottom: 0.5rem;">分析结果</div>
-                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-                    <span>类型: <strong>${esc(d.sport_display)}</strong></span>
-                    <span>时长: ${durationStr}</span>
-                    <span>距离: ${distStr}</span>
-                    <span>数据点: ${d.trackpoint_count}</span>
-                    <span>心率: ${d.has_heart_rate ? '✓' : '✗'}</span>
-                    <span>功率: ${d.has_power ? '✓' : '✗'}</span>
-                    <span>GPS: ${d.has_gps ? (d.gps_tag === 'low_quality' ? '<span style="color:var(--warning);">⚠ 低质量</span>' : '✓') : '✗'}</span>
-                </div>`;
-            if (d.warnings.length > 0) {
-                html += `<div style="margin-top: 0.5rem; color: var(--warning);"><strong>注意:</strong> ${esc(d.warnings.join('；'))}</div>`;
-            }
-            html += '</div>';
-            document.getElementById('upload-preview').innerHTML = html;
-
+            batchData = res.data;
+            batchSessionId = res.data.session_id;
+            renderBatchTable(res.data.items);
             document.getElementById('upload-loading').style.display = 'none';
             document.getElementById('upload-step2').style.display = 'block';
-            document.getElementById('upload-title').textContent = '确认上传';
+            document.getElementById('upload-title').textContent = `分析完成（${res.data.items.length} 个文件）`;
+            updateBatchSaveBtn();
         })
         .catch(() => {
             document.getElementById('upload-loading').style.display = 'none';
@@ -240,14 +224,127 @@ fileInput.addEventListener('change', function() {
         });
 });
 
+function renderBatchTable(items) {
+    const tbody = document.getElementById('batch-tbody');
+    const typeOptions = Object.entries(typeNames).map(([k, v]) =>
+        `<option value="${k}">${v}</option>`
+    ).join('');
+
+    let html = '';
+    items.forEach((item, idx) => {
+        const hasError = !!item.error;
+        const isDup = !!item.is_duplicate;
+        const rowStyle = (hasError || isDup) ? 'style="opacity:0.5"' : '';
+        const statusText = hasError ? `<span style="color:var(--danger)">${esc(item.error)}</span>`
+                         : isDup ? '<span style="color:var(--warning)">重复</span>'
+                         : '正常';
+        const checkAttr = (hasError || isDup) ? 'disabled' : 'checked';
+        const timeStr = item.start_time ? item.start_time.slice(0, 16).replace('T', ' ') : '—';
+        const durationStr = item.duration_seconds ? fmtDur(item.duration_seconds) : '—';
+        const distStr = item.total_distance ? (item.total_distance / 1000).toFixed(1) + ' km' : '—';
+        const selectedType = item.sport || 'other';
+
+        html += `<tr ${rowStyle}>
+            <td><input type="checkbox" class="batch-check" data-idx="${idx}" ${checkAttr}></td>
+            <td title="${esc(item.filename)}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(item.filename)}</td>
+            <td style="white-space:nowrap;">${timeStr}</td>
+            <td><select class="batch-type" data-idx="${idx}" style="font-size:0.8rem;padding:2px 4px;">${typeOptions.replace(`value="${selectedType}"`, `value="${selectedType}" selected`)}</select></td>
+            <td><input type="text" class="batch-name" data-idx="${idx}" value="${esc(item.name_suggestion)}" style="font-size:0.8rem;padding:2px 4px;width:120px;"></td>
+            <td style="white-space:nowrap;">${durationStr}</td>
+            <td>${distStr}</td>
+            <td>${statusText}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+
+    document.querySelectorAll('.batch-check').forEach(cb => {
+        cb.addEventListener('change', updateBatchSaveBtn);
+    });
+}
+
+function updateBatchSaveBtn() {
+    const checked = document.querySelectorAll('.batch-check:checked');
+    const btn = document.getElementById('batch-save-btn');
+    btn.textContent = checked.length > 0 ? `保存 ${checked.length} 条活动` : '保存';
+}
+
+document.getElementById('batch-select-all').addEventListener('change', function() {
+    document.querySelectorAll('.batch-check:not(:disabled)').forEach(cb => cb.checked = this.checked);
+    updateBatchSaveBtn();
+});
+
+document.getElementById('batch-save-btn').addEventListener('click', function() {
+    const checked = document.querySelectorAll('.batch-check:checked');
+    if (checked.length === 0) { showToast('请至少选择一个文件', 'error'); return; }
+
+    const items = [];
+    checked.forEach(cb => {
+        const idx = parseInt(cb.dataset.idx);
+        const item = batchData.items[idx];
+        items.push({
+            temp_id: item.temp_id,
+            filename: item.filename,
+            activity_type: document.querySelector(`.batch-type[data-idx="${idx}"]`).value,
+            name: document.querySelector(`.batch-name[data-idx="${idx}"]`).value,
+        });
+    });
+
+    const btn = this;
+    const status = document.getElementById('upload-status');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+    status.textContent = '';
+
+    authFetch('/api/activities/batch-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: batchSessionId, items: items }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            btn.disabled = false;
+            updateBatchSaveBtn();
+            if (res.code === 200) {
+                const failed = res.data.errors.length;
+                showToast(res.message, failed > 0 ? 'info' : 'success');
+                closeUploadModal();
+                loadActivities(0);
+            } else {
+                status.textContent = res.message;
+                status.style.color = 'var(--danger)';
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            updateBatchSaveBtn();
+            showToast('保存失败，请重试', 'error');
+        });
+});
+
 function resetUploadStep() {
     document.getElementById('upload-step2').style.display = 'none';
     document.getElementById('upload-step1').style.display = 'block';
     document.getElementById('upload-title').textContent = '上传运动数据';
-    document.getElementById('upload-form').reset();
+    fileInput.value = '';
     document.getElementById('upload-status').textContent = '';
+    batchData = null;
+    batchSessionId = null;
 }
 
+// ============ 弹层开关 ============
+function openUploadModal() {
+    document.getElementById('upload-modal').style.display = 'flex';
+    resetUploadStep();
+}
+function closeUploadModal() {
+    document.getElementById('upload-modal').style.display = 'none';
+    fileInput.value = '';
+}
+document.getElementById('upload-modal').addEventListener('click', e => {
+    if (e.target.id === 'upload-modal') closeUploadModal();
+});
+
+// ============ 活动列表 ============
 function getFilterParams() {
     const params = new URLSearchParams();
     const type = document.getElementById('filter-type').value;
@@ -336,7 +433,7 @@ function exportData(format) {
         authFetch(url)
             .then(r => r.json())
             .then(res => {
-                const blob = new Blob([JSON.stringify(res.data, null, 2)], {type: 'application/json'});
+                const blob = new Blob([JSON.stringify(res.data, null, 2)],{type:'application/json'});
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = 'activities.json';
@@ -365,47 +462,6 @@ async function deleteActivity(id) {
             loadActivities(currentOffset);
         });
 }
-
-// 上传弹层
-function openUploadModal() {
-    document.getElementById('upload-modal').style.display = 'flex';
-    resetUploadStep();
-}
-function closeUploadModal() {
-    document.getElementById('upload-modal').style.display = 'none';
-    document.getElementById('upload-form').reset();
-}
-document.getElementById('upload-modal').addEventListener('click', e => {
-    if (e.target.id === 'upload-modal') closeUploadModal();
-});
-
-document.getElementById('upload-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const status = document.getElementById('upload-status');
-    const btn = document.getElementById('upload-btn');
-    btn.disabled = true;
-    btn.textContent = '上传中...';
-    status.textContent = '';
-    const formData = new FormData(e.target);
-    authFetch('/api/activities/upload', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(res => {
-            btn.disabled = false;
-            btn.textContent = '上传';
-            if (res.code === 200) {
-                showToast('上传成功', 'success');
-                closeUploadModal();
-                loadActivities(0);
-            } else {
-                status.textContent = res.message;
-                status.style.color = 'var(--danger)';
-            }
-        })
-        .catch(() => {
-            btn.disabled = false;
-            btn.textContent = '上传';
-        });
-});
 
 // 全选/取消全选
 document.getElementById('select-all').addEventListener('change', function() {

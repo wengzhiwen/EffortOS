@@ -12,7 +12,7 @@ class Config:
         "UPLOAD_FOLDER",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "instance", "uploads"),
     )
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
+    MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
     OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4-mini-2026-03-17")
 

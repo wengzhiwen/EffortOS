@@ -80,6 +80,7 @@ class Activity(BaseDocument):
     start_time = DateTimeField(required=True)
     source_file = StringField()  # 原始文件路径
     source_format = StringField(choices=["tcx", "gpx"])  # 文件格式
+    file_checksum = StringField(max_length=64)  # SHA-256 文件内容校验和，用于去重
 
     data_summary = EmbeddedDocumentField(DataSummary)
     computed_metrics = EmbeddedDocumentField(ComputedMetrics)
@@ -92,7 +93,14 @@ class Activity(BaseDocument):
 
     meta = {
         "collection": "activities",
-        "indexes": ["user", "start_time", "activity_type", ("user", "start_time"), ("user", "activity_type")],
+        "indexes": [
+            "user",
+            "start_time",
+            "activity_type",
+            ("user", "start_time"),
+            ("user", "activity_type"),
+            ("user", "file_checksum"),
+        ],
     }
 
     def get_trackpoints_downsampled(self, max_points=500):

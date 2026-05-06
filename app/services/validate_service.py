@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 ALLOWED_EXTENSIONS = {"tcx", "gpx"}
@@ -46,3 +47,12 @@ def validate_activity_file(file_path: str) -> tuple[bool, str]:
         return False, "文件不是有效的 XML 格式"
 
     return True, ""
+
+
+def compute_file_checksum(file_path: str) -> str:
+    """计算文件内容的 SHA-256 校验和。"""
+    h = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()

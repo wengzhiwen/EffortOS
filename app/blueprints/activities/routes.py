@@ -1,6 +1,8 @@
 import csv
 import io
 import os
+import shutil
+import time
 import uuid
 
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -8,7 +10,7 @@ from flask import Blueprint, Response, current_app, jsonify, request
 from app.models.activity import Activity, DataSummary, Trackpoint
 from app.models.gear import Gear
 from app.services.parse_service import parse_activity_file
-from app.services.validate_service import validate_activity_file
+from app.services.validate_service import compute_file_checksum, validate_activity_file
 from app.utils.auth import require_user, user_filter
 
 activities_bp = Blueprint("activities", __name__)
@@ -353,48 +355,11 @@ def _compute_metrics(activity, trackpoints):
 # ============================================================
 
 
-@activities_bp.route("/activities/analyze", methods=["POST"])
-def analyze_activity():
-    """预分析运动数据文件，返回运动类型、名称建议和数据质量。"""
-    user, err = require_user()
-    if err:
-        return err
-
-    if "file" not in request.files:
-        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
-
-    file = request.files["file"]
-    if not file.filename:
-        return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
-
-    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-    if ext not in ("tcx", "gpx"):
-        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
-
-    # 临时保存文件用于解析
-    upload_dir = current_app.config["UPLOAD_FOLDER"]
-    os.makedirs(upload_dir, exist_ok=True)
-    tmp_path = os.path.join(upload_dir, f"_analyze_{uuid.uuid4().hex}.{ext}")
-    file.save(tmp_path)
-
-    try:
-        is_valid, error_msg = validate_activity_file(tmp_path)
-        if not is_valid:
-            return jsonify({"code": 400, "message": error_msg, "data": None}), 400
-        parsed = parse_activity_file(tmp_path)
-    except ValueError as e:
-        return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-    trackpoints = parsed["trackpoints"]
-    sport = parsed.get("sport", "other")
-    start = parsed["start_time"]
-    name_suggestion = f"{start.strftime('%m月%d日')}{SPORT_DISPLAY.get(sport, sport)}"
-
-    # 数据质量检查
+def _analyze_trackpoints(trackpoints, sport):
+    """分析轨迹点数据，返回预览信息（时长、距离、数据质量、警告等）。"""
     total = len(trackpoints)
+    start = trackpoints[0]["time"] if trackpoints else None
+
     hr_count = sum(1 for tp in trackpoints if tp.get("heart_rate") is not None)
     power_count = sum(1 for tp in trackpoints if tp.get("power") is not None)
     speed_count = sum(1 for tp in trackpoints if tp.get("speed") is not None)
@@ -463,27 +428,86 @@ def analyze_activity():
         if hrs:
             avg_hr = sum(hrs) // len(hrs)
 
-    return jsonify(
-        {
-            "code": 200,
-            "message": "ok",
-            "data": {
-                "sport": sport,
-                "sport_display": SPORT_DISPLAY.get(sport, sport),
-                "name_suggestion": name_suggestion,
-                "start_time": start.isoformat(),
-                "duration_seconds": duration,
-                "total_distance": round(total_dist, 1),
-                "avg_heart_rate": avg_hr,
-                "trackpoint_count": total,
-                "has_heart_rate": hr_count > total * 0.5,
-                "has_power": power_count > total * 0.5,
-                "has_gps": has_gps,
-                "gps_tag": gps_tag,
-                "warnings": warnings,
-            },
-        }
-    )
+    name_suggestion = f"{start.strftime('%m月%d日')}{SPORT_DISPLAY.get(sport, sport)}" if start else "未知活动"
+
+    return {
+        "sport": sport,
+        "sport_display": SPORT_DISPLAY.get(sport, sport),
+        "name_suggestion": name_suggestion,
+        "start_time": start.isoformat() if start else None,
+        "duration_seconds": duration,
+        "total_distance": round(total_dist, 1),
+        "avg_heart_rate": avg_hr,
+        "trackpoint_count": total,
+        "has_heart_rate": hr_count > total * 0.5,
+        "has_power": power_count > total * 0.5,
+        "has_gps": has_gps,
+        "gps_tag": gps_tag,
+        "warnings": warnings,
+    }
+
+
+def _cleanup_expired_batch_sessions(upload_dir, max_age_seconds=3600):
+    """清理过期的批量上传会话目录。"""
+    batch_dir = os.path.join(upload_dir, "_batch")
+    if not os.path.isdir(batch_dir):
+        return
+    now = time.time()
+    for name in os.listdir(batch_dir):
+        path = os.path.join(batch_dir, name)
+        if os.path.isdir(path) and now - os.path.getmtime(path) > max_age_seconds:
+            shutil.rmtree(path, ignore_errors=True)
+
+
+@activities_bp.route("/activities/analyze", methods=["POST"])
+def analyze_activity():
+    """预分析运动数据文件，返回运动类型、名称建议和数据质量。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    if "file" not in request.files:
+        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
+
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ("tcx", "gpx"):
+        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
+
+    # 临时保存文件用于解析
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    os.makedirs(upload_dir, exist_ok=True)
+    tmp_path = os.path.join(upload_dir, f"_analyze_{uuid.uuid4().hex}.{ext}")
+    file.save(tmp_path)
+
+    try:
+        is_valid, error_msg = validate_activity_file(tmp_path)
+        if not is_valid:
+            return jsonify({"code": 400, "message": error_msg, "data": None}), 400
+        parsed = parse_activity_file(tmp_path)
+    except ValueError as e:
+        return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
+
+    trackpoints = parsed["trackpoints"]
+    sport = parsed.get("sport", "other")
+    checksum = compute_file_checksum(tmp_path)
+
+    # 检查重复
+    existing = Activity.objects(user=user, file_checksum=checksum).first()
+    is_duplicate = existing is not None
+
+    # 清理临时文件
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
+    preview = _analyze_trackpoints(trackpoints, sport)
+    preview["checksum"] = checksum
+    preview["is_duplicate"] = is_duplicate
+
+    return jsonify({"code": 200, "message": "ok", "data": preview})
 
 
 @activities_bp.route("/activities/upload", methods=["POST"])
@@ -529,6 +553,12 @@ def upload_activity():
         os.remove(file_path)
         return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
 
+    # 文件校验和去重
+    checksum = compute_file_checksum(file_path)
+    if Activity.objects(user=user, file_checksum=checksum).first():
+        os.remove(file_path)
+        return jsonify({"code": 409, "message": "该文件已上传过", "data": None}), 409
+
     trackpoints = parsed["trackpoints"]
     data_summary = _build_data_summary(parsed["laps"], trackpoints)
     name = request.form.get("name") or file.filename
@@ -540,6 +570,7 @@ def upload_activity():
         start_time=parsed["start_time"],
         source_file=safe_filename,
         source_format=ext,
+        file_checksum=checksum,
         data_summary=data_summary,
         raw_data_path=file_path,
         user=user,
@@ -590,6 +621,192 @@ def upload_activity():
                 "computed_metrics": _serialize_metrics(activity.computed_metrics),
                 "trackpoint_count": len(trackpoints),
             },
+        }
+    )
+
+
+@activities_bp.route("/activities/batch-analyze", methods=["POST"])
+def batch_analyze():
+    """批量预分析多个运动数据文件，返回分析结果列表（按时间排序）。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
+    if len(files) > 30:
+        return jsonify({"code": 400, "message": "单次最多 30 个文件", "data": None}), 400
+
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # 清理过期会话
+    _cleanup_expired_batch_sessions(upload_dir)
+
+    # 创建本次会话目录
+    session_id = uuid.uuid4().hex
+    session_dir = os.path.join(upload_dir, "_batch", session_id)
+    os.makedirs(session_dir, exist_ok=True)
+
+    results = []
+    for file in files:
+        if not file.filename:
+            continue
+        ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+        if ext not in ("tcx", "gpx"):
+            results.append({"filename": file.filename, "error": f"不支持的格式: .{ext}"})
+            continue
+
+        safe_name = f"{uuid.uuid4().hex}.{ext}"
+        tmp_path = os.path.join(session_dir, safe_name)
+        file.save(tmp_path)
+
+        try:
+            is_valid, error_msg = validate_activity_file(tmp_path)
+            if not is_valid:
+                results.append({"filename": file.filename, "error": error_msg})
+                os.remove(tmp_path)
+                continue
+
+            parsed = parse_activity_file(tmp_path)
+            checksum = compute_file_checksum(tmp_path)
+
+            # 去重检查
+            existing = Activity.objects(user=user, file_checksum=checksum).first()
+            is_dup = existing is not None
+
+            trackpoints = parsed["trackpoints"]
+            sport = parsed.get("sport", "other")
+            preview = _analyze_trackpoints(trackpoints, sport)
+
+            results.append(
+                {
+                    "temp_id": safe_name,
+                    "filename": file.filename,
+                    "checksum": checksum,
+                    "is_duplicate": is_dup,
+                    **preview,
+                }
+            )
+        except ValueError as e:
+            results.append({"filename": file.filename, "error": f"解析失败: {str(e)}"})
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    # 按时间排序：有效结果在前，错误在后
+    valid = [r for r in results if "error" not in r]
+    valid.sort(key=lambda r: r.get("start_time") or "")
+    errors = [r for r in results if "error" in r]
+
+    return jsonify({"code": 200, "message": "ok", "data": {"session_id": session_id, "items": valid + errors}})
+
+
+@activities_bp.route("/activities/batch-upload", methods=["POST"])
+def batch_upload():
+    """批量上传运动数据文件。"""
+    user, err = require_user()
+    if err:
+        return err
+
+    data = request.get_json()
+    session_id = data.get("session_id")
+    items = data.get("items", [])
+    if not session_id or not items:
+        return jsonify({"code": 400, "message": "缺少参数", "data": None}), 400
+    if len(items) > 30:
+        return jsonify({"code": 400, "message": "单次最多 30 个文件", "data": None}), 400
+
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    session_dir = os.path.join(upload_dir, "_batch", session_id)
+    if not os.path.isdir(session_dir):
+        return jsonify({"code": 400, "message": "会话已过期，请重新分析", "data": None}), 400
+
+    created = []
+    errors = []
+
+    for item in items:
+        temp_id = item.get("temp_id")
+        src_path = os.path.join(session_dir, temp_id)
+        if not os.path.exists(src_path):
+            errors.append({"filename": item.get("filename"), "error": "文件未找到"})
+            continue
+
+        try:
+            is_valid, error_msg = validate_activity_file(src_path)
+            if not is_valid:
+                errors.append({"filename": item.get("filename"), "error": error_msg})
+                continue
+
+            parsed = parse_activity_file(src_path)
+            checksum = compute_file_checksum(src_path)
+
+            # 二次去重检查
+            if Activity.objects(user=user, file_checksum=checksum).first():
+                errors.append({"filename": item.get("filename"), "error": "重复文件，已跳过"})
+                continue
+
+            activity_type = item.get("activity_type", parsed.get("sport", "other"))
+            if activity_type not in VALID_ACTIVITY_TYPES:
+                activity_type = "other"
+            name = item.get("name") or item.get("filename", "未命名")
+
+            # 移动文件到永久位置
+            ext = temp_id.rsplit(".", 1)[-1]
+            safe_filename = f"{uuid.uuid4().hex}.{ext}"
+            perm_path = os.path.join(upload_dir, safe_filename)
+            os.rename(src_path, perm_path)
+
+            trackpoints = parsed["trackpoints"]
+            data_summary = _build_data_summary(parsed["laps"], trackpoints)
+
+            activity = Activity(
+                activity_type=activity_type,
+                name=name,
+                start_time=parsed["start_time"],
+                source_file=safe_filename,
+                source_format=ext,
+                file_checksum=checksum,
+                data_summary=data_summary,
+                raw_data_path=perm_path,
+                user=user,
+            )
+
+            if trackpoints:
+                first_time = trackpoints[0]["time"]
+                activity.trackpoints = [
+                    Trackpoint(
+                        elapsed=(tp["time"] - first_time).total_seconds(),
+                        hr=tp.get("heart_rate"),
+                        power=tp.get("power"),
+                        speed=tp.get("speed"),
+                        cadence=tp.get("cadence"),
+                        altitude=tp.get("altitude"),
+                        distance=tp.get("distance"),
+                        latitude=tp.get("latitude"),
+                        longitude=tp.get("longitude"),
+                    )
+                    for tp in trackpoints
+                ]
+
+            _compute_metrics(activity, parsed["trackpoints"])
+            activity.save()
+            created.append({"id": str(activity.id), "name": activity.name})
+        except Exception as e:
+            errors.append({"filename": item.get("filename"), "error": str(e)})
+
+    # 清理会话目录
+    shutil.rmtree(session_dir, ignore_errors=True)
+
+    msg = f"成功上传 {len(created)} 条活动"
+    if errors:
+        msg += f"，{len(errors)} 条失败或跳过"
+
+    return jsonify(
+        {
+            "code": 200,
+            "message": msg,
+            "data": {"created": created, "errors": errors},
         }
     )
 
