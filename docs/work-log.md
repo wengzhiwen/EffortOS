@@ -4,6 +4,16 @@
 
 ---
 
+## Sprint 76 完成 — 2026-05-07
+
+训练日历 hover 浮层（GitHub Issue #1）：
+- Dashboard API 新增 `calendar_activities` 字段，按日期汇总活动列表
+- 训练日历格子添加 mouse hover 浮层：显示日期、TSS 总量、运动列表（最多5个，按 TSS 降序）
+- 浮层支持鼠标移入点击活动名称进入详情页
+- Playwright 验证通过
+
+---
+
 ## Sprint 75 完成 — 2026-05-07
 
 Bug 大扫除（Sprint 编号可被 5 整除）：
