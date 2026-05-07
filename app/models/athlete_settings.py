@@ -48,6 +48,7 @@ class AthleteParams(BaseDocument):
         lthr_map = {
             "cycling": self.cycling_lthr,
             "indoor_cycling": self.cycling_lthr,
+            "commute_cycling": self.cycling_lthr,
             "running": self.running_lthr,
             "indoor_running": self.running_lthr,
             "walking": self.walking_lthr,
