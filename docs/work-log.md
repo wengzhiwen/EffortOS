@@ -4,6 +4,16 @@
 
 ---
 
+## Sprint 77 完成 — 2026-05-08
+
+PB 算法审查与修正（GitHub Issue #2）：
+- calc_best_efforts 从简单计数平均改为时间加权平均（修正 trackpoint 间隔不均问题）
+- PB 标记从"功率+心率"改为仅功率（心率短窗口变化极小，不适合做 PB 标准）
+- 活动详情页最佳表现表格添加金色 PB 标记
+- 11 个 best_efforts 测试全部通过
+
+---
+
 ## Sprint 76 完成 — 2026-05-07
 
 训练日历 hover 浮层（GitHub Issue #1）：
