@@ -160,7 +160,7 @@ function summaryCard(act, color) {
     const m = act.metrics || {};
     return `<div style="border-left: 4px solid ${color}; padding-left: 0.75rem;">
         <div style="font-weight: 600; font-size: 1.05rem;">${esc(act.name || '未命名')}</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary);">${typeNames[act.type] || act.type}</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">${typeNames[act.activity_type] || act.activity_type}</div>
         <div style="margin-top: 0.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; font-size: 0.9rem;">
             <div><div style="color: var(--text-secondary);">时长</div>${fmtDur(s.duration_seconds)}</div>
             <div><div style="color: var(--text-secondary);">距离</div>${fmtDist(s.total_distance)}</div>

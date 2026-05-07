@@ -164,40 +164,6 @@ def test_list_activities_search_by_name(client, auth_headers):
     assert result3["data"]["total"] == 1
 
 
-def test_update_activity_gear(client, auth_headers):
-    """测试通过 PUT 更新活动的装备。"""
-    from app.models.gear import Gear
-
-    user = _get_user(client, auth_headers)
-    gear = Gear(user=user, name="Test Bike", gear_type="bike").save()
-    uploaded = _upload_sample(client, auth_headers)
-    aid = uploaded["id"]
-
-    resp = client.put(
-        f"/api/activities/{aid}",
-        json={"gear_id": str(gear.id)},
-        headers=auth_headers,
-    )
-    assert resp.status_code == 200
-    assert resp.get_json()["data"]["gear_id"] == str(gear.id)
-
-
-def test_update_activity_clear_gear(client, auth_headers):
-    """测试清除活动装备。"""
-    from app.models.gear import Gear
-
-    user = _get_user(client, auth_headers)
-    gear = Gear(user=user, name="Test Bike", gear_type="bike").save()
-    uploaded = _upload_sample(client, auth_headers)
-    aid = uploaded["id"]
-
-    # 先分配
-    client.put(f"/api/activities/{aid}", json={"gear_id": str(gear.id)}, headers=auth_headers)
-    # 再清除
-    resp = client.put(f"/api/activities/{aid}", json={"gear_id": ""}, headers=auth_headers)
-    assert resp.status_code == 200
-    assert resp.get_json()["data"]["gear_id"] is None
-
 
 def _get_user(client, auth_headers):
     from app.models.user import User

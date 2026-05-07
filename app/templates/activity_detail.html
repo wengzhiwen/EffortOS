@@ -34,17 +34,8 @@ Promise.all([
     const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
     const elevGain = s.elevation_gain ? s.elevation_gain.toFixed(0) + ' m' : null;
 
-    // 加载装备信息
-    let gearInfo = '';
-    if (a.gear_id) {
-        gearInfo = `<span style="margin-left: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">装备加载中...</span>`;
-        authFetch('/api/gear').then(r => r.json()).then(res => {
-            const gear = (res.data || []).find(g => g.id === a.gear_id);
-            const el = document.getElementById('gear-info');
-            if (el && gear) el.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-secondary);">🚴 ${esc(gear.name)}</span>`;
-            else if (el) el.innerHTML = '';
-        });
-    }
+    // 装备信息（功能已移除，保留字段兼容）
+    const gearInfo = '';
 
     document.getElementById('activity-detail').innerHTML = `
         <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${esc(a.name || '未命名活动')}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
@@ -463,26 +454,12 @@ function editActivity() {
         <h3 style="margin-bottom:1rem;">编辑活动</h3>
         <div class="form-group"><label>名称</label><input type="text" id="edit-name" value="${(a.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"></div>
         <div class="form-group"><label>运动类型</label><select id="edit-type" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${typeOptions}</select></div>
-        <div class="form-group"><label>装备</label><select id="edit-gear" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"><option value="">无</option></select></div>
         <div class="form-group"><label>训练感受</label><textarea id="edit-notes" rows="4" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${(a.notes||'').replace(/</g,'&lt;')}</textarea></div>
         <div style="display:flex;gap:0.5rem;margin-top:1rem;">
             <button class="btn btn-primary" onclick="saveEdit()">保存</button>
             <button class="btn btn-secondary" onclick="closeEdit()">取消</button>
         </div>
     </div>`;
-    // 加载装备选项
-    authFetch('/api/gear').then(r => r.json()).then(res => {
-        const gears = (res.data || []).filter(g => g.is_active !== 'retired');
-        const sel = document.getElementById('edit-gear');
-        if (!sel) return;
-        gears.forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g.id;
-            opt.textContent = g.name;
-            if (a.gear_id === g.id) opt.selected = true;
-            sel.appendChild(opt);
-        });
-    });
     overlay.addEventListener('click', e => { if (e.target === overlay) closeEdit(); });
     document.body.appendChild(overlay);
 }
@@ -496,11 +473,10 @@ function saveEdit() {
     const name = document.getElementById('edit-name').value;
     const type = document.getElementById('edit-type').value;
     const notes = document.getElementById('edit-notes').value;
-    const gearId = document.getElementById('edit-gear').value;
     authFetch(`/api/activities/${activityId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, activity_type: type, notes, gear_id: gearId || null }),
+        body: JSON.stringify({ name, activity_type: type, notes }),
     })
         .then(r => r.json())
         .then(res => {
