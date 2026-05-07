@@ -74,12 +74,6 @@ def profile():
     return _require_login_for("profile.html")
 
 
-@pages_bp.route("/gear")
-def gear():
-    """装备管理（需登录）。"""
-    return _require_login_for("gear.html")
-
-
 @pages_bp.route("/wellness")
 def wellness():
     """Wellness 日常追踪（需登录）。"""
@@ -114,7 +108,7 @@ def robots():
         "Disallow: /api/\n"
         "Disallow: /settings\n"
         "Disallow: /profile\n"
-        "Disallow: /gear\n"
+        "Disallow: /gear\n"  # 装备功能已移除，保留 disallow
         "Disallow: /wellness\n"
         "Sitemap: https://effortos.app/sitemap.xml\n",
         mimetype="text/plain",
