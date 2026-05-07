@@ -446,6 +446,22 @@ a:hover { text-decoration: underline; }
 .cal-level-4 { background: #216e39; }
 .cal-legend { display: flex; align-items: center; gap: 4px; margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-secondary); }
 
+/* 日历浮层 */
+.cal-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    min-width: 160px;
+    max-width: 240px;
+    pointer-events: auto;
+}
+.cal-tooltip a:hover { text-decoration: underline; }
+
 /* Markdown 渲染内容 */
 .md-content { line-height: 1.8; }
 .md-content h1, .md-content h2, .md-content h3 { margin: 1rem 0 0.5rem; }

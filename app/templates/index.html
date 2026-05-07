@@ -161,7 +161,7 @@ authFetch('/api/dashboard')
         renderStats('monthly-stats', d.monthly_stats);
 
         // TSS 日历热力图
-        renderCalendar(d.calendar);
+        renderCalendar(d.calendar, d.calendar_activities);
 
         // 运动类型分布
         renderTypeChart(d.type_breakdown);
@@ -322,7 +322,7 @@ function renderStats(elId, stats) {
     `;
 }
 
-function renderCalendar(calendarData) {
+function renderCalendar(calendarData, calendarActivities) {
     const container = document.getElementById('tss-calendar');
     const today = new Date();
     const days = [];
@@ -347,7 +347,6 @@ function renderCalendar(calendarData) {
     const maxTss = Math.max(...Object.values(calendarData), 1);
     const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-    // 月份标签
     const weekMonths = weeks.map(w => {
         const d = w.find(x => x);
         return d ? d.date.slice(0, 7) : null;
@@ -371,7 +370,6 @@ function renderCalendar(calendarData) {
     }
     html += '</div>';
 
-    // CSS grid: 7行 × (1标签列 + N周列)
     const cols = `22px repeat(${totalWeeks}, 1fr)`;
     html += `<div class="cal-grid" style="grid-template-columns:${cols};">`;
 
@@ -384,7 +382,7 @@ function renderCalendar(calendarData) {
                 html += '<div class="cal-cell cal-empty"></div>';
             } else {
                 const level = day.tss === 0 ? 0 : day.tss < maxTss * 0.25 ? 1 : day.tss < maxTss * 0.5 ? 2 : day.tss < maxTss * 0.75 ? 3 : 4;
-                html += `<div class="cal-cell cal-level-${level}" title="${day.date}: ${day.tss.toFixed(0)} TSS"></div>`;
+                html += `<div class="cal-cell cal-level-${level}" data-date="${day.date}"></div>`;
             }
         }
     }
@@ -395,6 +393,84 @@ function renderCalendar(calendarData) {
     html += '<span>多 TSS</span></div>';
 
     container.innerHTML = html;
+
+    // 浮层逻辑
+    const typeLabels = window.TYPE_NAMES || {};
+    let tooltip = null;
+    let hideTimer = null;
+
+    function showTooltip(cell, date) {
+        clearTimeout(hideTimer);
+        const acts = (calendarActivities && calendarActivities[date]) || [];
+        const tss = calendarData[date] || 0;
+
+        let actHtml = '';
+        if (acts.length > 0) {
+            const shown = acts.slice(0, 5);
+            actHtml = shown.map(a =>
+                `<a href="/activities/${a.id}" style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;color:var(--primary);text-decoration:none;font-size:0.8rem;">` +
+                `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">${esc(a.name || '(未命名)')}</span>` +
+                `<span style="flex-shrink:0;margin-left:8px;color:var(--text-secondary);">${a.tss != null ? a.tss.toFixed(1) : '—'}</span></a>`
+            ).join('');
+            if (acts.length > 5) actHtml += `<div style="font-size:0.75rem;color:var(--text-secondary);padding-top:2px;">还有 ${acts.length - 5} 项...</div>`;
+        } else {
+            actHtml = '<div style="font-size:0.8rem;color:var(--text-secondary);">无活动</div>';
+        }
+
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.className = 'cal-tooltip';
+            document.body.appendChild(tooltip);
+        }
+
+        tooltip.innerHTML =
+            `<div style="font-weight:600;margin-bottom:4px;">${date}</div>` +
+            `<div style="font-size:0.85rem;margin-bottom:6px;">TSS: ${tss.toFixed(1)}</div>` +
+            actHtml;
+
+        tooltip.style.display = 'block';
+        positionTooltip(cell);
+    }
+
+    function positionTooltip(cell) {
+        if (!tooltip) return;
+        const rect = cell.getBoundingClientRect();
+        const tw = tooltip.offsetWidth;
+        const th = tooltip.offsetHeight;
+        let left = rect.left + rect.width / 2 - tw / 2;
+        let top = rect.bottom + 8;
+        if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+        if (left < 8) left = 8;
+        if (top + th > window.innerHeight - 8) top = rect.top - th - 8;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    function scheduleHide() {
+        hideTimer = setTimeout(() => { if (tooltip) tooltip.style.display = 'none'; }, 200);
+    }
+
+    container.addEventListener('mouseover', e => {
+        const cell = e.target.closest('.cal-cell[data-date]');
+        if (cell) showTooltip(cell, cell.dataset.date);
+    });
+    container.addEventListener('mouseout', e => {
+        const cell = e.target.closest('.cal-cell[data-date]');
+        if (cell) scheduleHide();
+    });
+    if (tooltip) {
+        tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+        tooltip.addEventListener('mouseleave', () => scheduleHide());
+    }
+    // 在 tooltip 创建后补充事件
+    const observer = new MutationObserver(() => {
+        if (tooltip && !tooltip._bound) {
+            tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+            tooltip.addEventListener('mouseleave', () => scheduleHide());
+            tooltip._bound = true;
+        }
+    });
+    observer.observe(document.body, { childList: true });
 }
 
 function renderTypeChart(breakdown) {

@@ -59,6 +59,17 @@ def get_dashboard():
         Activity.objects(start_time__gte=start, start_time__lte=end_dt).exclude("trackpoints", "raw_data_path")
     )
     daily = calc_daily_tss(list(activities_all))
+    # 按日期汇总活动列表（供日历浮层使用）
+    calendar_activities = {}
+    for a in activities_all:
+        date_str = a.start_time.strftime("%Y-%m-%d")
+        m = a.computed_metrics
+        tss = m.manual_tss or m.tss or m.hr_tss if m else None
+        calendar_activities.setdefault(date_str, []).append(
+            {"id": str(a.id), "name": a.name or "", "tss": tss, "type": a.activity_type}
+        )
+    for acts in calendar_activities.values():
+        acts.sort(key=lambda x: x.get("tss") or 0, reverse=True)
     pmc_data = calc_pmc(daily, start, end)
 
     latest_pmc = pmc_data[-1] if pmc_data else {"ctl": 0, "atl": 0, "tsb": 0}
@@ -148,6 +159,7 @@ def get_dashboard():
                 "recent_activities": recent_list,
                 "pmc": pmc_data[-30:],
                 "calendar": daily,
+                "calendar_activities": calendar_activities,
                 "weekly_stats": _calc_stats(week_activities),
                 "monthly_stats": _calc_stats(month_activities),
                 "type_breakdown": dict(type_breakdown),
