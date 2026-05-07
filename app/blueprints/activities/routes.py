@@ -222,44 +222,37 @@ def _serialize_metrics(metrics):
 
 
 def _calc_pb_markers(activities, full_qs):
-    """计算每个活动刷新了哪些窗口的历史最佳（PB）。
+    """计算每个活动哪些窗口是当前全局最佳（PB）。
 
-    PB 仅基于功率指标（心率在短窗口内变化极小，不适合作为 PB 标准）。
+    PB 仅基于功率指标。只有各窗口的当前记录保持者才标记 PB。
+    如果新活动刷新了 PB，旧活动的 PB 标记会自动消失。
 
-    返回 {activity_id: ["5", "60", ...]} — 列表中是创造 PB 的窗口秒数字符串。
+    返回 {activity_id: ["5", "60", ...]} — 列表中是达到全局最佳的窗口秒数字符串。
     """
     if not activities:
         return {}
 
-    earliest = min(a.start_time for a in activities)
-
-    # 获取该时间点之前的所有活动，用于确定历史最佳
-    prior_best = {}  # {"power_5": 300.0, ...}
-    prior_activities = list(full_qs.filter(start_time__lt=earliest).order_by("start_time").only("computed_metrics"))
-    for a in prior_activities:
+    # 先找出所有活动在各窗口的全局最佳值
+    global_best = {}  # {"5": 300.0, "60": 250.0, ...}
+    all_activities = list(full_qs.only("computed_metrics"))
+    for a in all_activities:
         cm = a.computed_metrics
         if not cm or not cm.best_efforts:
             continue
         for window, val in cm.best_efforts.get("power", {}).items():
-            key = f"power_{window}"
-            if val is not None and (key not in prior_best or val > prior_best[key]):
-                prior_best[key] = val
+            if val is not None and (window not in global_best or val > global_best[window]):
+                global_best[window] = val
 
-    # 按时间顺序遍历当前页活动，追踪 running best
-    sorted_acts = sorted(activities, key=lambda a: a.start_time)
+    # 标记当前页中达到全局最佳的活动
     pb_map = {}
-    for a in sorted_acts:
+    for a in activities:
         aid = str(a.id)
         cm = a.computed_metrics
         pb_windows = []
         if cm and cm.best_efforts:
             for window, val in cm.best_efforts.get("power", {}).items():
-                if val is None:
-                    continue
-                key = f"power_{window}"
-                if key not in prior_best or val > prior_best[key]:
+                if val is not None and val == global_best.get(window):
                     pb_windows.append(window)
-                    prior_best[key] = val
         pb_map[aid] = pb_windows
 
     return pb_map
