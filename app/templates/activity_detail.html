@@ -187,7 +187,7 @@ Promise.all([
 
         ${m.best_efforts && (m.best_efforts.power || m.best_efforts.heart_rate) ? `
         <div class="card" style="margin-bottom: 1rem;">
-            <div class="card-title">最佳表现</div>
+            <div class="card-title">最佳表现（Best Efforts）</div>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                 <thead><tr style="border-bottom: 2px solid var(--border);">
                     <th style="text-align: left; padding: 0.4rem 0.6rem;">时长</th>
@@ -200,9 +200,12 @@ Promise.all([
                     const label = wn < 60 ? wn + '秒' : wn < 3600 ? (wn/60) + '分钟' : (wn/3600) + '小时';
                     const pw = m.best_efforts.power && m.best_efforts.power[w];
                     const hr = m.best_efforts.heart_rate && m.best_efforts.heart_rate[w];
+                    const histPw = curveRes.data && curveRes.data.power && curveRes.data.power[w];
+                    const isPb = pw && histPw && pw >= histPw;
+                    const pbBadge = isPb ? ' <span style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;font-size:0.65rem;padding:1px 4px;border-radius:3px;font-weight:700;">PB</span>' : '';
                     return `<tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 0.4rem 0.6rem;">${label}</td>
-                        ${m.best_efforts.power ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #2563eb;">${pw ? pw + ' W' : '—'}</td>` : ''}
+                        ${m.best_efforts.power ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #2563eb;">${pw ? pw + ' W' : '—'}${pbBadge}</td>` : ''}
                         ${m.best_efforts.heart_rate ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #dc2626;">${hr ? hr + ' bpm' : '—'}</td>` : ''}
                     </tr>`;
                 }).join('')}

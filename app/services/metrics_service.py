@@ -420,7 +420,7 @@ BEST_EFFORT_WINDOWS = [5, 15, 30, 60, 120, 300, 600, 1200, 3600]  # 秒
 def calc_best_efforts(trackpoints: list[dict]) -> dict:
     """计算不同时间窗口的最佳功率和最佳心率。
 
-    使用滑动窗口算法：对每个时间窗口，找出窗口内功率/心率的最高滚动平均值。
+    使用滑动窗口算法：对每个时间窗口，找出窗口内功率/心率的最高时间加权平均值。
 
     返回: {
         "power": {5: 450, 15: 380, 60: 320, ...},
@@ -431,11 +431,14 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
         return {}
 
     n = len(trackpoints)
-    # 计算逐秒间隔
+    # 计算相邻 trackpoint 的时间间隔
     intervals = []
     for i in range(1, n):
         dt = (trackpoints[i]["time"] - trackpoints[i - 1]["time"]).total_seconds()
-        intervals.append(max(dt, 0.5))  # 最小 0.5 秒防除零
+        intervals.append(max(dt, 0.5))
+
+    # 总时长
+    total_time = sum(intervals)
 
     # 预提取有效值序列
     power_seq = [tp.get("power") for tp in trackpoints]
@@ -444,7 +447,7 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
     result = {}
 
     for window_sec in BEST_EFFORT_WINDOWS:
-        if window_sec > n * 2:  # 数据太短，跳过
+        if window_sec > total_time * 1.1:  # 数据总时长不够（留 10% 余量）
             continue
 
         best_power = None
@@ -454,33 +457,33 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
         i = 0
         while i < n:
             cum_time = 0.0
-            cum_power = 0.0
-            cum_hr = 0.0
-            power_count = 0
-            hr_count = 0
+            cum_power_time = 0.0  # 功率 × 时间的加权累积
+            cum_hr_time = 0.0
+            cum_weight_p = 0.0  # 权重累积（时间）
+            cum_weight_h = 0.0
             j = i
 
             while j < n:
-                if j > i:
-                    cum_time += intervals[j - 1]
+                seg = intervals[j - 1] if j > i else 0.0
+                cum_time += seg
                 if cum_time > window_sec and j > i:
                     break
 
                 if power_seq[j] is not None:
-                    cum_power += power_seq[j]
-                    power_count += 1
+                    cum_power_time += power_seq[j] * max(seg, 1.0)
+                    cum_weight_p += max(seg, 1.0)
                 if hr_seq[j] is not None:
-                    cum_hr += hr_seq[j]
-                    hr_count += 1
+                    cum_hr_time += hr_seq[j] * max(seg, 1.0)
+                    cum_weight_h += max(seg, 1.0)
                 j += 1
 
             if cum_time >= window_sec * 0.9:  # 允许 10% 误差
-                if power_count > 0:
-                    avg_p = cum_power / power_count
+                if cum_weight_p > 0:
+                    avg_p = cum_power_time / cum_weight_p
                     if best_power is None or avg_p > best_power:
                         best_power = round(avg_p)
-                if hr_count > 0:
-                    avg_h = cum_hr / hr_count
+                if cum_weight_h > 0:
+                    avg_h = cum_hr_time / cum_weight_h
                     if best_hr is None or avg_h > best_hr:
                         best_hr = round(avg_h)
 

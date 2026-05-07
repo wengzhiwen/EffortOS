@@ -224,28 +224,26 @@ def _serialize_metrics(metrics):
 def _calc_pb_markers(activities, full_qs):
     """计算每个活动刷新了哪些窗口的历史最佳（PB）。
 
+    PB 仅基于功率指标（心率在短窗口内变化极小，不适合作为 PB 标准）。
+
     返回 {activity_id: ["5", "60", ...]} — 列表中是创造 PB 的窗口秒数字符串。
     """
     if not activities:
         return {}
 
-    # 找到当前页活动中最早的时间，作为查询上界
     earliest = min(a.start_time for a in activities)
 
     # 获取该时间点之前的所有活动，用于确定历史最佳
-    prior_best = {}  # {"power_5": 300.0, "heart_rate_60": 165.0, ...}
+    prior_best = {}  # {"power_5": 300.0, ...}
     prior_activities = list(full_qs.filter(start_time__lt=earliest).order_by("start_time").only("computed_metrics"))
     for a in prior_activities:
         cm = a.computed_metrics
         if not cm or not cm.best_efforts:
             continue
-        for metric in ("power", "heart_rate"):
-            if metric not in cm.best_efforts:
-                continue
-            for window, val in cm.best_efforts[metric].items():
-                key = f"{metric}_{window}"
-                if val is not None and (key not in prior_best or val > prior_best[key]):
-                    prior_best[key] = val
+        for window, val in cm.best_efforts.get("power", {}).items():
+            key = f"power_{window}"
+            if val is not None and (key not in prior_best or val > prior_best[key]):
+                prior_best[key] = val
 
     # 按时间顺序遍历当前页活动，追踪 running best
     sorted_acts = sorted(activities, key=lambda a: a.start_time)
@@ -255,16 +253,13 @@ def _calc_pb_markers(activities, full_qs):
         cm = a.computed_metrics
         pb_windows = []
         if cm and cm.best_efforts:
-            for metric in ("power", "heart_rate"):
-                if metric not in cm.best_efforts:
+            for window, val in cm.best_efforts.get("power", {}).items():
+                if val is None:
                     continue
-                for window, val in cm.best_efforts[metric].items():
-                    if val is None:
-                        continue
-                    key = f"{metric}_{window}"
-                    if key not in prior_best or val > prior_best[key]:
-                        pb_windows.append(window)
-                        prior_best[key] = val
+                key = f"power_{window}"
+                if key not in prior_best or val > prior_best[key]:
+                    pb_windows.append(window)
+                    prior_best[key] = val
         pb_map[aid] = pb_windows
 
     return pb_map
