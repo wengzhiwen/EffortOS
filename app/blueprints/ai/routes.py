@@ -16,6 +16,7 @@ ai_bp = Blueprint("ai", __name__)
 _TYPE_NAMES = {
     "cycling": "骑行",
     "indoor_cycling": "室内骑行",
+    "commute_cycling": "通勤骑行",
     "running": "跑步",
     "indoor_running": "室内跑步",
     "walking": "步行",

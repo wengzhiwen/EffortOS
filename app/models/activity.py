@@ -73,7 +73,16 @@ class Activity(BaseDocument):
     gear = ReferenceField("Gear")  # 关联装备
     activity_type = StringField(
         required=True,
-        choices=["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"],
+        choices=[
+            "cycling",
+            "indoor_cycling",
+            "commute_cycling",
+            "running",
+            "indoor_running",
+            "walking",
+            "swimming",
+            "other",
+        ],
     )
     name = StringField(max_length=200)
     notes = StringField()  # 用户备注/感受记录

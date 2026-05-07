@@ -14,11 +14,21 @@ from app.utils.auth import require_user, user_filter
 
 activities_bp = Blueprint("activities", __name__)
 
-VALID_ACTIVITY_TYPES = ["cycling", "indoor_cycling", "running", "indoor_running", "walking", "swimming", "other"]
+VALID_ACTIVITY_TYPES = [
+    "cycling",
+    "indoor_cycling",
+    "commute_cycling",
+    "running",
+    "indoor_running",
+    "walking",
+    "swimming",
+    "other",
+]
 
 SPORT_DISPLAY = {
     "cycling": "骑行",
     "indoor_cycling": "室内骑行",
+    "commute_cycling": "通勤骑行",
     "running": "跑步",
     "indoor_running": "室内跑步",
     "walking": "步行",
@@ -321,11 +331,12 @@ def _compute_metrics(activity, trackpoints):
 
     activity_type = activity.activity_type
     hr_zones = params.get_hr_zones(activity_type)
-    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling") else []
+    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling", "commute_cycling") else []
 
     lthr_map = {
         "cycling": params.cycling_lthr,
         "indoor_cycling": params.cycling_lthr,
+        "commute_cycling": params.cycling_lthr,
         "running": params.running_lthr,
         "indoor_running": params.running_lthr,
         "walking": params.walking_lthr,

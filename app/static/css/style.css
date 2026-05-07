@@ -28,6 +28,7 @@
 
 [data-theme="dark"] .badge-cycling { background: #1e3a5f; color: #60a5fa; }
 [data-theme="dark"] .badge-indoor_cycling { background: #312e81; color: #a5b4fc; }
+[data-theme="dark"] .badge-commute_cycling { background: #0c4a6e; color: #38bdf8; }
 [data-theme="dark"] .badge-running { background: #14532d; color: #4ade80; }
 [data-theme="dark"] .badge-indoor_running { background: #064e3b; color: #34d399; }
 [data-theme="dark"] .badge-walking { background: #78350f; color: #fbbf24; }
@@ -339,6 +340,7 @@ a:hover { text-decoration: underline; }
 
 .badge-cycling { background: #dbeafe; color: #1d4ed8; }
 .badge-indoor_cycling { background: #e0e7ff; color: #4338ca; }
+.badge-commute_cycling { background: #e0f2fe; color: #0369a1; }
 .badge-running { background: #dcfce7; color: #166534; }
 .badge-indoor_running { background: #d1fae5; color: #065f46; }
 .badge-walking { background: #fef3c7; color: #92400e; }

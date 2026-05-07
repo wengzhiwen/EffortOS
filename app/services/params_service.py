@@ -107,11 +107,12 @@ def recalc_activity(activity):
 
     activity_type = activity.activity_type
     hr_zones = params.get_hr_zones(activity_type)
-    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling") else []
+    power_zones = params.get_power_zones() if activity_type in ("cycling", "indoor_cycling", "commute_cycling") else []
 
     lthr_map = {
         "cycling": params.cycling_lthr,
         "indoor_cycling": params.cycling_lthr,
+        "commute_cycling": params.cycling_lthr,
         "running": params.running_lthr,
         "indoor_running": params.running_lthr,
         "walking": params.walking_lthr,

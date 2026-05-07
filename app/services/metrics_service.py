@@ -357,7 +357,7 @@ def _calc_intensity_level(
         return None, {}
 
     start_time = trackpoints[0]["time"]
-    is_cycling = activity_type in ("cycling", "indoor_cycling")
+    is_cycling = activity_type in ("cycling", "indoor_cycling", "commute_cycling")
 
     # 构建 (elapsed, value) 序列
     power_series = [((tp["time"] - start_time).total_seconds(), tp.get("power")) for tp in trackpoints]
@@ -638,7 +638,8 @@ def compute_activity_metrics(
 
     has_power = len(power_values) > 0
     has_hr = len(hr_values) > 0
-    is_cycling = activity_type in ("cycling", "indoor_cycling")
+    is_cycling = activity_type in ("cycling", "indoor_cycling", "commute_cycling")
+    is_commute = activity_type == "commute_cycling"
 
     # 判断功率数据质量：覆盖率低于 50% 视为不可靠
     power_coverage = len(power_values) / total_points if total_points > 0 else 0
@@ -665,6 +666,10 @@ def compute_activity_metrics(
     if has_hr and lthr:
         metrics.hr_intensity_factor = calc_hr_intensity_factor(avg_hr, lthr)
         metrics.hr_tss = calc_hr_tss(trackpoints, lthr)
+        # 通勤骑行且无功率 TSS 时，TSS = hrTSS × 0.75
+        if is_commute and metrics.tss is None and metrics.hr_tss is not None:
+            metrics.tss = round(metrics.hr_tss * 0.75, 1)
+            metrics.tss_method = "hr_commute"
 
     # 分区时间统计（使用实际时间间隔）
     if has_hr and hr_zones:
