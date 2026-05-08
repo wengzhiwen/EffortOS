@@ -411,14 +411,24 @@ Promise.all([
         function renderChart() {
             const s = chartSeries[currentChartType];
             if (!s) return;
-            const labels = currentXAxis === 'distance' ? distLabels : timeLabels;
-            const xTitle = currentXAxis === 'distance' ? '距离 (km)' : '时间';
             if (mainChart) mainChart.destroy();
+            const isDist = currentXAxis === 'distance';
+            const xTitle = isDist ? '距离 (km)' : '时间';
+            let chartData, xScale;
+            if (isDist) {
+                chartData = points.map((p, i) => ({ x: p.distance != null ? p.distance / 1000 : null, y: s.data[i] })).filter(d => d.x != null);
+                xScale = { type: 'linear', display: true, title: { display: true, text: xTitle }, ticks: { maxTicksLimit: 10 } };
+            } else {
+                chartData = { labels: timeLabels, datasets: [{ label: s.label, data: s.data, borderColor: s.color, fill: true, backgroundColor: s.color + '1a' }] };
+                xScale = { display: true, ticks: { maxTicksLimit: 10 }, title: { display: true, text: xTitle } };
+            }
+            const dataset = isDist ? { label: s.label, data: chartData, borderColor: s.color, backgroundColor: s.color + '1a', showLine: true, pointRadius: 0, borderWidth: 1.5, fill: true } : chartData.datasets[0];
+            const dataArg = isDist ? { datasets: [dataset] } : chartData;
             mainChart = new Chart(document.getElementById('main-chart'), {
-                type: 'line',
+                type: isDist ? 'scatter' : 'line',
                 plugins: [crosshairPlugin],
-                data: { labels, datasets: [{ label: s.label, data: s.data, borderColor: s.color, fill: true, backgroundColor: s.color + '1a' }] },
-                options: { ...chartOpts, scales: { ...chartOpts.scales, x: { ...chartOpts.scales.x, title: { display: true, text: xTitle } }, y: { ...chartOpts.scales.y, title: { display: true, text: s.unit } } } },
+                data: dataArg,
+                options: { ...chartOpts, scales: { x: { ...chartOpts.scales.x, ...xScale }, y: { ...chartOpts.scales.y, title: { display: true, text: s.unit } } } },
             });
         }
         window.switchChart = function(type) {
