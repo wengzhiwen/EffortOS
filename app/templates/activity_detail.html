@@ -65,7 +65,7 @@ Promise.all([
                 </div>
                 <div class="metric-unit" id="tss-sub">
                     ${m.manual_tss != null
-                        ? `${t('activity_detail.manual_set')}${m.tss != null ? '（${t('activity_detail.calc_value')} ' + m.tss.toFixed(1) + '）' : ''}`
+                        ? `${t('activity_detail.manual_set')}${m.tss != null ? '（' + t('activity_detail.calc_value') + ' ' + m.tss.toFixed(1) + '）' : ''}`
                         : m.tss_method === 'power' ? t('activity_detail.power_based') : ''}
                 </div>
                 <div id="tss-editor" style="display:none; margin-top:0.5rem;">
@@ -405,8 +405,32 @@ Promise.all([
             const xTitle = isDist ? t('activity_detail.xaxis_distance') + ' (km)' : t('activity_detail.xaxis_time');
             let chartData, xScale;
             if (isDist) {
-                chartData = points.map((p, i) => ({ x: p.distance != null ? p.distance / 1000 : null, y: s.data[i] })).filter(d => d.x != null);
-                xScale = { type: 'linear', display: true, title: { display: true, text: xTitle }, ticks: { maxTicksLimit: 10 } };
+                // 按距离均匀重采样：将 trackpoint 数据插值到等距采样点上
+                let maxDist = 0;
+                for (const p of points) { if (p.distance != null && p.distance > maxDist) maxDist = p.distance; }
+                if (maxDist > 0) {
+                    const numBins = Math.min(points.length, 500);
+                    chartData = [];
+                    for (let i = 0; i <= numBins; i++) {
+                        const targetDist = (i / numBins) * maxDist;
+                        // 二分查找目标距离两侧的 trackpoint
+                        let lo = 0, hi = points.length - 1;
+                        while (lo < hi) { const mid = (lo + hi) >> 1; if (points[mid].distance == null || points[mid].distance < targetDist) lo = mid + 1; else hi = mid; }
+                        if (lo === 0) {
+                            chartData.push({ x: targetDist / 1000, y: s.data[0] ?? null });
+                        } else {
+                            const d0 = points[lo - 1].distance, d1 = points[lo].distance;
+                            if (d0 == null || d1 == null || d1 === d0) {
+                                chartData.push({ x: targetDist / 1000, y: s.data[lo] ?? null });
+                            } else {
+                                const frac = (targetDist - d0) / (d1 - d0);
+                                const v0 = s.data[lo - 1], v1 = s.data[lo];
+                                chartData.push({ x: targetDist / 1000, y: (v0 != null && v1 != null) ? v0 + frac * (v1 - v0) : v1 ?? v0 ?? null });
+                            }
+                        }
+                    }
+                } else { chartData = []; }
+                xScale = { type: 'linear', display: true, title: { display: true, text: xTitle }, max: maxDist / 1000, ticks: { maxTicksLimit: 10 } };
             } else {
                 chartData = { labels: timeLabels, datasets: [{ label: s.label, data: s.data, borderColor: s.color, fill: true, backgroundColor: s.color + '1a' }] };
                 xScale = { display: true, ticks: { maxTicksLimit: 10 }, title: { display: true, text: xTitle } };
