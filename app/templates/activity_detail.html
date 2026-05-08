@@ -262,6 +262,39 @@ Promise.all([
     `;
     document.title = (a.name || '未命名活动') + ' - EffortOS';
 
+    // 地图辅助函数
+    function smoothValues(arr, window) {
+        const result = [];
+        const half = Math.floor(window / 2);
+        for (let i = 0; i < arr.length; i++) {
+            let sum = 0, count = 0;
+            for (let j = Math.max(0, i - half); j <= Math.min(arr.length - 1, i + half); j++) {
+                sum += arr[j]; count++;
+            }
+            result.push(sum / count);
+        }
+        return result;
+    }
+    function valueToColor(t) {
+        t = Math.max(0, Math.min(1, t));
+        const stops = [
+            [0, 59, 130, 246],   // blue
+            [0.3, 34, 197, 94],   // green
+            [0.6, 250, 204, 21],  // yellow
+            [0.85, 249, 115, 22], // orange
+            [1, 239, 68, 68],     // red
+        ];
+        let lo = stops[0], hi = stops[stops.length - 1];
+        for (let i = 0; i < stops.length - 1; i++) {
+            if (t >= stops[i][0] && t <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
+        }
+        const ratio = (t - lo[0]) / (hi[0] - lo[0]);
+        const r = Math.round(lo[1] + (hi[1] - lo[1]) * ratio);
+        const g = Math.round(lo[2] + (hi[2] - lo[2]) * ratio);
+        const b = Math.round(lo[3] + (hi[3] - lo[3]) * ratio);
+        return `rgb(${r},${g},${b})`;
+    }
+
     // 路线地图
     const gpsPoints = hasTP ? tpData.points.filter(p => p.latitude != null && p.longitude != null) : [];
     if (gpsPoints.length >= 10) {
@@ -275,17 +308,42 @@ Promise.all([
             attributionControl: false,
         });
         L.tileLayer(tileUrl, { maxZoom: 18 }).addTo(map);
-        const polyline = L.polyline(latlngs, {
-            color: '#3b82f6',
-            weight: 3,
-            opacity: 0.9,
-        }).addTo(map);
-        map.fitBounds(polyline.getBounds(), { padding: [15, 15] });
+
+        // 功率/速度颜色渲染
+        const hasPower = gpsPoints.some(p => p.power != null);
+        const values = gpsPoints.map(p => hasPower ? (p.power || 0) : (p.speed != null ? p.speed * 3.6 : 0));
+        const smoothed = smoothValues(values, Math.max(5, Math.floor(gpsPoints.length / 50)));
+        const valMin = Math.min(...smoothed.filter(v => v > 0));
+        const valMax = Math.max(...smoothed);
+        const colorFn = valMax > valMin ? (v) => valueToColor((v - valMin) / (valMax - valMin)) : () => '#3b82f6';
+
+        // 按颜色分段绘制 polyline
+        let allBounds = null;
+        for (let i = 0; i < gpsPoints.length - 1; i++) {
+            const color = colorFn(smoothed[i]);
+            const seg = L.polyline([latlngs[i], latlngs[i + 1]], { color, weight: 3, opacity: 0.9 }).addTo(map);
+            if (!allBounds) allBounds = seg.getBounds();
+            else allBounds.extend(seg.getBounds());
+        }
+        if (allBounds) map.fitBounds(allBounds, { padding: [15, 15] });
+
         // 起点/终点标记
         L.circleMarker(latlngs[0], { radius: 6, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1, weight: 2 })
             .addTo(map).bindTooltip('起点', { permanent: false });
         L.circleMarker(latlngs[latlngs.length - 1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1, weight: 2 })
             .addTo(map).bindTooltip('终点', { permanent: false });
+
+        // 图例
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'map-legend');
+            const label = hasPower ? '功率 (W)' : '速度 (km/h)';
+            div.innerHTML = `<div class="map-legend-title">${label}</div>
+                <div class="map-legend-bar"></div>
+                <div class="map-legend-labels"><span>${Math.round(valMin)}</span><span>${Math.round(valMax)}</span></div>`;
+            return div;
+        };
+        legend.addTo(map);
     }
 
     // 时间序列图表
