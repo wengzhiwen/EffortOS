@@ -61,9 +61,9 @@ function _renderPlanTable(plan) {
         const dur = r.intensity === 'rest' ? '—' : (r.duration_min + 'min');
         const tss = r.intensity === 'rest' ? '—' : r.tss;
         html += '<tr style="border-bottom:1px solid var(--border);">';
-        html += `<td style="padding:0.5rem 0.4rem;">${r.date}</td>`;
-        html += `<td style="padding:0.5rem 0.4rem;">${r.type}</td>`;
-        html += `<td style="padding:0.5rem 0.4rem;"><span style="color:${color};font-weight:600;">${name}</span></td>`;
+        html += `<td style="padding:0.5rem 0.4rem;">${esc(r.date)}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;">${esc(r.type)}</td>`;
+        html += `<td style="padding:0.5rem 0.4rem;"><span style="color:${color};font-weight:600;">${esc(name)}</span></td>`;
         html += `<td style="padding:0.5rem 0.4rem;">${dur}</td>`;
         html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${tss}</td>`;
         html += `<td style="padding:0.5rem 0.4rem;text-align:right;">${r.ctl.toFixed(1)}</td>`;
@@ -91,9 +91,9 @@ function _renderReport(res) {
     } else {
         dateEl.textContent = '';
     }
-    summaryEl.innerHTML = marked.parse(d.summary || '');
+    summaryEl.innerHTML = DOMPurify.sanitize(marked.parse(d.summary || ''));
     planEl.innerHTML = _renderPlanTable(d.plan);
-    outlookEl.innerHTML = marked.parse(d.outlook || '');
+    outlookEl.innerHTML = DOMPurify.sanitize(marked.parse(d.outlook || ''));
     metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 最近 7 天活动: ${d.week_activities} 次`;
 }
 
@@ -121,10 +121,10 @@ function generateReport() {
     authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
         .then(res => {
-            if (res.code !== 200) { planEl.innerHTML = '<p style="color:var(--danger)">' + res.message + '</p>'; return; }
+            if (res.code !== 200) { planEl.textContent = res.message; planEl.style.color = 'var(--danger)'; return; }
             _renderReport(res);
         })
-        .catch(e => planEl.innerHTML = '<p style="color:var(--danger)">请求失败: ' + e.message + '</p>');
+        .catch(() => { planEl.textContent = '请求失败，请稍后重试'; planEl.style.color = 'var(--danger)'; });
 }
 
 function getSuggestion() {
@@ -145,7 +145,7 @@ function getSuggestion() {
         .then(r => r.json())
         .then(res => {
             if (res.code !== 200) { content.textContent = res.message; return; }
-            content.innerHTML = marked.parse(res.data.suggestion || '');
+            content.innerHTML = DOMPurify.sanitize(marked.parse(res.data.suggestion || ''));
             meta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
         })
         .catch(e => content.textContent = '请求失败: ' + e.message);

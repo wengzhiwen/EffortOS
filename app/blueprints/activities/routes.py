@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import re
 import shutil
 import time
 import uuid
@@ -10,7 +11,7 @@ from flask import Blueprint, Response, current_app, jsonify, request
 from app.models.activity import Activity, DataSummary, Trackpoint
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import compute_file_checksum, validate_activity_file
-from app.utils.auth import require_user, user_filter
+from app.utils.auth import get_authenticated_user, require_user, user_filter
 
 activities_bp = Blueprint("activities", __name__)
 
@@ -688,12 +689,14 @@ def batch_upload():
         return err
 
     data = request.get_json()
-    session_id = data.get("session_id")
+    session_id = data.get("session_id", "")
     items = data.get("items", [])
     if not session_id or not items:
         return jsonify({"code": 400, "message": "缺少参数", "data": None}), 400
     if len(items) > 30:
         return jsonify({"code": 400, "message": "单次最多 30 个文件", "data": None}), 400
+    if not re.match(r"^[a-f0-9]{32}$", session_id):
+        return jsonify({"code": 400, "message": "无效的会话 ID", "data": None}), 400
 
     upload_dir = current_app.config["UPLOAD_FOLDER"]
     session_dir = os.path.join(upload_dir, "_batch", session_id)
@@ -704,8 +707,14 @@ def batch_upload():
     errors = []
 
     for item in items:
-        temp_id = item.get("temp_id")
+        temp_id = item.get("temp_id", "")
+        if not re.match(r"^[a-f0-9]+\.(tcx|gpx)$", temp_id):
+            errors.append({"filename": item.get("filename"), "error": "无效的文件标识"})
+            continue
         src_path = os.path.join(session_dir, temp_id)
+        if not os.path.realpath(src_path).startswith(os.path.realpath(session_dir) + os.sep):
+            errors.append({"filename": item.get("filename"), "error": "非法路径"})
+            continue
         if not os.path.exists(src_path):
             errors.append({"filename": item.get("filename"), "error": "文件未找到"})
             continue
@@ -874,9 +883,12 @@ def export_activities():
 @activities_bp.route("/activities/<activity_id>", methods=["GET"])
 def get_activity(activity_id):
     """获取单次运动记录详情。"""
+    user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).exclude("trackpoints", "raw_data_path").first()
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+    if user and activity.user and str(activity.user.id) != str(user.id):
+        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
 
     data = _serialize_activity(activity)
 
@@ -890,9 +902,12 @@ def get_activity(activity_id):
 @activities_bp.route("/activities/<activity_id>/trackpoints", methods=["GET"])
 def get_trackpoints(activity_id):
     """获取活动的时间序列数据（支持降采样）。"""
+    user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).first()
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+    if user and activity.user and str(activity.user.id) != str(user.id):
+        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
 
     max_points = min(request.args.get("max_points", 500, type=int), 5000)
     data = activity.get_trackpoints_downsampled(max_points)
@@ -913,9 +928,12 @@ def get_lap_splits(activity_id):
     """获取活动的分段分析。"""
     from app.services.metrics_service import calc_lap_splits
 
+    user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).first()
     if not activity:
         return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+    if user and activity.user and str(activity.user.id) != str(user.id):
+        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
 
     tps = activity.trackpoints
     if not tps or len(tps) < 2:
@@ -952,6 +970,7 @@ def get_lap_splits(activity_id):
 @activities_bp.route("/activities/compare", methods=["GET"])
 def compare_activities():
     """对比两个活动的指标和曲线。"""
+    user = get_authenticated_user()
     id_a = request.args.get("a")
     id_b = request.args.get("b")
     if not id_a or not id_b:
@@ -961,6 +980,10 @@ def compare_activities():
     b = Activity.objects(id=id_b).first()
     if not a or not b:
         return jsonify({"code": 404, "message": "活动不存在", "data": None}), 404
+    if user:
+        for act in (a, b):
+            if act.user and str(act.user.id) != str(user.id):
+                return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
 
     def _tp_data(activity):
         tps = activity.get_trackpoints_downsampled(300)

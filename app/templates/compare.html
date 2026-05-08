@@ -58,7 +58,7 @@ authFetch('/api/activities?limit=50')
     .then(r => r.json())
     .then(res => {
         const items = res.data.items || [];
-        const options = items.map(a => `<option value="${a.id}">${a.start_time.slice(0,10)} ${esc(a.name || '(未命名)')} [${typeNames[a.activity_type] || a.activity_type}]</option>`).join('');
+        const options = items.map(a => `<option value="${esc(a.id)}">${a.start_time.slice(0,10)} ${esc(a.name || '(未命名)')} [${esc(typeNames[a.activity_type] || a.activity_type)}]</option>`).join('');
         document.getElementById('select-a').innerHTML += options;
         document.getElementById('select-b').innerHTML += options;
     });

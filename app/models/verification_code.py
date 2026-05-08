@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 from datetime import datetime, timezone
 
@@ -28,7 +28,7 @@ class VerificationCode(BaseDocument):
             vc.used_at = datetime.now(timezone.utc)
             vc.save()
 
-        code = "".join(random.choices(string.digits, k=6))
+        code = "".join(secrets.choice(string.digits) for _ in range(6))
         vc = cls(email=email.lower().strip(), code=code)
         vc.save()
         return vc

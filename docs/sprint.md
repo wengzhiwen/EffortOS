@@ -1,20 +1,14 @@
-# Sprint 85: 运动详情曲线合并 + 距离轴支持
+# Sprint 86: 代码质量优化 + 安全审查
 
 **状态**: 已完成
-**目标**: 心率/功率/速度/踏频/海拔曲线合并为一个 card，tab 切换展示，支持时间/距离 X 轴切换（GitHub Issue #9）
+**目标**: 全面代码质量优化，发现并解决潜在安全性问题（GitHub Issue #10）
 
-## 任务清单
+## 修复清单
 
-- [x] 合并多个曲线 card 为一个 tab 切换 card
-- [x] 添加时间/距离 X 轴切换按钮
-- [x] 深色/浅色主题适配
-- [x] 截图验证
-- [x] 测试通过 + commit
-
-## 修改内容
-
-- 5 个独立图表 card 合并为 1 个「运动曲线」card
-- tab 按钮切换：心率 / 功率 / 速度 / 踏频 / 海拔
-- X 轴切换：时间（mm:ss） / 距离（km）
-- 切换时无动画延迟（animation: false）
-- 减少页面纵向空间占用，信息密度更高
+- [x] 路径遍历：session_id UUID 格式校验 + temp_id 格式校验 + realpath 边界检查
+- [x] 存储型 XSS：引入 DOMPurify，所有 marked.parse 输出经 sanitize
+- [x] 授权缺失：活动详情/轨迹点/laps/compare 端点添加用户归属检查
+- [x] 反射型 XSS：compare.html option value、ai.html _renderPlanTable 数据转义
+- [x] 验证码安全：random.choices → secrets.choice
+- [x] TEST_HOLE 后门：限制仅 testing 环境生效
+- [x] 异常信息泄露：前端错误提示不再暴露 e.message

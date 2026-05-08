@@ -544,9 +544,9 @@ function _renderDashboardReport(res) {
         const dt = new Date(d.generated_at);
         dateEl.textContent = '生成于 ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
     }
-    summaryEl.innerHTML = marked.parse(d.summary || '');
+    summaryEl.innerHTML = DOMPurify.sanitize(marked.parse(d.summary || ''));
     planEl.innerHTML = _renderPlanTable(d.plan);
-    outlookEl.innerHTML = marked.parse(d.outlook || '');
+    outlookEl.innerHTML = DOMPurify.sanitize(marked.parse(d.outlook || ''));
     metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 近 7 天活动: ${d.week_activities} 次`;
 }
 

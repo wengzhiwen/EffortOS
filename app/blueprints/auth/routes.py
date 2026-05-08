@@ -32,7 +32,7 @@ def request_code():
 
     vc = VerificationCode.create_for_email(email)
 
-    test_hole = os.environ.get("TEST_HOLE")
+    test_hole = os.environ.get("TEST_HOLE") if os.environ.get("FLASK_ENV") == "testing" else None
     if test_hole:
         print(f"[DEV] 验证码 for {email}: {vc.code}")
 
@@ -60,7 +60,7 @@ def verify_code():
     if not email or not code:
         return jsonify({"code": 400, "message": "请输入邮箱和验证码", "data": None}), 400
 
-    test_hole = os.environ.get("TEST_HOLE")
+    test_hole = os.environ.get("TEST_HOLE") if os.environ.get("FLASK_ENV") == "testing" else None
     if test_hole and code == test_hole:
         vc = VerificationCode.objects(email=email).order_by("-created_at").first()
         if not vc:
