@@ -124,5 +124,23 @@
   "meta": {
     "description": "EffortOS — 運動資料追蹤與分析平台，上傳 TCX/GPX 檔案，智慧計算訓練指標並提供個人化建議。",
     "og_description": "運動資料追蹤與分析平台"
+  },
+  "error": {
+    "go_home": "返回首頁"
+  },
+  "landing": {
+    "title": "EffortOS - 運動資料追蹤與分析",
+    "meta_description": "EffortOS 是一款運動資料追蹤與分析平台，支援 TCX/GPX 檔案上傳，自動計算 TSS、CTL、ATL 等訓練指標，AI 教練提供個人化訓練建議。",
+    "og_title": "EffortOS - 運動資料追蹤與分析",
+    "og_description": "上傳運動資料，智慧分析訓練指標，AI 教練個人化建議",
+    "hero_desc": "上傳 TCX/GPX 運動資料，自動計算 TSS、CTL、ATL 等訓練指標，基於科學方法分析你的訓練負荷，AI 教練提供個人化建議。",
+    "login_register": "登入 / 註冊",
+    "learn_more": "瞭解更多",
+    "feature_metrics": "訓練指標",
+    "feature_metrics_desc": "TSS、CTL、ATL、TSB、NP、IF 等核心指標自動計算",
+    "feature_charts": "資料視覺化",
+    "feature_charts_desc": "PMC 趨勢圖、訓練日曆、心率/功率分區圖",
+    "feature_ai": "AI 教練",
+    "feature_ai_desc": "基於訓練資料產生週報和個人化訓練建議"
   }
 }

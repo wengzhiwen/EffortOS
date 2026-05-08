@@ -124,5 +124,23 @@
   "meta": {
     "description": "EffortOS — Sports activity tracker & analytics. Upload TCX/GPX files, compute training metrics, and get personalized coaching advice.",
     "og_description": "Sports activity tracker & analytics platform"
+  },
+  "error": {
+    "go_home": "Back to Home"
+  },
+  "landing": {
+    "title": "EffortOS - Sports Activity Tracker & Analytics",
+    "meta_description": "EffortOS is a sports activity tracking and analytics platform. Upload TCX/GPX files to auto-calculate TSS, CTL, ATL and other training metrics. AI coach provides personalized training advice.",
+    "og_title": "EffortOS - Sports Activity Tracker & Analytics",
+    "og_description": "Upload activity data, smart training analytics, AI-powered coaching advice",
+    "hero_desc": "Upload TCX/GPX activity files to auto-calculate TSS, CTL, ATL and other training metrics. Science-based training load analysis with AI-powered personalized coaching.",
+    "login_register": "Login / Sign Up",
+    "learn_more": "Learn More",
+    "feature_metrics": "Training Metrics",
+    "feature_metrics_desc": "TSS, CTL, ATL, TSB, NP, IF and more — auto-calculated",
+    "feature_charts": "Data Visualization",
+    "feature_charts_desc": "PMC trends, training calendar, HR/power zone charts",
+    "feature_ai": "AI Coach",
+    "feature_ai_desc": "Weekly reports and personalized training advice powered by AI"
   }
 }

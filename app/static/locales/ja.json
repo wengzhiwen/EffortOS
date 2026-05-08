@@ -124,5 +124,23 @@
   "meta": {
     "description": "EffortOS — スポーツアクティビティトラッカー＆分析。TCX/GPXファイルをアップロードしてトレーニング指標を計算し、パーソナライズされたコーチングアドバイスを取得。",
     "og_description": "スポーツアクティビティトラッカー＆分析プラットフォーム"
+  },
+  "error": {
+    "go_home": "ホームに戻る"
+  },
+  "landing": {
+    "title": "EffortOS - スポーツアクティビティトラッカー＆分析",
+    "meta_description": "EffortOS はスポーツアクティビティのトラッキング＆分析プラットフォームです。TCX/GPXファイルをアップロードして TSS、CTL、ATL などのトレーニング指標を自動計算。AIコーチがパーソナライズされたアドバイスを提供。",
+    "og_title": "EffortOS - スポーツアクティビティトラッカー＆分析",
+    "og_description": "アクティビティデータをアップロード、スマートトレーニング分析、AIコーチングアドバイス",
+    "hero_desc": "TCX/GPXアクティビティファイルをアップロードして、TSS、CTL、ATL などのトレーニング指標を自動計算。科学的なトレーニング負荷分析とAIコーチによるパーソナライズされたアドバイス。",
+    "login_register": "ログイン / 新規登録",
+    "learn_more": "詳細を見る",
+    "feature_metrics": "トレーニング指標",
+    "feature_metrics_desc": "TSS、CTL、ATL、TSB、NP、IF など主要指標を自動計算",
+    "feature_charts": "データビジュアライゼーション",
+    "feature_charts_desc": "PMCトレンド、トレーニングカレンダー、心拍/パワーゾーンチャート",
+    "feature_ai": "AIコーチ",
+    "feature_ai_desc": "トレーニングデータに基づく週次レポートとパーソナライズされたアドバイス"
   }
 }

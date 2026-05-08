@@ -1,38 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}EffortOS - 运动数据追踪与分析{% endblock %}
-{% block meta_description %}EffortOS 是一款运动数据追踪与分析平台，支持 TCX/GPX 文件上传，自动计算 TSS、CTL、ATL 等训练指标，AI 教练提供个性化训练建议。{% endblock %}
-{% block og_title %}EffortOS - 运动数据追踪与分析{% endblock %}
-{% block og_description %}上传运动数据，智能分析训练指标，AI 教练个性化建议{% endblock %}
+{% block title %}{{ t('landing.title') }}{% endblock %}
+{% block meta_description %}{{ t('landing.meta_description') }}{% endblock %}
+{% block og_title %}{{ t('landing.og_title') }}{% endblock %}
+{% block og_description %}{{ t('landing.og_description') }}{% endblock %}
 
 {% block content %}
 <div style="text-align: center; padding: 4rem 1rem;">
     <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">EffortOS</h1>
     <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 500px; margin: 0 auto 2rem;">
-        上传 TCX/GPX 运动数据，自动计算 TSS、CTL、ATL 等训练指标，
-        基于科学方法分析你的训练负荷，AI 教练提供个性化建议。
+        {{ t('landing.hero_desc') }}
     </p>
     <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-        <a href="/login" class="btn btn-primary" style="font-size: 1rem; padding: 0.75rem 2rem;">登录 / 注册</a>
-        <a href="/help" class="btn btn-secondary" style="font-size: 1rem; padding: 0.75rem 2rem;">了解更多</a>
+        <a href="/login" class="btn btn-primary" style="font-size: 1rem; padding: 0.75rem 2rem;">{{ t('landing.login_register') }}</a>
+        <a href="/help" class="btn btn-secondary" style="font-size: 1rem; padding: 0.75rem 2rem;">{{ t('landing.learn_more') }}</a>
     </div>
 </div>
 
 <div class="grid grid-3" style="max-width: 800px; margin: 2rem auto;">
     <div class="card" style="text-align: center;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
-        <div style="font-weight: 600; margin-bottom: 0.5rem;">训练指标</div>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">TSS、CTL、ATL、TSB、NP、IF 等核心指标自动计算</p>
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">{{ t('landing.feature_metrics') }}</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('landing.feature_metrics_desc') }}</p>
     </div>
     <div class="card" style="text-align: center;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
-        <div style="font-weight: 600; margin-bottom: 0.5rem;">数据可视化</div>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">PMC 趋势图、训练日历、心率/功率分区图</p>
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">{{ t('landing.feature_charts') }}</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('landing.feature_charts_desc') }}</p>
     </div>
     <div class="card" style="text-align: center;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
-        <div style="font-weight: 600; margin-bottom: 0.5rem;">AI 教练</div>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">基于训练数据生成周报和个性化训练建议</p>
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">{{ t('landing.feature_ai') }}</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('landing.feature_ai_desc') }}</p>
     </div>
 </div>
 {% endblock %}
