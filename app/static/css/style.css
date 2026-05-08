@@ -317,6 +317,14 @@ body {
     border-top: 1px solid var(--border);
 }
 
+/* 路线地图 */
+#activity-map { background: var(--bg); }
+.leaflet-control-zoom a {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
 /* 指标数值 */
 .metric-value {
     font-size: 2rem;

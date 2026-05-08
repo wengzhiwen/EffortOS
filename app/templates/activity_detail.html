@@ -136,6 +136,16 @@ Promise.all([
             </div>` : ''}
         </div>
 
+        ${(() => {
+            const gpsPoints = hasTP ? tpData.points.filter(p => p.latitude != null && p.longitude != null) : [];
+            if (gpsPoints.length < 10) return '';
+            return `
+        <div class="card" style="margin-bottom: 1rem; padding: 0; overflow: hidden;">
+            <div class="card-title" style="padding: 0.75rem 1.25rem 0;">路线地图</div>
+            <div id="activity-map" style="height: 360px; width: 100%; border-radius: 0 0 8px 8px;"></div>
+        </div>`;
+        })()}
+
         ${hasTP ? `
         <div class="card" style="margin-bottom: 1rem;">
             <div class="card-title">心率曲线</div>
@@ -251,6 +261,32 @@ Promise.all([
         <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
     `;
     document.title = (a.name || '未命名活动') + ' - EffortOS';
+
+    // 路线地图
+    const gpsPoints = hasTP ? tpData.points.filter(p => p.latitude != null && p.longitude != null) : [];
+    if (gpsPoints.length >= 10) {
+        const latlngs = gpsPoints.map(p => [p.latitude, p.longitude]);
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const tileUrl = isDark
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        const map = L.map('activity-map', {
+            zoomControl: true,
+            attributionControl: false,
+        });
+        L.tileLayer(tileUrl, { maxZoom: 18 }).addTo(map);
+        const polyline = L.polyline(latlngs, {
+            color: '#3b82f6',
+            weight: 3,
+            opacity: 0.9,
+        }).addTo(map);
+        map.fitBounds(polyline.getBounds(), { padding: [15, 15] });
+        // 起点/终点标记
+        L.circleMarker(latlngs[0], { radius: 6, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1, weight: 2 })
+            .addTo(map).bindTooltip('起点', { permanent: false });
+        L.circleMarker(latlngs[latlngs.length - 1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1, weight: 2 })
+            .addTo(map).bindTooltip('终点', { permanent: false });
+    }
 
     // 时间序列图表
     if (hasTP) {
