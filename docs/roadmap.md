@@ -78,7 +78,7 @@
 > 向 intervals.icu / Strava 看齐
 
 - SEO 优化（meta 标签、sitemap、robots.txt）
-- 多语言支持（中/英）
+- [~] 多语言支持（中/英/繁中/日）— 基础设施已搭建，仪表盘页已翻译
 - 帮助文档页面
 - Logo 和品牌视觉
 - Admin 后台（用户管理、数据统计）

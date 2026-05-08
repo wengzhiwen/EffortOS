@@ -1,14 +1,14 @@
-# Sprint 86: 代码质量优化 + 安全审查
+# Sprint 88: 多语言基础设施 + 仪表盘翻译
 
 **状态**: 已完成
-**目标**: 全面代码质量优化，发现并解决潜在安全性问题（GitHub Issue #10）
+**目标**: 搭建 i18n 基础设施，翻译仪表盘页作为概念验证
 
-## 修复清单
+## 任务清单
 
-- [x] 路径遍历：session_id UUID 格式校验 + temp_id 格式校验 + realpath 边界检查
-- [x] 存储型 XSS：引入 DOMPurify，所有 marked.parse 输出经 sanitize
-- [x] 授权缺失：活动详情/轨迹点/laps/compare 端点添加用户归属检查
-- [x] 反射型 XSS：compare.html option value、ai.html _renderPlanTable 数据转义
-- [x] 验证码安全：random.choices → secrets.choice
-- [x] TEST_HOLE 后门：限制仅 testing 环境生效
-- [x] 异常信息泄露：前端错误提示不再暴露 e.message
+- [x] 创建 i18n 服务（app/services/i18n_service.py）
+- [x] 创建翻译字典文件（zh_CN / en / zh_TW / ja）
+- [x] 前端 JS i18n 机制：全局字典 + 语言切换
+- [x] 后端 API 消息改用 t() 翻译
+- [x] 仪表盘页全部文本翻译
+- [x] 导航栏语言切换器
+- [x] 测试通过 + commit

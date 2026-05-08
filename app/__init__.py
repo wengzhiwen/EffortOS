@@ -4,6 +4,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 from app.config import config_by_name
+from app.services.i18n_service import t
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,11 @@ def create_app(config_name=None):
         port=mongo_settings["port"],
         alias="default",
     )
+
+    # 初始化 i18n
+    from app.services.i18n_service import init_app as i18n_init
+
+    i18n_init(app)
 
     # 注册蓝图
     from app.blueprints.activities.routes import activities_bp
@@ -74,14 +80,14 @@ def create_app(config_name=None):
     @app.errorhandler(404)
     def handle_404(error):
         if request.path.startswith("/api/"):
-            return jsonify({"code": 404, "message": "资源不存在", "data": None}), 404
-        return render_template("error.html", code=404, message="页面不存在"), 404
+            return jsonify({"code": 404, "message": t("api.not_found"), "data": None}), 404
+        return render_template("error.html", code=404, message=t("api.page_not_found")), 404
 
     @app.errorhandler(500)
     def handle_500(error):
         logger.error("内部错误: %s", error, exc_info=True)
         if request.path.startswith("/api/"):
-            return jsonify({"code": 500, "message": "服务器内部错误", "data": None}), 500
-        return render_template("error.html", code=500, message="服务器内部错误"), 500
+            return jsonify({"code": 500, "message": t("api.server_error"), "data": None}), 500
+        return render_template("error.html", code=500, message=t("api.server_error")), 500
 
     return app

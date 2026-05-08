@@ -5,6 +5,7 @@ from datetime import timedelta
 from flask import Blueprint, jsonify, request
 
 from app.models.activity import Activity
+from app.services.i18n_service import t
 from app.services.metrics_service import calc_daily_tss, calc_pmc
 from app.utils.auth import user_filter
 
@@ -34,7 +35,7 @@ def get_pmc():
         dt.strptime(start_date, "%Y-%m-%d")
         dt.strptime(end_date, "%Y-%m-%d")
     except ValueError:
-        return jsonify({"code": 400, "message": "日期格式无效，应为 YYYY-MM-DD", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.invalid_date_format"), "data": None}), 400
 
     activities = _filter_user(
         Activity.objects(start_time__gte=start_date, start_time__lte=_end_of_day(end_date)).exclude(

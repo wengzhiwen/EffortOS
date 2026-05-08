@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "activities": "Activities",
+    "settings": "Settings",
+    "ai_coach": "AI Coach",
+    "help": "Help",
+    "login": "Login",
+    "logout": "Logout",
+    "menu": "Menu",
+    "switch_theme": "Switch theme"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "today_tss": "Today TSS",
+    "today_tss_tooltip": "Training Stress Score — measures the training load of a single workout",
+    "fitness_ctl": "Fitness (CTL)",
+    "ctl_tooltip": "Chronic Training Load — 42-day TSS weighted average, reflects long-term fitness",
+    "fatigue_atl": "Fatigue (ATL)",
+    "atl_tooltip": "Acute Training Load — 7-day TSS weighted average, reflects recent fatigue",
+    "form_tsb": "Form (TSB)",
+    "tsb_tooltip": "Training Stress Balance = CTL − ATL. Positive means well-rested, negative means fatigued",
+    "last_7_days": "Last 7 Days",
+    "last_30_days": "Last 30 Days",
+    "training_calendar": "Training Calendar (90-Day TSS)",
+    "type_distribution": "Activity Types (This Month)",
+    "pmc_trend": "PMC Trend (Last 30 Days)",
+    "fitness_trend": "Fitness Trend — NP / Efficiency Factor",
+    "intensity_distribution": "Training Intensity Distribution",
+    "weekly_volume": "Weekly Volume (Last 12 Weeks)",
+    "weekly_count": "Weekly Training Days",
+    "recent_activities": "Recent Activities",
+    "date": "Date",
+    "type": "Type",
+    "name": "Name",
+    "duration": "Duration",
+    "tss": "TSS",
+    "intensity": "Intensity",
+    "ai_report": "AI Training Report",
+    "generate_report": "Generate Report",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "ai_analyzing": "AI Coach is analyzing the last 7 days of training data...",
+    "generated_at": "Generated at",
+    "no_data": "No data",
+    "no_activities": "No activities yet",
+    "no_activities_link": "Upload one",
+    "upload_data_hint": "PMC trend will appear here after uploading activity data",
+    "no_activity_data": "No activity data",
+    "loading": "Loading...",
+    "load_failed": "Load failed",
+    "data_empty": "Empty data",
+    "generate_failed": "Generation failed",
+    "request_failed": "Request failed",
+    "unnamed": "(Unnamed)",
+    "no_activity": "No activity",
+    "week_activities": "Last 7 days activities",
+    "report_date": "Date",
+    "report_type": "Type",
+    "report_intensity": "Intensity",
+    "report_duration": "Duration",
+    "training_days": "Training days",
+    "days_unit": "d"
+  },
+  "stats": {
+    "activity_count": "Activities",
+    "total_tss": "Total TSS",
+    "total_duration_min": "Duration (min)",
+    "total_distance_km": "Distance (km)"
+  },
+  "onboarding": {
+    "start_using": "Get Started with EffortOS",
+    "start_using_desc": "Upload activity files and set athlete parameters to view training metrics and analysis.",
+    "set_params": "Set Parameters",
+    "upload_data": "Upload Data",
+    "set_params_title": "Set athlete parameters to calculate training metrics",
+    "set_params_desc": "Activity data exists, but FTP and LTHR are not set. Set them to calculate TSS, zone time, etc.",
+    "go_settings": "Go to Settings"
+  },
+  "types": {
+    "cycling": "Cycling",
+    "indoor_cycling": "Indoor Cycling",
+    "commute_cycling": "Commute",
+    "running": "Running",
+    "indoor_running": "Indoor Running",
+    "walking": "Walking",
+    "swimming": "Swimming",
+    "other": "Other"
+  },
+  "intensity": {
+    "recovery": "Recovery",
+    "endurance": "Endurance",
+    "tempo": "Tempo",
+    "threshold": "Threshold",
+    "vo2max": "VO2max",
+    "rest": "Rest"
+  },
+  "calendar": {
+    "less_tss": "Less TSS",
+    "more_tss": "More TSS",
+    "more_items": "{n} more...",
+    "months": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+    "days": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+  },
+  "time": {
+    "hour": "h",
+    "minute": "min",
+    "second": "s",
+    "min": "min"
+  },
+  "confirm": {
+    "cancel": "Cancel",
+    "ok": "OK"
+  },
+  "auth": {
+    "not_logged_in": "Not logged in"
+  },
+  "api": {
+    "invalid_date_format": "Invalid date format, expected YYYY-MM-DD",
+    "not_found": "Resource not found",
+    "server_error": "Internal server error",
+    "page_not_found": "Page not found"
+  },
+  "meta": {
+    "description": "EffortOS — Sports activity tracker & analytics. Upload TCX/GPX files, compute training metrics, and get personalized coaching advice.",
+    "og_description": "Sports activity tracker & analytics platform"
+  }
+}

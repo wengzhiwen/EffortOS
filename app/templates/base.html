@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{{ current_lang | replace('_', '-') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}EffortOS{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}EffortOS — 运动数据追踪与分析平台，上传 TCX/GPX 文件，智能计算训练指标并提供个性化建议。{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{{ t('meta.description') }}{% endblock %}">
     <meta property="og:title" content="{% block og_title %}EffortOS{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}运动数据追踪与分析平台{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ t('meta.og_description') }}{% endblock %}">
     <meta property="og:type" content="website">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -26,19 +26,26 @@
     .confirm-box { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
     .confirm-box p { margin-bottom: 1.25rem; line-height: 1.6; }
     .confirm-box .btn-row { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .lang-select { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; cursor: pointer; }
+    .lang-select:hover { border-color: var(--primary); }
     </style>
     <script>
-    // 全局常量和工具
-    window.TYPE_NAMES = { cycling: '骑行', indoor_cycling: '室内骑行', commute_cycling: '通勤骑行', running: '跑步', indoor_running: '室内跑步', walking: '步行', swimming: '游泳', other: '其他' };
+    // i18n 字典注入
+    window.__i18n_dict = {{ translations_json | safe }};
+    window.__i18n_lang = "{{ current_lang }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script>
+    // 全局工具（使用 t() 进行 i18n）
     window.esc = function(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
     window.fmtDur = function(sec) {
         if (!sec) return '—';
         var s = Math.round(sec);
         var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
         var parts = [];
-        if (h) parts.push(h + '小时');
-        if (m) parts.push(m + '分钟');
-        if (r || parts.length === 0) parts.push(r + '秒');
+        if (h) parts.push(h + t('time.hour'));
+        if (m) parts.push(m + t('time.minute'));
+        if (r || parts.length === 0) parts.push(r + t('time.second'));
         return parts.join('');
     };
     </script>
@@ -68,7 +75,7 @@
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-                    return Promise.reject(new Error('未登录'));
+                    return Promise.reject(new Error(t('auth.not_logged_in')));
                 }
                 return resp;
             });
@@ -145,24 +152,29 @@
 <body>
     <nav class="navbar">
         <a href="{{ url_for('pages.index') }}" class="brand">EffortOS</a>
-        <button id="hamburger" class="hamburger" aria-label="菜单">
+        <button id="hamburger" class="hamburger" aria-label="{{ t('nav.menu') }}">
             <span></span><span></span><span></span>
         </button>
         <div id="nav-links" class="nav-links">
-            <a href="{{ url_for('pages.index') }}" class="{{ 'active' if request.endpoint == 'pages.index' }}">仪表盘</a>
-            <a href="{{ url_for('pages.activities') }}" class="{{ 'active' if request.endpoint == 'pages.activities' }}">活动</a>
-            <a href="{{ url_for('pages.settings') }}" class="{{ 'active' if request.endpoint == 'pages.settings' }}">设置</a>
-            <a href="{{ url_for('pages.ai') }}" class="{{ 'active' if request.endpoint == 'pages.ai' }}">AI 教练</a>
+            <a href="{{ url_for('pages.index') }}" class="{{ 'active' if request.endpoint == 'pages.index' }}">{{ t('nav.dashboard') }}</a>
+            <a href="{{ url_for('pages.activities') }}" class="{{ 'active' if request.endpoint == 'pages.activities' }}">{{ t('nav.activities') }}</a>
+            <a href="{{ url_for('pages.settings') }}" class="{{ 'active' if request.endpoint == 'pages.settings' }}">{{ t('nav.settings') }}</a>
+            <a href="{{ url_for('pages.ai') }}" class="{{ 'active' if request.endpoint == 'pages.ai' }}">{{ t('nav.ai_coach') }}</a>
             <!-- Wellness/装备 暂时隐藏 -->
-            <a href="/help" class="{{ 'active' if request.endpoint == 'pages.help_page' }}">帮助</a>
+            <a href="/help" class="{{ 'active' if request.endpoint == 'pages.help_page' }}">{{ t('nav.help') }}</a>
         </div>
         <div class="navbar-right">
-            <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">🌙</button>
+            <select class="lang-select" onchange="switchLang(this.value)" aria-label="Language">
+                {% for lang in supported_langs %}
+                <option value="{{ lang }}" {% if lang == current_lang %}selected{% endif %}>{{ lang_display[lang] }}</option>
+                {% endfor %}
+            </select>
+            <button id="theme-toggle" class="theme-toggle" aria-label="{{ t('nav.switch_theme') }}">🌙</button>
             <span id="user-info" style="display:{% if _server_user is defined and _server_user %}inline-flex{% else %}none{% endif %};">
                 <a href="/profile" id="user-nickname" style="color: var(--text); font-weight: 500;">{{ _server_user.nickname or _server_user.email if _server_user is defined and _server_user else '' }}</a>
-                <button id="btn-logout" class="btn btn-secondary btn-sm">登出</button>
+                <button id="btn-logout" class="btn btn-secondary btn-sm">{{ t('nav.logout') }}</button>
             </span>
-            <a id="btn-login" href="/login" class="btn btn-primary btn-sm" style="display:{% if _server_user is defined and _server_user %}none{% else %}inline-block{% endif %};">登录</a>
+            <a id="btn-login" href="/login" class="btn btn-primary btn-sm" style="display:{% if _server_user is defined and _server_user %}none{% else %}inline-block{% endif %};">{{ t('nav.login') }}</a>
         </div>
     </nav>
     <div class="container">
@@ -197,10 +209,10 @@
             btnRow.className = 'btn-row';
             var btnCancel = document.createElement('button');
             btnCancel.className = 'btn btn-secondary';
-            btnCancel.textContent = '取消';
+            btnCancel.textContent = t('confirm.cancel');
             var btnOk = document.createElement('button');
             btnOk.className = 'btn btn-primary';
-            btnOk.textContent = '确定';
+            btnOk.textContent = t('confirm.ok');
             btnRow.appendChild(btnCancel);
             btnRow.appendChild(btnOk);
             box.appendChild(p);

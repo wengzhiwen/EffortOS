@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "activities": "アクティビティ",
+    "settings": "設定",
+    "ai_coach": "AIコーチ",
+    "help": "ヘルプ",
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "menu": "メニュー",
+    "switch_theme": "テーマ切替"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "today_tss": "今日のTSS",
+    "today_tss_tooltip": "トレーニングストレススコア — 1回のトレーニングが体に与える負荷を測定",
+    "fitness_ctl": "Fitness (CTL)",
+    "ctl_tooltip": "慢性トレーニング負荷 — 42日間のTSS加重平均、長期的なフィットネスを反映",
+    "fatigue_atl": "Fatigue (ATL)",
+    "atl_tooltip": "急性トレーニング負荷 — 7日間のTSS加重平均、最近の疲労を反映",
+    "form_tsb": "Form (TSB)",
+    "tsb_tooltip": "トレーニングストレスバランス = CTL - ATL。プラスは十分回復、マイナスは疲労蓄積",
+    "last_7_days": "過去7日間",
+    "last_30_days": "過去30日間",
+    "training_calendar": "トレーニングカレンダー（過去90日間TSS）",
+    "type_distribution": "アクティビティタイプ（今月）",
+    "pmc_trend": "PMCトレンド（過去30日間）",
+    "fitness_trend": "フィットネストレンド — NP / 効率因子(EF)",
+    "intensity_distribution": "トレーニング強度分布",
+    "weekly_volume": "週間トレーニング量（過去12週）",
+    "weekly_count": "週間トレーニング日数",
+    "recent_activities": "最近のアクティビティ",
+    "date": "日付",
+    "type": "タイプ",
+    "name": "名前",
+    "duration": "時間",
+    "tss": "TSS",
+    "intensity": "強度",
+    "ai_report": "AIトレーニングレポート",
+    "generate_report": "レポート生成",
+    "regenerate": "再生成",
+    "generating": "生成中...",
+    "ai_analyzing": "AIコーチが過去7日間のトレーニングデータを分析中...",
+    "generated_at": "生成日時",
+    "no_data": "データなし",
+    "no_activities": "アクティビティはまだありません",
+    "no_activities_link": "アップロード",
+    "upload_data_hint": "アクティビティデータをアップロードすると、PMCトレンドがここに表示されます",
+    "no_activity_data": "アクティビティデータなし",
+    "loading": "読み込み中...",
+    "load_failed": "読み込み失敗",
+    "data_empty": "データが空です",
+    "generate_failed": "生成失敗",
+    "request_failed": "リクエスト失敗",
+    "unnamed": "(名前なし)",
+    "no_activity": "アクティビティなし",
+    "week_activities": "過去7日間のアクティビティ",
+    "report_date": "日付",
+    "report_type": "タイプ",
+    "report_intensity": "強度",
+    "report_duration": "時間",
+    "training_days": "トレーニング日数",
+    "days_unit": "日"
+  },
+  "stats": {
+    "activity_count": "アクティビティ数",
+    "total_tss": "合計TSS",
+    "total_duration_min": "合計時間(分)",
+    "total_distance_km": "合計距離(km)"
+  },
+  "onboarding": {
+    "start_using": "EffortOSを始めましょう",
+    "start_using_desc": "アクティビティファイルをアップロードしてアスリートパラメータを設定すると、トレーニング指標と分析を表示できます。",
+    "set_params": "パラメータ設定",
+    "upload_data": "データアップロード",
+    "set_params_title": "トレーニング指標を計算するためにアスリートパラメータを設定",
+    "set_params_desc": "アクティビティデータはありますが、FTPとLTHRが未設定です。設定するとTSSやゾーン時間などを計算できます。",
+    "go_settings": "設定へ"
+  },
+  "types": {
+    "cycling": "サイクリング",
+    "indoor_cycling": "インドアサイクリング",
+    "commute_cycling": "通勤サイクリング",
+    "running": "ランニング",
+    "indoor_running": "インドアランニング",
+    "walking": "ウォーキング",
+    "swimming": "水泳",
+    "other": "その他"
+  },
+  "intensity": {
+    "recovery": "リカバリー",
+    "endurance": "エンデュランス",
+    "tempo": "テンポ",
+    "threshold": "スレッショルド",
+    "vo2max": "VO2max",
+    "rest": "休息"
+  },
+  "calendar": {
+    "less_tss": "少 TSS",
+    "more_tss": "多 TSS",
+    "more_items": "他{n}件...",
+    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
+    "days": ["日","月","火","水","木","金","土"]
+  },
+  "time": {
+    "hour": "時間",
+    "minute": "分",
+    "second": "秒",
+    "min": "分"
+  },
+  "confirm": {
+    "cancel": "キャンセル",
+    "ok": "OK"
+  },
+  "auth": {
+    "not_logged_in": "未ログイン"
+  },
+  "api": {
+    "invalid_date_format": "日付形式が無効です。YYYY-MM-DD形式で入力してください",
+    "not_found": "リソースが見つかりません",
+    "server_error": "サーバー内部エラー",
+    "page_not_found": "ページが見つかりません"
+  },
+  "meta": {
+    "description": "EffortOS — スポーツアクティビティトラッカー＆分析。TCX/GPXファイルをアップロードしてトレーニング指標を計算し、パーソナライズされたコーチングアドバイスを取得。",
+    "og_description": "スポーツアクティビティトラッカー＆分析プラットフォーム"
+  }
+}

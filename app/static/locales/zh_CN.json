@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "dashboard": "仪表盘",
+    "activities": "活动",
+    "settings": "设置",
+    "ai_coach": "AI 教练",
+    "help": "帮助",
+    "login": "登录",
+    "logout": "登出",
+    "menu": "菜单",
+    "switch_theme": "切换主题"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "today_tss": "今日 TSS",
+    "today_tss_tooltip": "训练压力分数，衡量单次训练对身体造成的负荷",
+    "fitness_ctl": "Fitness (CTL)",
+    "ctl_tooltip": "慢性训练负荷，42天TSS加权均值，反映长期体能水平",
+    "fatigue_atl": "Fatigue (ATL)",
+    "atl_tooltip": "急性训练负荷，7天TSS加权均值，反映近期疲劳程度",
+    "form_tsb": "Form (TSB)",
+    "tsb_tooltip": "训练压力平衡 = CTL - ATL，正值表示恢复充分，负值表示疲劳累积",
+    "last_7_days": "近 7 天",
+    "last_30_days": "近 30 天",
+    "training_calendar": "训练日历（近 90 天 TSS）",
+    "type_distribution": "运动类型分布（本月）",
+    "pmc_trend": "PMC 趋势（最近 30 天）",
+    "fitness_trend": "体能趋势 — NP / 效率因子(EF)",
+    "intensity_distribution": "训练强度分布",
+    "weekly_volume": "周训练量趋势（最近 12 周）",
+    "weekly_count": "周训练次数",
+    "recent_activities": "最近活动",
+    "date": "日期",
+    "type": "类型",
+    "name": "名称",
+    "duration": "时长",
+    "tss": "TSS",
+    "intensity": "强度",
+    "ai_report": "AI 训练报告",
+    "generate_report": "生成报告",
+    "regenerate": "重新生成",
+    "generating": "生成中...",
+    "ai_analyzing": "AI 教练正在分析最近 7 天训练数据...",
+    "generated_at": "生成于",
+    "no_data": "暂无数据",
+    "no_activities": "暂无活动记录",
+    "no_activities_link": "去上传",
+    "upload_data_hint": "上传运动数据后，PMC 趋势将在此显示",
+    "no_activity_data": "暂无活动数据",
+    "loading": "加载中...",
+    "load_failed": "加载失败",
+    "data_empty": "数据为空",
+    "generate_failed": "生成失败",
+    "request_failed": "请求失败",
+    "unnamed": "(未命名)",
+    "no_activity": "无活动",
+    "week_activities": "近 7 天活动",
+    "report_date": "日期",
+    "report_type": "训练类型",
+    "report_intensity": "强度",
+    "report_duration": "时长",
+    "training_days": "训练天数",
+    "days_unit": "天"
+  },
+  "stats": {
+    "activity_count": "活动次数",
+    "total_tss": "总 TSS",
+    "total_duration_min": "总时长(分)",
+    "total_distance_km": "总距离(km)"
+  },
+  "onboarding": {
+    "start_using": "开始使用 EffortOS",
+    "start_using_desc": "上传运动数据文件并设置运动员参数，即可查看训练指标和分析。",
+    "set_params": "设置运动参数",
+    "upload_data": "上传运动数据",
+    "set_params_title": "设置运动员参数以计算训练指标",
+    "set_params_desc": "已有活动数据，但尚未设置 FTP 和阈值心率（LTHR）。设置后可计算 TSS、分区时间等指标。",
+    "go_settings": "前往设置"
+  },
+  "types": {
+    "cycling": "骑行",
+    "indoor_cycling": "室内骑行",
+    "commute_cycling": "通勤骑行",
+    "running": "跑步",
+    "indoor_running": "室内跑步",
+    "walking": "步行",
+    "swimming": "游泳",
+    "other": "其他"
+  },
+  "intensity": {
+    "recovery": "恢复",
+    "endurance": "有氧耐力",
+    "tempo": "节奏",
+    "threshold": "阈值",
+    "vo2max": "VO2max",
+    "rest": "休息"
+  },
+  "calendar": {
+    "less_tss": "少 TSS",
+    "more_tss": "多 TSS",
+    "more_items": "还有 {n} 项...",
+    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
+    "days": ["日","一","二","三","四","五","六"]
+  },
+  "time": {
+    "hour": "小时",
+    "minute": "分钟",
+    "second": "秒",
+    "min": "min"
+  },
+  "confirm": {
+    "cancel": "取消",
+    "ok": "确定"
+  },
+  "auth": {
+    "not_logged_in": "未登录"
+  },
+  "api": {
+    "invalid_date_format": "日期格式无效，应为 YYYY-MM-DD",
+    "not_found": "资源不存在",
+    "server_error": "服务器内部错误",
+    "page_not_found": "页面不存在"
+  },
+  "meta": {
+    "description": "EffortOS — 运动数据追踪与分析平台，上传 TCX/GPX 文件，智能计算训练指标并提供个性化建议。",
+    "og_description": "运动数据追踪与分析平台"
+  }
+}

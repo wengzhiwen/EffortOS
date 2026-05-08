@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}EffortOS - 仪表盘{% endblock %}
+{% block title %}EffortOS - {{ t('dashboard.title') }}{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">仪表盘</h2>
+<h2 style="margin-bottom: 1rem;">{{ t('dashboard.title') }}</h2>
 
 <div class="grid grid-4">
     <div class="card">
-        <div class="card-title metric-title">今日 TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量单次训练对身体造成的负荷</span></span></div>
+        <div class="card-title metric-title">{{ t('dashboard.today_tss') }} <span class="metric-help">?<span class="metric-tooltip">{{ t('dashboard.today_tss_tooltip') }}</span></span></div>
         <div class="metric-value" id="today-tss">—</div>
     </div>
     <!-- Wellness/Readiness 暂时隐藏 -->
     <div class="card">
-        <div class="card-title metric-title">Fitness (CTL) <span class="metric-help">?<span class="metric-tooltip">慢性训练负荷，42天TSS加权均值，反映长期体能水平</span></span></div>
+        <div class="card-title metric-title">{{ t('dashboard.fitness_ctl') }} <span class="metric-help">?<span class="metric-tooltip">{{ t('dashboard.ctl_tooltip') }}</span></span></div>
         <div class="metric-value" id="ctl">—</div>
     </div>
     <div class="card">
-        <div class="card-title metric-title">Fatigue (ATL) <span class="metric-help">?<span class="metric-tooltip">急性训练负荷，7天TSS加权均值，反映近期疲劳程度</span></span></div>
+        <div class="card-title metric-title">{{ t('dashboard.fatigue_atl') }} <span class="metric-help">?<span class="metric-tooltip">{{ t('dashboard.atl_tooltip') }}</span></span></div>
         <div class="metric-value" id="atl">—</div>
     </div>
     <div class="card">
-        <div class="card-title metric-title">Form (TSB) <span class="metric-help">?<span class="metric-tooltip">训练压力平衡 = CTL - ATL，正值表示恢复充分，负值表示疲劳累积</span></span></div>
+        <div class="card-title metric-title">{{ t('dashboard.form_tsb') }} <span class="metric-help">?<span class="metric-tooltip">{{ t('dashboard.tsb_tooltip') }}</span></span></div>
         <div class="metric-value" id="tsb">—</div>
     </div>
 </div>
@@ -29,76 +29,76 @@
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">近 7 天</div>
+        <div class="card-title">{{ t('dashboard.last_7_days') }}</div>
         <div id="weekly-stats" class="stats-grid">—</div>
     </div>
     <div class="card">
-        <div class="card-title">近 30 天</div>
+        <div class="card-title">{{ t('dashboard.last_30_days') }}</div>
         <div id="monthly-stats" class="stats-grid">—</div>
     </div>
 </div>
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">训练日历（近 90 天 TSS）</div>
+        <div class="card-title">{{ t('dashboard.training_calendar') }}</div>
         <div id="tss-calendar" class="tss-calendar"></div>
     </div>
     <div class="card">
-        <div class="card-title">运动类型分布（本月）</div>
+        <div class="card-title">{{ t('dashboard.type_distribution') }}</div>
         <canvas id="type-chart"></canvas>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-title">PMC 趋势（最近 30 天）</div>
+    <div class="card-title">{{ t('dashboard.pmc_trend') }}</div>
     <canvas id="pmc-chart" height="200"></canvas>
 </div>
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">体能趋势 — NP / 效率因子(EF)</div>
+        <div class="card-title">{{ t('dashboard.fitness_trend') }}</div>
         <canvas id="fitness-trend-chart" height="200"></canvas>
     </div>
     <div class="card">
-        <div class="card-title">训练强度分布</div>
+        <div class="card-title">{{ t('dashboard.intensity_distribution') }}</div>
         <canvas id="intensity-trend-chart" height="200"></canvas>
     </div>
 </div>
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">周训练量趋势（最近 12 周）</div>
+        <div class="card-title">{{ t('dashboard.weekly_volume') }}</div>
         <canvas id="weekly-trend-chart" height="200"></canvas>
     </div>
     <div class="card">
-        <div class="card-title">周训练次数</div>
+        <div class="card-title">{{ t('dashboard.weekly_count') }}</div>
         <canvas id="weekly-count-chart" height="200"></canvas>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-title">最近活动</div>
+    <div class="card-title">{{ t('dashboard.recent_activities') }}</div>
     <table>
         <thead>
             <tr>
-                <th>日期</th>
-                <th>类型</th>
-                <th>名称</th>
-                <th>时长</th>
-                <th>TSS</th>
-                <th>强度</th>
+                <th>{{ t('dashboard.date') }}</th>
+                <th>{{ t('dashboard.type') }}</th>
+                <th>{{ t('dashboard.name') }}</th>
+                <th>{{ t('dashboard.duration') }}</th>
+                <th>{{ t('dashboard.tss') }}</th>
+                <th>{{ t('dashboard.intensity') }}</th>
             </tr>
         </thead>
         <tbody id="recent-activities">
-            <tr><td colspan="6"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr>
+            <tr><td colspan="6"><div class="loading"><div class="spinner"></div>{{ t('dashboard.loading') }}</div></td></tr>
         </tbody>
     </table>
 </div>
 
 <div class="card" id="weekly-report-card">
     <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>AI 训练报告</span>
-        <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">生成报告</button>
+        <span>{{ t('dashboard.ai_report') }}</span>
+        <button class="btn btn-primary btn-sm" id="gen-report-btn" onclick="generateReport()">{{ t('dashboard.generate_report') }}</button>
     </div>
     <div id="weekly-report-date" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
     <div id="weekly-report-summary" class="md-content" style="margin-bottom: 0.75rem;"></div>
@@ -115,7 +115,7 @@ const typeNames = window.TYPE_NAMES;
 authFetch('/api/dashboard')
     .then(r => r.json())
     .then(res => {
-        if (!res.data) throw new Error(res.message || '数据为空');
+        if (!res.data) throw new Error(res.message || t('dashboard.data_empty'));
         const d = res.data;
         const hasActivities = d.recent_activities && d.recent_activities.length > 0;
         const hasMetrics = d.weekly_stats && d.weekly_stats.count > 0;
@@ -136,23 +136,23 @@ authFetch('/api/dashboard')
         if (!hasActivities) {
             hint.style.display = 'block';
             hint.innerHTML = `<div class="card" style="background: var(--primary-light); border-color: var(--primary);">
-                <div style="font-weight: 600; margin-bottom: 0.5rem;">开始使用 EffortOS</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">${t('onboarding.start_using')}</div>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-                    上传运动数据文件并设置运动员参数，即可查看训练指标和分析。
+                    ${t('onboarding.start_using_desc')}
                 </p>
                 <div style="display: flex; gap: 0.5rem;">
-                    <a href="/settings" class="btn btn-primary btn-sm">设置运动参数</a>
-                    <a href="/activities" class="btn btn-secondary btn-sm">上传运动数据</a>
+                    <a href="/settings" class="btn btn-primary btn-sm">${t('onboarding.set_params')}</a>
+                    <a href="/activities" class="btn btn-secondary btn-sm">${t('onboarding.upload_data')}</a>
                 </div>
             </div>`;
         } else if (!hasMetrics) {
             hint.style.display = 'block';
             hint.innerHTML = `<div class="card" style="background: var(--primary-light); border-color: var(--primary);">
-                <div style="font-weight: 600; margin-bottom: 0.5rem;">设置运动员参数以计算训练指标</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">${t('onboarding.set_params_title')}</div>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-                    已有活动数据，但尚未设置 FTP 和阈值心率（LTHR）。设置后可计算 TSS、分区时间等指标。
+                    ${t('onboarding.set_params_desc')}
                 </p>
-                <a href="/settings" class="btn btn-primary btn-sm">前往设置</a>
+                <a href="/settings" class="btn btn-primary btn-sm">${t('onboarding.go_settings')}</a>
             </div>`;
         }
 
@@ -187,7 +187,7 @@ authFetch('/api/dashboard')
                 }
             });
         } else {
-            pmcEl.parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">上传运动数据后，PMC 趋势将在此显示</p>';
+            pmcEl.parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">' + t('dashboard.upload_data_hint') + '</p>';
         }
 
         // 体能趋势图
@@ -240,8 +240,8 @@ authFetch('/api/dashboard')
                 }
             });
         } else {
-            document.getElementById('fitness-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
-            document.getElementById('intensity-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
+            document.getElementById('fitness-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">' + t('dashboard.no_data') + '</p>';
+            document.getElementById('intensity-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">' + t('dashboard.no_data') + '</p>';
         }
 
         // 周训练量趋势
@@ -264,24 +264,24 @@ authFetch('/api/dashboard')
                 type: 'bar',
                 data: {
                     labels: wtLabels,
-                    datasets: [{ label: '训练天数', data: d.weekly_trend.map(w => w.count), backgroundColor: 'rgba(22,163,74,0.7)', borderRadius: 4 }]
+                    datasets: [{ label: t('dashboard.training_days'), data: d.weekly_trend.map(w => w.count), backgroundColor: 'rgba(22,163,74,0.7)', borderRadius: 4 }]
                 },
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '天' } } }
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: t('dashboard.days_unit') } } }
                 }
             });
         } else {
-            document.getElementById('weekly-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
-            document.getElementById('weekly-count-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">暂无数据</p>';
+            document.getElementById('weekly-trend-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">' + t('dashboard.no_data') + '</p>';
+            document.getElementById('weekly-count-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">' + t('dashboard.no_data') + '</p>';
         }
         const tbody = document.getElementById('recent-activities');
         if (!hasActivities) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">暂无活动记录，<a href="/activities">去上传</a></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">' + t('dashboard.no_activities') + '，<a href="/activities">' + t('dashboard.no_activities_link') + '</a></td></tr>';
             return;
         }
-        const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+        const intensityNames = { recovery: t('intensity.recovery'), endurance: t('intensity.endurance'), tempo: t('intensity.tempo'), threshold: t('intensity.threshold'), vo2max: t('intensity.vo2max') };
         const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
         tbody.innerHTML = d.recent_activities.map(a => {
             const duration = a.data_summary?.duration_seconds;
@@ -306,19 +306,19 @@ authFetch('/api/dashboard')
         errTd.colSpan = 6;
         errTd.style.textAlign = 'center';
         errTd.style.color = 'var(--text-secondary)';
-        errTd.textContent = '加载失败: ' + err.message;
+        errTd.textContent = t('dashboard.load_failed') + ': ' + err.message;
     });
 
 function renderStats(elId, stats) {
     if (!stats || stats.count === 0) {
-        document.getElementById(elId).innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">暂无数据</p>';
+        document.getElementById(elId).innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">' + t('dashboard.no_data') + '</p>';
         return;
     }
     document.getElementById(elId).innerHTML = `
-        <div class="stat-item"><div class="stat-value">${stats.count}</div><div class="stat-label">活动次数</div></div>
-        <div class="stat-item"><div class="stat-value">${stats.total_tss.toFixed(0)}</div><div class="stat-label">总 TSS</div></div>
-        <div class="stat-item"><div class="stat-value">${stats.total_duration_minutes}</div><div class="stat-label">总时长(分)</div></div>
-        <div class="stat-item"><div class="stat-value">${stats.total_distance_km}</div><div class="stat-label">总距离(km)</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.count}</div><div class="stat-label">${t('stats.activity_count')}</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_tss.toFixed(0)}</div><div class="stat-label">${t('stats.total_tss')}</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_duration_minutes}</div><div class="stat-label">${t('stats.total_duration_min')}</div></div>
+        <div class="stat-item"><div class="stat-value">${stats.total_distance_km}</div><div class="stat-label">${t('stats.total_distance_km')}</div></div>
     `;
 }
 
@@ -345,7 +345,7 @@ function renderCalendar(calendarData, calendarActivities) {
     }
 
     const maxTss = Math.max(...Object.values(calendarData), 1);
-    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const monthNames = t('calendar.months');
 
     const weekMonths = weeks.map(w => {
         const d = w.find(x => x);
@@ -373,7 +373,7 @@ function renderCalendar(calendarData, calendarActivities) {
     const cols = `22px repeat(${totalWeeks}, 1fr)`;
     html += `<div class="cal-grid" style="grid-template-columns:${cols};">`;
 
-    const dayLabels = ['日','一','二','三','四','五','六'];
+    const dayLabels = t('calendar.days');
     for (let row = 0; row < 7; row++) {
         html += `<span class="cal-dow-label">${dayLabels[row]}</span>`;
         for (let w = 0; w < totalWeeks; w++) {
@@ -388,9 +388,9 @@ function renderCalendar(calendarData, calendarActivities) {
     }
     html += '</div>';
 
-    html += '<div class="cal-legend"><span>少 TSS</span>';
+    html += '<div class="cal-legend"><span>' + t('calendar.less_tss') + '</span>';
     for (let i = 0; i <= 4; i++) html += `<div class="cal-cell cal-level-${i}" style="display:inline-block;width:12px;height:12px;flex-shrink:0;"></div>`;
-    html += '<span>多 TSS</span></div>';
+    html += '<span>' + t('calendar.more_tss') + '</span></div>';
 
     container.innerHTML = html;
 
@@ -409,12 +409,12 @@ function renderCalendar(calendarData, calendarActivities) {
             const shown = acts.slice(0, 5);
             actHtml = shown.map(a =>
                 `<a href="/activities/${a.id}" style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;color:var(--primary);text-decoration:none;font-size:0.8rem;">` +
-                `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">${esc(a.name || '(未命名)')}</span>` +
+                `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">${esc(a.name || t('dashboard.unnamed'))}</span>` +
                 `<span style="flex-shrink:0;margin-left:8px;color:var(--text-secondary);">${a.tss != null ? a.tss.toFixed(1) : '—'}</span></a>`
             ).join('');
-            if (acts.length > 5) actHtml += `<div style="font-size:0.75rem;color:var(--text-secondary);padding-top:2px;">还有 ${acts.length - 5} 项...</div>`;
+            if (acts.length > 5) actHtml += `<div style="font-size:0.75rem;color:var(--text-secondary);padding-top:2px;">${t('calendar.more_items', {n: acts.length - 5})}</div>`;
         } else {
-            actHtml = '<div style="font-size:0.8rem;color:var(--text-secondary);">无活动</div>';
+            actHtml = '<div style="font-size:0.8rem;color:var(--text-secondary);">' + t('dashboard.no_activity') + '</div>';
         }
 
         if (!tooltip) {
@@ -477,7 +477,7 @@ function renderTypeChart(breakdown) {
     const labels = Object.keys(breakdown);
     const data = Object.values(breakdown);
     if (labels.length === 0) {
-        document.getElementById('type-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary);">暂无活动数据</p>';
+        document.getElementById('type-chart').parentElement.innerHTML += '<p style="color: var(--text-secondary);">' + t('dashboard.no_activity_data') + '</p>';
         return;
     }
     const colors = ['#2563eb', '#4338ca', '#16a34a', '#065f46', '#d97706'];
@@ -495,15 +495,15 @@ function renderTypeChart(breakdown) {
     });
 }
 
-const _reportIntensityNames = { rest: '休息', recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const _reportIntensityNames = { rest: t('intensity.rest'), recovery: t('intensity.recovery'), endurance: t('intensity.endurance'), tempo: t('intensity.tempo'), threshold: t('intensity.threshold'), vo2max: t('intensity.vo2max') };
 const _reportIntensityColors = { rest: '#9ca3af', recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 function _renderPlanTable(plan) {
     if (!plan || !plan.length) return '';
     let html = '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:0.25rem;">';
     html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">';
-    html += '<th style="padding:0.4rem;">日期</th><th style="padding:0.4rem;">训练类型</th>';
-    html += '<th style="padding:0.4rem;">强度</th><th style="padding:0.4rem;">时长</th>';
+    html += `<th style="padding:0.4rem;">${t('dashboard.report_date')}</th><th style="padding:0.4rem;">${t('dashboard.report_type')}</th>`;
+    html += `<th style="padding:0.4rem;">${t('dashboard.report_intensity')}</th><th style="padding:0.4rem;">${t('dashboard.report_duration')}</th>`;
     html += '<th style="padding:0.4rem;text-align:right;">TSS</th>';
     html += '<th style="padding:0.4rem;text-align:right;">CTL</th>';
     html += '<th style="padding:0.4rem;text-align:right;">ATL</th>';
@@ -513,7 +513,7 @@ function _renderPlanTable(plan) {
         const il = r.intensity || 'rest';
         const color = _reportIntensityColors[il] || '#999';
         const name = _reportIntensityNames[il] || il;
-        const dur = il === 'rest' ? '—' : (r.duration_min + 'min');
+        const dur = il === 'rest' ? '—' : (r.duration_min + t('time.min'));
         const tss = il === 'rest' ? '—' : r.tss;
         html += '<tr style="border-bottom:1px solid var(--border);">';
         html += `<td style="padding:0.4rem;">${r.date}</td>`;
@@ -539,15 +539,15 @@ function _renderDashboardReport(res) {
     const metaEl = document.getElementById('weekly-report-meta');
     const d = res.data;
 
-    btn.textContent = '重新生成';
+    btn.textContent = t('dashboard.regenerate');
     if (d.generated_at) {
         const dt = new Date(d.generated_at);
-        dateEl.textContent = '生成于 ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        dateEl.textContent = t('dashboard.generated_at') + ' ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
     }
     summaryEl.innerHTML = DOMPurify.sanitize(marked.parse(d.summary || ''));
     planEl.innerHTML = _renderPlanTable(d.plan);
     outlookEl.innerHTML = DOMPurify.sanitize(marked.parse(d.outlook || ''));
-    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 近 7 天活动: ${d.week_activities} 次`;
+    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | ${t('dashboard.week_activities')}: ${d.week_activities}`;
 }
 
 // 页面加载时加载已有报告
@@ -564,10 +564,10 @@ function generateReport() {
     const outlookEl = document.getElementById('weekly-report-outlook');
     const metaEl = document.getElementById('weekly-report-meta');
     btn.disabled = true;
-    btn.textContent = '生成中...';
+    btn.textContent = t('dashboard.generating');
     dateEl.textContent = '';
     summaryEl.innerHTML = '';
-    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>AI 教练正在分析最近 7 天训练数据...</div>';
+    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('dashboard.ai_analyzing') + '</div>';
     outlookEl.innerHTML = '';
     metaEl.textContent = '';
 
@@ -576,16 +576,16 @@ function generateReport() {
         .then(res => {
             btn.disabled = false;
             if (res.code !== 200) {
-                btn.textContent = '重新生成';
-                planEl.innerHTML = '<p style="color:var(--danger)">生成失败: ' + res.message + '</p>';
+                btn.textContent = t('dashboard.regenerate');
+                planEl.innerHTML = '<p style="color:var(--danger)">' + t('dashboard.generate_failed') + ': ' + res.message + '</p>';
                 return;
             }
             _renderDashboardReport(res);
         })
         .catch(err => {
             btn.disabled = false;
-            btn.textContent = '重新生成';
-            planEl.innerHTML = '<p style="color:var(--danger)">请求失败: ' + err.message + '</p>';
+            btn.textContent = t('dashboard.regenerate');
+            planEl.innerHTML = '<p style="color:var(--danger)">' + t('dashboard.request_failed') + ': ' + err.message + '</p>';
         });
 }
 </script>

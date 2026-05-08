@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "dashboard": "儀表板",
+    "activities": "活動",
+    "settings": "設定",
+    "ai_coach": "AI 教練",
+    "help": "說明",
+    "login": "登入",
+    "logout": "登出",
+    "menu": "選單",
+    "switch_theme": "切換主題"
+  },
+  "dashboard": {
+    "title": "儀表板",
+    "today_tss": "今日 TSS",
+    "today_tss_tooltip": "訓練壓力分數，衡量單次訓練對身體造成的負荷",
+    "fitness_ctl": "Fitness (CTL)",
+    "ctl_tooltip": "慢性訓練負荷，42天TSS加權均值，反映長期體能水準",
+    "fatigue_atl": "Fatigue (ATL)",
+    "atl_tooltip": "急性訓練負荷，7天TSS加權均值，反映近期疲勞程度",
+    "form_tsb": "Form (TSB)",
+    "tsb_tooltip": "訓練壓力平衡 = CTL - ATL，正值表示恢復充分，負值表示疲勞累積",
+    "last_7_days": "近 7 天",
+    "last_30_days": "近 30 天",
+    "training_calendar": "訓練日曆（近 90 天 TSS）",
+    "type_distribution": "運動類型分佈（本月）",
+    "pmc_trend": "PMC 趨勢（最近 30 天）",
+    "fitness_trend": "體能趨勢 — NP / 效率因子(EF)",
+    "intensity_distribution": "訓練強度分佈",
+    "weekly_volume": "週訓練量趨勢（最近 12 週）",
+    "weekly_count": "週訓練次數",
+    "recent_activities": "最近活動",
+    "date": "日期",
+    "type": "類型",
+    "name": "名稱",
+    "duration": "時長",
+    "tss": "TSS",
+    "intensity": "強度",
+    "ai_report": "AI 訓練報告",
+    "generate_report": "產生報告",
+    "regenerate": "重新產生",
+    "generating": "產生中...",
+    "ai_analyzing": "AI 教練正在分析最近 7 天訓練資料...",
+    "generated_at": "產生於",
+    "no_data": "暫無資料",
+    "no_activities": "暫無活動記錄",
+    "no_activities_link": "去上傳",
+    "upload_data_hint": "上傳運動資料後，PMC 趨勢將在此顯示",
+    "no_activity_data": "暫無活動資料",
+    "loading": "載入中...",
+    "load_failed": "載入失敗",
+    "data_empty": "資料為空",
+    "generate_failed": "產生失敗",
+    "request_failed": "請求失敗",
+    "unnamed": "(未命名)",
+    "no_activity": "無活動",
+    "week_activities": "近 7 天活動",
+    "report_date": "日期",
+    "report_type": "訓練類型",
+    "report_intensity": "強度",
+    "report_duration": "時長",
+    "training_days": "訓練天數",
+    "days_unit": "天"
+  },
+  "stats": {
+    "activity_count": "活動次數",
+    "total_tss": "總 TSS",
+    "total_duration_min": "總時長(分)",
+    "total_distance_km": "總距離(km)"
+  },
+  "onboarding": {
+    "start_using": "開始使用 EffortOS",
+    "start_using_desc": "上傳運動資料檔案並設定運動員參數，即可查看訓練指標和分析。",
+    "set_params": "設定運動參數",
+    "upload_data": "上傳運動資料",
+    "set_params_title": "設定運動員參數以計算訓練指標",
+    "set_params_desc": "已有活動資料，但尚未設定 FTP 和閾值心率（LTHR）。設定後可計算 TSS、分區時間等指標。",
+    "go_settings": "前往設定"
+  },
+  "types": {
+    "cycling": "騎行",
+    "indoor_cycling": "室內騎行",
+    "commute_cycling": "通勤騎行",
+    "running": "跑步",
+    "indoor_running": "室內跑步",
+    "walking": "步行",
+    "swimming": "游泳",
+    "other": "其他"
+  },
+  "intensity": {
+    "recovery": "恢復",
+    "endurance": "有氧耐力",
+    "tempo": "節奏",
+    "threshold": "閾值",
+    "vo2max": "VO2max",
+    "rest": "休息"
+  },
+  "calendar": {
+    "less_tss": "少 TSS",
+    "more_tss": "多 TSS",
+    "more_items": "還有 {n} 項...",
+    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
+    "days": ["日","一","二","三","四","五","六"]
+  },
+  "time": {
+    "hour": "小時",
+    "minute": "分鐘",
+    "second": "秒",
+    "min": "min"
+  },
+  "confirm": {
+    "cancel": "取消",
+    "ok": "確定"
+  },
+  "auth": {
+    "not_logged_in": "未登入"
+  },
+  "api": {
+    "invalid_date_format": "日期格式無效，應為 YYYY-MM-DD",
+    "not_found": "資源不存在",
+    "server_error": "伺服器內部錯誤",
+    "page_not_found": "頁面不存在"
+  },
+  "meta": {
+    "description": "EffortOS — 運動資料追蹤與分析平台，上傳 TCX/GPX 檔案，智慧計算訓練指標並提供個人化建議。",
+    "og_description": "運動資料追蹤與分析平台"
+  }
+}
