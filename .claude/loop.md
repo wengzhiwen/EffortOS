@@ -133,6 +133,9 @@
    venv/bin/python -c "from app.utils.notify import bark_notify; bark_notify('EffortOS 循环完成', '简报内容')"
    ```
 
+4. **会话压缩（Bug 大扫除 Sprint 完成后）**：
+   如果刚完成的是 Bug 大扫除 Sprint（编号可被 5 整除），**必须**在收尾最后一步压缩当前会话，防止长时间运行超出 context window。执行 `/compact` 命令，或在输出中明确提示用户：本轮 Bug 大扫除已完成，建议执行 `/compact` 压缩会话上下文后再继续下一轮循环。
+
 ## 核心原则：任务驱动，不自主发散
 
 1. **任务来源按优先级**：特殊 Sprint → 用户提案 → GitHub Issues → 等待
