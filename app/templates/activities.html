@@ -3,13 +3,12 @@
 {% block title %}活动记录 - EffortOS{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">
-    活动记录
-    <div style="float: right; display: flex; gap: 0.5rem;">
-        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('csv')">导出 CSV</button>
-        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('json')">导出 JSON</button>
-        <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">对比</a>
+<h2 class="page-header" style="margin-bottom: 1rem;">
+    <span>活动记录</span>
+    <div class="page-header-actions">
         <button class="btn btn-primary" style="font-size: 0.85rem;" onclick="openUploadModal()">上传文件</button>
+        <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">对比</a>
+        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('csv')">导出</button>
     </div>
 </h2>
 
@@ -137,16 +136,16 @@
     <table>
         <thead>
             <tr>
-                <th></th>
-                <th>日期</th>
+                <th style="width:30px;"></th>
+                <th style="white-space:nowrap;">日期</th>
                 <th>类型</th>
                 <th>名称</th>
-                <th>时长</th>
-                <th>距离</th>
+                <th style="white-space:nowrap;">时长</th>
+                <th style="white-space:nowrap;">距离</th>
                 <th>TSS</th>
                 <th>hrTSS</th>
                 <th>强度</th>
-                <th></th>
+                <th style="width:40px;"></th>
             </tr>
         </thead>
         <tbody id="activity-list">

@@ -253,6 +253,20 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* 页面头部 */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.page-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 /* 移动端 */
 @media (max-width: 768px) {
     table { font-size: 0.85rem; min-width: 600px; }
@@ -265,6 +279,8 @@ body {
     .filter-search-wrap { flex: 1 1 100%; }
     .filter-sort-wrap { flex: 1 1 calc(50% - 0.5rem); }
     .filter-toggle-btn { flex: 1 1 calc(50% - 0.5rem); }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-header-actions { width: 100%; }
 }
 
 /* 筛选栏 */
