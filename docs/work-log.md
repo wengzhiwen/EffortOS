@@ -4,6 +4,19 @@
 
 ---
 
+## Sprint 86 完成 — 2026-05-08
+
+代码安全审查（GitHub Issue #10）：
+- 路径遍历：batch_upload 的 session_id/temp_id 添加格式校验 + realpath 边界检查
+- 存储型 XSS：引入 DOMPurify 清理 LLM 输出中的恶意 HTML
+- 授权缺失：活动详情/轨迹点/laps/compare 端点添加用户归属校验
+- 反射型 XSS：compare.html、ai.html 中未转义数据添加 esc() 调用
+- 验证码：random.choices 改为 secrets.choice
+- TEST_HOLE 后门限制仅 testing 环境
+- 前端错误提示不再暴露内部异常信息
+
+---
+
 ## Sprint 85 完成 — 2026-05-08
 
 运动详情曲线合并（GitHub Issue #9）：
