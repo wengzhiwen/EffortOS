@@ -6,6 +6,8 @@
 <h2 style="margin-bottom: 1rem;">
     活动记录
     <div style="float: right; display: flex; gap: 0.5rem;">
+        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('csv')">导出 CSV</button>
+        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('json')">导出 JSON</button>
         <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">对比</a>
         <button class="btn btn-primary" style="font-size: 0.85rem;" onclick="openUploadModal()">上传文件</button>
     </div>
@@ -61,14 +63,12 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-title">筛选</div>
-    <div style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; margin-bottom: 0.5rem;">
-        <div class="form-group" style="margin-bottom: 0;">
-            <input type="text" id="filter-search" placeholder="搜索活动名称..." style="max-width: 300px;" onkeydown="if(event.key==='Enter')loadActivities(0)">
+<div class="card filter-card">
+    <div class="filter-bar">
+        <div class="filter-search-wrap">
+            <input type="text" id="filter-search" placeholder="搜索活动名称..." onkeydown="if(event.key==='Enter')loadActivities(0)">
         </div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>排序</label>
+        <div class="filter-sort-wrap">
             <select id="filter-sort" onchange="loadActivities(0)">
                 <option value="-start_time">最新优先</option>
                 <option value="start_time">最早优先</option>
@@ -76,44 +76,49 @@
                 <option value="name">名称 A-Z</option>
             </select>
         </div>
+        <button class="btn btn-secondary btn-sm filter-toggle-btn" onclick="toggleFilterPanel()">
+            <span class="filter-toggle-icon" id="filter-toggle-icon">&#9660;</span> 筛选
+            <span class="filter-count" id="filter-count" style="display:none"></span>
+        </button>
     </div>
-    <div class="grid grid-4" style="align-items: end;">
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>运动类型</label>
-            <select id="filter-type">
-                <option value="">全部</option>
-                <option value="cycling">骑行</option>
-                <option value="indoor_cycling">室内骑行</option>
-                <option value="commute_cycling">通勤骑行</option>
-                <option value="running">跑步</option>
-                <option value="indoor_running">室内跑步</option>
-                <option value="walking">步行</option>
-            </select>
+    <div class="filter-panel" id="filter-panel">
+        <div class="grid grid-4" style="align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>运动类型</label>
+                <select id="filter-type">
+                    <option value="">全部</option>
+                    <option value="cycling">骑行</option>
+                    <option value="indoor_cycling">室内骑行</option>
+                    <option value="commute_cycling">通勤骑行</option>
+                    <option value="running">跑步</option>
+                    <option value="indoor_running">室内跑步</option>
+                    <option value="walking">步行</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>起始日期</label>
+                <input type="date" id="filter-start">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>结束日期</label>
+                <input type="date" id="filter-end">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>强度等级</label>
+                <select id="filter-intensity">
+                    <option value="">全部</option>
+                    <option value="recovery">恢复</option>
+                    <option value="endurance">有氧耐力</option>
+                    <option value="tempo">节奏</option>
+                    <option value="threshold">阈值</option>
+                    <option value="vo2max">VO2max</option>
+                </select>
+            </div>
         </div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>起始日期</label>
-            <input type="date" id="filter-start">
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+            <button class="btn btn-primary btn-sm" onclick="loadActivities(0)">应用</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearFilters()">重置</button>
         </div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>结束日期</label>
-            <input type="date" id="filter-end">
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <label>强度等级</label>
-            <select id="filter-intensity">
-                <option value="">全部</option>
-                <option value="recovery">恢复</option>
-                <option value="endurance">有氧耐力</option>
-                <option value="tempo">节奏</option>
-                <option value="threshold">阈值</option>
-                <option value="vo2max">VO2max</option>
-            </select>
-        </div>
-    </div>
-    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;" class="filter-buttons">
-        <button class="btn btn-primary" onclick="loadActivities(0)">筛选</button>
-        <button class="btn btn-secondary" onclick="exportData('csv')">导出 CSV</button>
-        <button class="btn btn-secondary" onclick="exportData('json')">导出 JSON</button>
     </div>
 </div>
 
@@ -344,6 +349,38 @@ document.getElementById('upload-modal').addEventListener('click', e => {
     if (e.target.id === 'upload-modal') closeUploadModal();
 });
 
+// ============ 筛选面板 ============
+let filterPanelOpen = false;
+
+function toggleFilterPanel() {
+    filterPanelOpen = !filterPanelOpen;
+    const panel = document.getElementById('filter-panel');
+    const icon = document.getElementById('filter-toggle-icon');
+    panel.style.display = filterPanelOpen ? 'block' : 'none';
+    icon.innerHTML = filterPanelOpen ? '&#9650;' : '&#9660;';
+}
+
+function updateFilterCount() {
+    const type = document.getElementById('filter-type').value;
+    const start = document.getElementById('filter-start').value;
+    const end = document.getElementById('filter-end').value;
+    const intensity = document.getElementById('filter-intensity').value;
+    const search = document.getElementById('filter-search').value.trim();
+    let count = 0;
+    if (type) count++;
+    if (start) count++;
+    if (end) count++;
+    if (intensity) count++;
+    if (search) count++;
+    const badge = document.getElementById('filter-count');
+    if (count > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = count;
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
 // ============ 活动列表 ============
 function getFilterParams() {
     const params = new URLSearchParams();
@@ -364,6 +401,7 @@ function getFilterParams() {
 
 function loadActivities(offset = 0) {
     currentOffset = offset;
+    updateFilterCount();
     const filters = getFilterParams();
     const url = `/api/activities?limit=${limit}&offset=${offset}${filters ? '&' + filters : ''}`;
     authFetch(url)
@@ -423,6 +461,7 @@ function clearFilters() {
     document.getElementById('filter-intensity').value = '';
     document.getElementById('filter-search').value = '';
     document.getElementById('filter-sort').value = '-start_time';
+    updateFilterCount();
     loadActivities(0);
 }
 

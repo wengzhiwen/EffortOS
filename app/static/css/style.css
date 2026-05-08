@@ -261,7 +261,60 @@ body {
     .card { padding: 1rem; overflow-x: auto; }
     .container { padding: 1rem; }
     canvas { max-width: 100%; height: auto !important; }
-    .filter-buttons { flex-wrap: wrap; }
+    .filter-bar { flex-wrap: wrap; }
+    .filter-search-wrap { flex: 1 1 100%; }
+    .filter-sort-wrap { flex: 1 1 calc(50% - 0.5rem); }
+    .filter-toggle-btn { flex: 1 1 calc(50% - 0.5rem); }
+}
+
+/* 筛选栏 */
+.filter-card { padding: 0.75rem 1.25rem; }
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.filter-search-wrap { flex: 1; min-width: 0; }
+.filter-search-wrap input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+}
+.filter-sort-wrap select {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text);
+    white-space: nowrap;
+}
+.filter-toggle-btn { white-space: nowrap; }
+.filter-toggle-icon { font-size: 0.7rem; }
+.filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: var(--primary);
+    color: white;
+    border-radius: 9px;
+    padding: 0 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.filter-panel {
+    display: none;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
 }
 
 /* 指标数值 */
