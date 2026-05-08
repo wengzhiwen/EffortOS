@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}AI 教练 - EffortOS{% endblock %}
+{% block title %}{{ t('ai.title') }} - EffortOS{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">AI 教练</h2>
+<h2 style="margin-bottom: 1rem;">{{ t('ai.title') }}</h2>
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">训练报告</div>
+        <div class="card-title">{{ t('ai.training_report') }}</div>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
-            基于最近 7 天训练数据和 42 天历史负荷，生成训练报告和未来 7 天计划。
+            {{ t('ai.report_desc') }}
         </p>
-        <button class="btn btn-primary" onclick="generateReport()">生成报告</button>
+        <button class="btn btn-primary" onclick="generateReport()">{{ t('ai.generate_report') }}</button>
     </div>
     <div class="card">
-        <div class="card-title">训练建议</div>
+        <div class="card-title">{{ t('ai.training_suggestion') }}</div>
         <div class="form-group">
-            <textarea id="question" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;" placeholder="输入你的问题（可选），例如：本周应该做恢复骑行还是间歇训练？"></textarea>
+            <textarea id="question" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;" placeholder="{{ t('ai.question_placeholder') }}"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="getSuggestion()">获取建议</button>
+        <button class="btn btn-primary" onclick="getSuggestion()">{{ t('ai.get_suggestion') }}</button>
     </div>
 </div>
 
 <div class="card" id="report-card" style="display: none;">
-    <div class="card-title">训练报告</div>
+    <div class="card-title">{{ t('ai.training_report') }}</div>
     <div id="report-date" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;"></div>
     <div id="report-summary" class="md-content" style="margin-bottom: 1rem;"></div>
     <div id="report-plan"></div>
@@ -32,7 +32,7 @@
 </div>
 
 <div class="card" id="suggestion-card" style="display: none;">
-    <div class="card-title">训练建议</div>
+    <div class="card-title">{{ t('ai.training_suggestion') }}</div>
     <div id="suggestion-content" class="md-content"></div>
     <div id="suggestion-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
 </div>
@@ -40,15 +40,15 @@
 
 {% block script %}
 <script>
-const intensityNames = { rest: '休息', recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const intensityNames = { rest: t('intensity.rest'), recovery: t('intensity.recovery'), endurance: t('intensity.endurance'), tempo: t('intensity.tempo'), threshold: t('intensity.threshold'), vo2max: t('intensity.vo2max') };
 const intensityColors = { rest: '#9ca3af', recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 function _renderPlanTable(plan) {
     if (!plan || !plan.length) return '';
     let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
     html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">';
-    html += '<th style="padding:0.5rem 0.4rem;">日期</th><th style="padding:0.5rem 0.4rem;">训练类型</th>';
-    html += '<th style="padding:0.5rem 0.4rem;">强度分类</th><th style="padding:0.5rem 0.4rem;">时长</th>';
+    html += `<th style="padding:0.5rem 0.4rem;">${t('ai.plan_date')}</th><th style="padding:0.5rem 0.4rem;">${t('ai.plan_type')}</th>`;
+    html += `<th style="padding:0.5rem 0.4rem;">${t('ai.plan_intensity')}</th><th style="padding:0.5rem 0.4rem;">${t('ai.plan_duration')}</th>`;
     html += '<th style="padding:0.5rem 0.4rem;text-align:right;">TSS</th>';
     html += '<th style="padding:0.5rem 0.4rem;text-align:right;">CTL</th>';
     html += '<th style="padding:0.5rem 0.4rem;text-align:right;">ATL</th>';
@@ -58,7 +58,7 @@ function _renderPlanTable(plan) {
         const il = r.intensity || 'rest';
         const color = intensityColors[il] || '#999';
         const name = intensityNames[il] || il;
-        const dur = r.intensity === 'rest' ? '—' : (r.duration_min + 'min');
+        const dur = r.intensity === 'rest' ? '—' : (r.duration_min + t('time.min'));
         const tss = r.intensity === 'rest' ? '—' : r.tss;
         html += '<tr style="border-bottom:1px solid var(--border);">';
         html += `<td style="padding:0.5rem 0.4rem;">${esc(r.date)}</td>`;
@@ -87,17 +87,16 @@ function _renderReport(res) {
     card.style.display = 'block';
     if (d.generated_at) {
         const dt = new Date(d.generated_at);
-        dateEl.textContent = '生成于 ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        dateEl.textContent = t('dashboard.generated_at') + ' ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
     } else {
         dateEl.textContent = '';
     }
     summaryEl.innerHTML = DOMPurify.sanitize(marked.parse(d.summary || ''));
     planEl.innerHTML = _renderPlanTable(d.plan);
     outlookEl.innerHTML = DOMPurify.sanitize(marked.parse(d.outlook || ''));
-    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | 最近 7 天活动: ${d.week_activities} 次`;
+    metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | ${t('dashboard.week_activities')}: ${d.week_activities}`;
 }
 
-// 页面加载时加载已有报告
 authFetch('/api/ai/weekly-report')
     .then(r => r.json())
     .then(res => { if (res.code === 200 && res.data) _renderReport(res); })
@@ -114,7 +113,7 @@ function generateReport() {
     card.style.display = 'block';
     dateEl.textContent = '';
     summaryEl.innerHTML = '';
-    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
+    planEl.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('ai.generating') + '</div>';
     outlookEl.innerHTML = '';
     metaEl.textContent = '';
 
@@ -124,7 +123,7 @@ function generateReport() {
             if (res.code !== 200) { planEl.textContent = res.message; planEl.style.color = 'var(--danger)'; return; }
             _renderReport(res);
         })
-        .catch(() => { planEl.textContent = '请求失败，请稍后重试'; planEl.style.color = 'var(--danger)'; });
+        .catch(() => { planEl.textContent = t('ai.request_failed_retry'); planEl.style.color = 'var(--danger)'; });
 }
 
 function getSuggestion() {
@@ -134,7 +133,7 @@ function getSuggestion() {
     const meta = document.getElementById('suggestion-meta');
 
     card.style.display = 'block';
-    content.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成...</div>';
+    content.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('ai.generating') + '</div>';
     meta.textContent = '';
 
     authFetch('/api/ai/suggestion', {
@@ -148,7 +147,7 @@ function getSuggestion() {
             content.innerHTML = DOMPurify.sanitize(marked.parse(res.data.suggestion || ''));
             meta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
         })
-        .catch(e => content.textContent = '请求失败: ' + e.message);
+        .catch(e => content.textContent = t('dashboard.request_failed') + ': ' + e.message);
 }
 </script>
 {% endblock %}

@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from app.models.athlete_settings import AthleteParams
+from app.services.i18n_service import t
 from app.services.params_service import mark_activities_for_recalc, save_params
 from app.utils.auth import require_user, user_filter
 
@@ -56,12 +57,12 @@ def create_params():
 
     data = request.get_json()
     if not data or "effective_date" not in data:
-        return jsonify({"code": 400, "message": "缺少 effective_date", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_effective_date"), "data": None}), 400
 
     try:
         effective_date = datetime.fromisoformat(data["effective_date"].replace("Z", "+00:00"))
     except (ValueError, AttributeError):
-        return jsonify({"code": 400, "message": "日期格式错误", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.date_format_error"), "data": None}), 400
 
     params_data = {
         "effective_date": effective_date,
@@ -81,7 +82,7 @@ def create_params():
     return jsonify(
         {
             "code": 200,
-            "message": "保存成功",
+            "message": t("api.save_success"),
             "data": _serialize_params(params),
         }
     )
@@ -124,17 +125,17 @@ def update_params(params_id):
 
     params = AthleteParams.objects(id=params_id, user=user).first()
     if not params:
-        return jsonify({"code": 404, "message": "参数记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.params_not_found"), "data": None}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({"code": 400, "message": "缺少请求体", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_request_body"), "data": None}), 400
 
     if "effective_date" in data:
         try:
             params.effective_date = datetime.fromisoformat(data["effective_date"].replace("Z", "+00:00"))
         except (ValueError, AttributeError):
-            return jsonify({"code": 400, "message": "日期格式错误", "data": None}), 400
+            return jsonify({"code": 400, "message": t("api.date_format_error"), "data": None}), 400
 
     if "ftp" in data:
         params.ftp = _clamp_int(data["ftp"], 50, 600)
@@ -152,7 +153,7 @@ def update_params(params_id):
     params.save()
     mark_activities_for_recalc(user, params.effective_date)
 
-    return jsonify({"code": 200, "message": "已更新", "data": _serialize_params(params)})
+    return jsonify({"code": 200, "message": t("api.updated"), "data": _serialize_params(params)})
 
 
 @params_bp.route("/params/<params_id>", methods=["DELETE"])
@@ -164,7 +165,7 @@ def delete_params(params_id):
 
     params = AthleteParams.objects(id=params_id, user=user).first()
     if not params:
-        return jsonify({"code": 404, "message": "参数记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.params_not_found"), "data": None}), 404
 
     effective_date = params.effective_date
     params.delete()
@@ -172,7 +173,7 @@ def delete_params(params_id):
     # 删除后重算受影响的活动
     mark_activities_for_recalc(user, effective_date)
 
-    return jsonify({"code": 200, "message": "已删除", "data": None})
+    return jsonify({"code": 200, "message": t("api.deleted"), "data": None})
 
 
 @params_bp.route("/params/recalc-status", methods=["GET"])

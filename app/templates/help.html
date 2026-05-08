@@ -1,171 +1,171 @@
 {% extends "base.html" %}
 
-{% block title %}帮助 - EffortOS{% endblock %}
-{% block meta_description %}EffortOS 使用帮助 — 了解如何上传运动数据、设置运动员参数、查看训练指标和使用 AI 教练。{% endblock %}
-{% block og_title %}使用帮助 - EffortOS{% endblock %}
-{% block og_description %}EffortOS 使用帮助文档{% endblock %}
+{% block title %}{{ t('help.title') }} - EffortOS{% endblock %}
+{% block meta_description %}{{ t('help.title') }}{% endblock %}
+{% block og_title %}{{ t('help.title') }} - EffortOS{% endblock %}
+{% block og_description %}{{ t('help.title') }}{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">使用指南</h2>
+<h2 style="margin-bottom: 1rem;">{{ t('help.title') }}</h2>
 
 <div class="card">
-    <div class="card-title">快速开始</div>
+    <div class="card-title">{{ t('help.quick_start') }}</div>
     <ol style="padding-left: 1.5rem; line-height: 2;">
-        <li><strong>设置运动参数</strong> — 前往 <a href="/settings">设置页面</a>，填写 FTP（骑行）、阈值心率（LTHR）和最大心率</li>
-        <li><strong>上传运动数据</strong> — 在 <a href="/activities">活动页面</a> 上传 TCX/GPX 文件，系统自动识别运动类型</li>
-        <li><strong>查看训练指标</strong> — 仪表盘和活动详情页自动展示训练负荷分析</li>
-        <li><strong>获取 AI 建议</strong> — <a href="/ai">AI 教练</a>基于你的训练数据生成个性化建议</li>
+        <li>{{ t('help.step1') }}</li>
+        <li>{{ t('help.step2') }}</li>
+        <li>{{ t('help.step3') }}</li>
+        <li>{{ t('help.step4') }}</li>
     </ol>
 </div>
 
 <div class="card">
-    <div class="card-title">核心指标说明</div>
+    <div class="card-title">{{ t('help.metrics_explanation') }}</div>
     <table>
-        <thead><tr><th style="width: 140px;">指标</th><th>全称</th><th>含义</th></tr></thead>
+        <thead><tr><th style="width: 140px;">{{ t('help.metric_col') }}</th><th>{{ t('help.full_name_col') }}</th><th>{{ t('help.meaning_col') }}</th></tr></thead>
         <tbody>
             <tr>
                 <td><strong>TSS</strong></td>
                 <td>Training Stress Score</td>
-                <td>训练压力分数。衡量单次训练对身体造成的负荷量。100 TSS 约等于 1 小时的阈值强度训练。基于功率（有 FTP 时）或心率计算。</td>
+                <td>{{ t('help.tss_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>CTL / Fitness</strong></td>
                 <td>Chronic Training Load</td>
-                <td>慢性训练负荷。42 天 TSS 的指数加权移动平均，反映长期体能水平。CTL 越高，说明近期训练量越大，体能基础越扎实。</td>
+                <td>{{ t('help.ctl_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>ATL / Fatigue</strong></td>
                 <td>Acute Training Load</td>
-                <td>急性训练负荷。7 天 TSS 的指数加权移动平均，反映短期疲劳程度。训练后 ATL 会快速上升。</td>
+                <td>{{ t('help.atl_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>TSB / Form</strong></td>
                 <td>Training Stress Balance</td>
-                <td>训练压力平衡 = CTL - ATL。正值表示恢复充分、状态好（适合比赛）；负值表示疲劳累积（适合训练期）。一般 -10 到 +10 之间为最佳比赛状态。</td>
+                <td>{{ t('help.tsb_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>NP</strong></td>
                 <td>Normalized Power</td>
-                <td>标准化功率。考虑了骑行中加减速、间歇等因素后的等效持续功率。比平均功率更能反映真实强度。</td>
+                <td>{{ t('help.np_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>IF</strong></td>
                 <td>Intensity Factor</td>
-                <td>强度因子 = NP / FTP。反映本次训练相对于个人阈值功率的强度。IF > 1.0 表示超过阈值强度。</td>
+                <td>{{ t('help.if_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>VI</strong></td>
                 <td>Variability Index</td>
-                <td>变异性指数 = NP / 平均功率。VI = 1.0 表示完美匀速（如计时赛），值越大表示骑行节奏变化越大。</td>
+                <td>{{ t('help.vi_desc') }}</td>
             </tr>
             <tr>
                 <td><strong>EF</strong></td>
                 <td>Efficiency Factor</td>
-                <td>效率因子 = NP / 平均心率。衡量在给定心率下产生的功率效率。EF 随训练提升，是衡量体能进步的好指标。</td>
+                <td>{{ t('help.ef_desc') }}</td>
             </tr>
             <tr>
-                <td><strong>强度等级</strong></td>
+                <td><strong>Intensity Level</strong></td>
                 <td>Intensity Level</td>
-                <td>基于强度因子（IF）自动评级：恢复（&lt;0.65）、有氧耐力（&lt;0.80）、节奏（&lt;0.90）、阈值（&lt;1.05）、VO2max（&ge;1.05）。帮助快速判断训练强度。</td>
+                <td>{{ t('help.intensity_level_desc') }}</td>
             </tr>
         </tbody>
     </table>
 </div>
 
 <div class="card">
-    <div class="card-title">分区说明</div>
-    <h3 style="margin: 0.5rem 0; font-size: 1rem;">心率分区（Joe Friel 5 区）</h3>
+    <div class="card-title">{{ t('help.zone_explanation') }}</div>
+    <h3 style="margin: 0.5rem 0; font-size: 1rem;">{{ t('help.hr_zones_title') }}</h3>
     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-        基于阈值心率（LTHR）自动推算。需要在设置页面配置各运动类型的 LTHR。
+        {{ t('help.hr_zones_desc') }}
     </p>
     <table>
-        <thead><tr><th>分区</th><th>范围</th><th>用途</th></tr></thead>
+        <thead><tr><th>{{ t('help.zone_col') }}</th><th>{{ t('help.range_col') }}</th><th>{{ t('help.usage_col') }}</th></tr></thead>
         <tbody>
-            <tr><td>Z1 恢复</td><td>&lt; 81% LTHR</td><td>积极恢复、热身/冷身</td></tr>
-            <tr><td>Z2 有氧</td><td>81-89% LTHR</td><td>长时间有氧耐力训练</td></tr>
-            <tr><td>Z3 节奏</td><td>90-93% LTHR</td><td>节奏骑/跑，提升乳酸阈值</td></tr>
-            <tr><td>Z4 次阈值</td><td>94-99% LTHR</td><td>阈值间歇，提升 FTP/LTHR</td></tr>
-            <tr><td>Z5 阈值以上</td><td>&ge; 100% LTHR</td><td>VO2max 间歇，高强度训练</td></tr>
+            <tr><td>Z1</td><td>&lt; 81% LTHR</td><td></td></tr>
+            <tr><td>Z2</td><td>81-89% LTHR</td><td></td></tr>
+            <tr><td>Z3</td><td>90-93% LTHR</td><td></td></tr>
+            <tr><td>Z4</td><td>94-99% LTHR</td><td></td></tr>
+            <tr><td>Z5</td><td>&ge; 100% LTHR</td><td></td></tr>
         </tbody>
     </table>
 
-    <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem;">功率分区（Coggan 7 区）</h3>
+    <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem;">{{ t('help.pw_zones_title') }}</h3>
     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-        基于 FTP 自动推算。需要在设置页面配置骑行 FTP。
+        {{ t('help.pw_zones_desc') }}
     </p>
     <table>
-        <thead><tr><th>分区</th><th>范围</th><th>用途</th></tr></thead>
+        <thead><tr><th>{{ t('help.zone_col') }}</th><th>{{ t('help.range_col') }}</th><th>{{ t('help.usage_col') }}</th></tr></thead>
         <tbody>
-            <tr><td>Z1 恢复</td><td>&lt; 55% FTP</td><td>积极恢复</td></tr>
-            <tr><td>Z2 有氧耐力</td><td>55-74% FTP</td><td>长时间有氧训练</td></tr>
-            <tr><td>Z3 节奏</td><td>75-89% FTP</td><td>节奏骑行</td></tr>
-            <tr><td>Z4 乳酸阈值</td><td>90-104% FTP</td><td>阈值训练</td></tr>
-            <tr><td>Z5 VO2max</td><td>105-119% FTP</td><td>最大摄氧量训练</td></tr>
-            <tr><td>Z6 无氧</td><td>120-149% FTP</td><td>无氧能力训练</td></tr>
-            <tr><td>Z7 冲刺</td><td>&ge; 150% FTP</td><td>神经肌肉功率</td></tr>
+            <tr><td>Z1</td><td>&lt; 55% FTP</td><td></td></tr>
+            <tr><td>Z2</td><td>55-74% FTP</td><td></td></tr>
+            <tr><td>Z3</td><td>75-89% FTP</td><td></td></tr>
+            <tr><td>Z4</td><td>90-104% FTP</td><td></td></tr>
+            <tr><td>Z5</td><td>105-119% FTP</td><td></td></tr>
+            <tr><td>Z6</td><td>120-149% FTP</td><td></td></tr>
+            <tr><td>Z7</td><td>&ge; 150% FTP</td><td></td></tr>
         </tbody>
     </table>
 </div>
 
 <div class="card">
-    <div class="card-title">支持的文件格式</div>
+    <div class="card-title">{{ t('help.file_formats') }}</div>
     <div class="grid grid-2">
         <div>
-            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">TCX (Garmin)</h3>
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">{{ t('help.tcx_title') }}</h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                Garmin Training Center XML 格式。包含心率、功率、速度、踏频、海拔等完整时间序列数据。
+                {{ t('help.tcx_desc') }}
             </p>
         </div>
         <div>
-            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">GPX</h3>
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">{{ t('help.gpx_title') }}</h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                GPS Exchange Format。支持 Garmin 扩展数据（心率、功率、踏频）。GPS 轨迹 + 扩展指标。
+                {{ t('help.gpx_desc') }}
             </p>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-title">功能指南</div>
+    <div class="card-title">{{ t('help.feature_guide') }}</div>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">Best Efforts 最佳表现</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.best_efforts_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            系统自动计算每次活动中 5 秒 ~ 60 分钟各时间窗口的峰值功率和峰值心率。活动列表中金色 <strong>PB</strong> 标记表示该活动刷新了对应窗口的历史最佳。
+            {{ t('help.best_efforts_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">活动对比</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.compare_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            选择两个活动进行横向对比，查看指标差异和趋势变化。前往 <a href="/compare">活动对比</a> 页面。
+            {{ t('help.compare_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">AI 训练周报</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.weekly_report_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            仪表盘底部的「AI 训练周报」按钮可一键生成本周训练报告。AI 教练会基于训练数据、最佳表现、强度分布等生成个性化分析和建议。也可在 <a href="/ai">AI 教练</a> 页面向教练提问。
+            {{ t('help.weekly_report_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">功率曲线 (Power Curve)</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.power_curve_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            活动详情页展示功率曲线对比图：蓝色填充线为历史各时间窗口的峰值功率/心率，橙色虚线为当前活动的表现。直观了解本次训练与历史最佳的差距。
+            {{ t('help.power_curve_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">体能趋势</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.fitness_trend_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            仪表盘提供两个趋势图表：NP / 效率因子(EF) 双轴折线图跟踪功率效率变化；训练强度分布图展示 TSS 和强度因子(IF) 的关系。帮助你纵向评估体能进步。
+            {{ t('help.fitness_trend_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">数据导出</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.export_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            活动列表页支持将活动数据导出为 CSV 或 JSON 格式，便于在其他工具中分析。支持按运动类型、日期范围和强度等级筛选后导出。
+            {{ t('help.export_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">搜索与排序</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.search_sort_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            活动列表支持按名称关键词搜索，以及按日期、上传时间、名称排序。
+            {{ t('help.search_sort_desc') }}
         </p>
 
-        <h3 style="font-size: 1rem; margin: 0.5rem 0;">批量操作</h3>
+        <h3 style="font-size: 1rem; margin: 0.5rem 0;">{{ t('help.batch_ops_title') }}</h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem;">
-            在活动列表勾选多条记录后，可批量删除。
+            {{ t('help.batch_ops_desc') }}
         </p>
     </div>
 {% endblock %}

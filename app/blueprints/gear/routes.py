@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from app.models.gear import Gear
+from app.services.i18n_service import t
 from app.utils.auth import require_user
 
 gear_bp = Blueprint("gear", __name__)
@@ -44,7 +45,7 @@ def create_gear():
         return err
     data = request.get_json()
     if not data or not data.get("name") or not data.get("gear_type"):
-        return jsonify({"code": 400, "message": "名称和类型为必填项", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.name_and_type_required"), "data": None}), 400
 
     gear = Gear(
         user=user,
@@ -55,7 +56,7 @@ def create_gear():
         notes=data.get("notes", ""),
     )
     gear.save()
-    return jsonify({"code": 200, "message": "创建成功", "data": _serialize_gear(gear)})
+    return jsonify({"code": 200, "message": t("api.create_success"), "data": _serialize_gear(gear)})
 
 
 @gear_bp.route("/gear/<gear_id>", methods=["PUT"])
@@ -65,17 +66,17 @@ def update_gear(gear_id):
         return err
     gear = Gear.objects(id=gear_id, user=user).first()
     if not gear:
-        return jsonify({"code": 404, "message": "装备不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.gear_not_found"), "data": None}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({"code": 400, "message": "请求数据为空", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.empty_request_data"), "data": None}), 400
 
     for field in ("name", "gear_type", "purchase_date", "distance_limit_km", "notes", "is_active"):
         if field in data:
             setattr(gear, field, data[field])
     gear.save()
-    return jsonify({"code": 200, "message": "更新成功", "data": _serialize_gear(gear)})
+    return jsonify({"code": 200, "message": t("api.update_success"), "data": _serialize_gear(gear)})
 
 
 @gear_bp.route("/gear/<gear_id>", methods=["DELETE"])
@@ -85,7 +86,7 @@ def delete_gear(gear_id):
         return err
     gear = Gear.objects(id=gear_id, user=user).first()
     if not gear:
-        return jsonify({"code": 404, "message": "装备不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.gear_not_found"), "data": None}), 404
 
     gear.delete()
-    return jsonify({"code": 200, "message": "已删除", "data": None})
+    return jsonify({"code": 200, "message": t("api.deleted"), "data": None})

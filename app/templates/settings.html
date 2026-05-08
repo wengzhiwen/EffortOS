@@ -1,119 +1,119 @@
 {% extends "base.html" %}
 
-{% block title %}参数设置 - EffortOS{% endblock %}
+{% block title %}{{ t('settings.title') }} - EffortOS{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">参数设置</h2>
+<h2 style="margin-bottom: 1rem;">{{ t('settings.title') }}</h2>
 
 <div class="card">
-    <div class="card-title">运动参数配置</div>
+    <div class="card-title">{{ t('settings.sport_params') }}</div>
     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
-        设置 FTP、阈值心率和最大心率，用于计算 TSS、分区等训练指标。修改后从生效日期起的运动指标将自动重算。
+        {{ t('settings.params_desc') }}
     </p>
     <form id="params-form">
         <div class="grid grid-3">
             <div class="form-group">
-                <label>生效日期</label>
+                <label>{{ t('settings.effective_date') }}</label>
                 <input type="date" name="effective_date" required id="effective-date">
             </div>
             <div class="form-group">
-                <label>FTP（瓦特）— 骑行</label>
+                <label>{{ t('settings.ftp_label') }}</label>
                 <input type="number" name="ftp" placeholder="例：250" min="0">
             </div>
             <div class="form-group">
-                <label>最大心率（bpm）</label>
+                <label>{{ t('settings.max_hr_label') }}</label>
                 <input type="number" name="max_heart_rate" placeholder="例：190" min="0">
             </div>
         </div>
         <div class="grid grid-3">
             <div class="form-group">
-                <label>骑行阈值心率 LTHR（bpm）</label>
+                <label>{{ t('settings.cycling_lthr') }}</label>
                 <input type="number" name="cycling_lthr" placeholder="例：160" min="0">
             </div>
             <div class="form-group">
-                <label>跑步阈值心率 LTHR（bpm）</label>
+                <label>{{ t('settings.running_lthr') }}</label>
                 <input type="number" name="running_lthr" placeholder="例：170" min="0">
             </div>
             <div class="form-group">
-                <label>步行阈值心率 LTHR（bpm）</label>
+                <label>{{ t('settings.walking_lthr') }}</label>
                 <input type="number" name="walking_lthr" placeholder="例：140" min="0">
             </div>
         </div>
         <div class="grid grid-3">
             <div class="form-group">
-                <label>体重（kg）</label>
+                <label>{{ t('settings.weight_label') }}</label>
                 <input type="number" step="0.1" name="weight" placeholder="例：70.0" min="0">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary" id="save-btn">保存参数</button>
+        <button type="submit" class="btn btn-primary" id="save-btn">{{ t('settings.save_params') }}</button>
         <span id="save-status" class="status-msg"></span>
     </form>
 </div>
 
 <div class="card">
-    <div class="card-title">当前生效参数</div>
-    <div id="current-params"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+    <div class="card-title">{{ t('settings.current_params') }}</div>
+    <div id="current-params"><div class="loading"><div class="spinner"></div>{{ t('dashboard.loading') }}</div></div>
 </div>
 
 <div class="card">
-    <div class="card-title">分区预览</div>
+    <div class="card-title">{{ t('settings.zone_preview') }}</div>
     <div class="grid grid-2">
         <div>
-            <h4 style="margin-bottom: 0.5rem;">心率分区（骑行）</h4>
-            <div id="hr-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">保存参数后显示预览</div>
+            <h4 style="margin-bottom: 0.5rem;">{{ t('settings.hr_zones_cycling') }}</h4>
+            <div id="hr-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('settings.preview_after_save') }}</div>
         </div>
         <div>
-            <h4 style="margin-bottom: 0.5rem;">功率分区</h4>
-            <div id="power-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">保存 FTP 后显示预览</div>
+            <h4 style="margin-bottom: 0.5rem;">{{ t('settings.power_zones') }}</h4>
+            <div id="power-zones-preview" style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('settings.preview_after_ftp') }}</div>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-title">历史参数变更</div>
+    <div class="card-title">{{ t('settings.params_history') }}</div>
     <table>
-        <thead><tr><th>生效日期</th><th>FTP</th><th>骑行 LTHR</th><th>跑步 LTHR</th><th>最大心率</th><th>体重</th><th>操作</th></tr></thead>
-        <tbody id="params-history"><tr><td colspan="7"><div class="loading"><div class="spinner"></div>加载中...</div></td></tr></tbody>
+        <thead><tr><th>{{ t('settings.history_date') }}</th><th>{{ t('settings.history_ftp') }}</th><th>{{ t('settings.history_cycling_lthr') }}</th><th>{{ t('settings.history_running_lthr') }}</th><th>{{ t('settings.history_max_hr') }}</th><th>{{ t('settings.history_weight') }}</th><th>{{ t('settings.history_action') }}</th></tr></thead>
+        <tbody id="params-history"><tr><td colspan="7"><div class="loading"><div class="spinner"></div>{{ t('dashboard.loading') }}</div></td></tr></tbody>
     </table>
 </div>
 
 <!-- 编辑弹窗 -->
 <div id="edit-overlay" class="confirm-overlay" style="display:none;">
     <div class="confirm-box" style="max-width: 520px;">
-        <h3 style="margin-bottom: 1rem;">编辑参数</h3>
+        <h3 style="margin-bottom: 1rem;">{{ t('settings.edit_params') }}</h3>
         <form id="edit-form">
             <input type="hidden" id="edit-id">
             <div class="grid grid-3">
                 <div class="form-group">
-                    <label>生效日期</label>
+                    <label>{{ t('settings.effective_date') }}</label>
                     <input type="date" id="edit-effective-date" required>
                 </div>
                 <div class="form-group">
-                    <label>FTP（瓦特）</label>
+                    <label>{{ t('settings.edit_ftp_label') }}</label>
                     <input type="number" id="edit-ftp" min="0">
                 </div>
                 <div class="form-group">
-                    <label>最大心率（bpm）</label>
+                    <label>{{ t('settings.edit_max_hr') }}</label>
                     <input type="number" id="edit-max-heart-rate" min="0">
                 </div>
             </div>
             <div class="grid grid-3">
                 <div class="form-group">
-                    <label>骑行 LTHR（bpm）</label>
+                    <label>{{ t('settings.edit_cycling_lthr') }}</label>
                     <input type="number" id="edit-cycling-lthr" min="0">
                 </div>
                 <div class="form-group">
-                    <label>跑步 LTHR（bpm）</label>
+                    <label>{{ t('settings.edit_running_lthr') }}</label>
                     <input type="number" id="edit-running-lthr" min="0">
                 </div>
                 <div class="form-group">
-                    <label>体重（kg）</label>
+                    <label>{{ t('settings.edit_weight') }}</label>
                     <input type="number" step="0.1" id="edit-weight" min="0">
                 </div>
             </div>
             <div class="btn-row" style="margin-top: 1rem;">
-                <button type="button" class="btn btn-secondary" id="edit-cancel">取消</button>
-                <button type="submit" class="btn btn-primary" id="edit-save">保存</button>
+                <button type="button" class="btn btn-secondary" id="edit-cancel">{{ t('settings.cancel_btn') }}</button>
+                <button type="submit" class="btn btn-primary" id="edit-save">{{ t('settings.save_btn') }}</button>
             </div>
         </form>
     </div>
@@ -130,17 +130,17 @@ function loadParams() {
         .then(res => {
             const d = res.data;
             if (!d) {
-                document.getElementById('current-params').innerHTML = '<p style="color: var(--text-secondary);">尚未设置参数，请填写上方表单并保存。</p>';
+                document.getElementById('current-params').innerHTML = '<p style="color: var(--text-secondary);">' + t('settings.no_params') + '</p>';
                 return;
             }
             document.getElementById('current-params').innerHTML = `
                 <div class="grid grid-3">
-                    <div><strong>FTP:</strong> ${d.ftp || '—'} W</div>
-                    <div><strong>骑行 LTHR:</strong> ${d.cycling_lthr || '—'} bpm</div>
-                    <div><strong>跑步 LTHR:</strong> ${d.running_lthr || '—'} bpm</div>
-                    <div><strong>步行 LTHR:</strong> ${d.walking_lthr || '—'} bpm</div>
-                    <div><strong>最大心率:</strong> ${d.max_heart_rate || '—'} bpm</div>
-                    <div><strong>体重:</strong> ${d.weight || '—'} kg</div>
+                    <div><strong>${t('settings.label_ftp')}:</strong> ${d.ftp || '—'} W</div>
+                    <div><strong>${t('settings.label_cycling_lthr')}:</strong> ${d.cycling_lthr || '—'} bpm</div>
+                    <div><strong>${t('settings.label_running_lthr')}:</strong> ${d.running_lthr || '—'} bpm</div>
+                    <div><strong>${t('settings.label_walking_lthr')}:</strong> ${d.walking_lthr || '—'} bpm</div>
+                    <div><strong>${t('settings.label_max_hr')}:</strong> ${d.max_heart_rate || '—'} bpm</div>
+                    <div><strong>${t('settings.label_weight')}:</strong> ${d.weight || '—'} kg</div>
                 </div>`;
 
             // 预填表单（仅当表单字段为空时）
@@ -153,8 +153,8 @@ function loadParams() {
             if (d.weight && !form.weight.value) form.weight.value = d.weight;
 
             // 分区预览
-            const hrZoneNames = {'Z1':'热身','Z2':'有氧','Z3':'节奏','Z4':'阈值','Z5':'VO2max'};
-            const pwZoneNames = {'Z1':'恢复','Z2':'耐力','Z3':'节奏','Z4':'阈值','Z5':'VO2max','Z6':'无氧','Z7':'神经肌肉'};
+            const hrZoneNames = {'Z1': t('settings.hr_zone_z1'),'Z2': t('settings.hr_zone_z2'),'Z3': t('settings.hr_zone_z3'),'Z4': t('settings.hr_zone_z4'),'Z5': t('settings.hr_zone_z5')};
+            const pwZoneNames = {'Z1': t('settings.pw_zone_z1'),'Z2': t('settings.pw_zone_z2'),'Z3': t('settings.pw_zone_z3'),'Z4': t('settings.pw_zone_z4'),'Z5': t('settings.pw_zone_z5'),'Z6': t('settings.pw_zone_z6'),'Z7': t('settings.pw_zone_z7')};
             if (d.hr_zones && d.hr_zones.length > 0) {
                 document.getElementById('hr-zones-preview').innerHTML = d.hr_zones.map(z =>
                     `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border);">
@@ -176,7 +176,7 @@ function loadParams() {
         .then(res => {
             const tbody = document.getElementById('params-history');
             if (!res.data || res.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7">暂无历史记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7">' + t('settings.no_history') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = res.data.map(p => `<tr data-id="${p.id}">
@@ -187,8 +187,8 @@ function loadParams() {
                 <td>${p.max_heart_rate || '—'}</td>
                 <td>${p.weight || '—'}</td>
                 <td>
-                    <button class="btn btn-sm btn-secondary edit-btn" data-id="${p.id}" style="margin-right:0.25rem;">编辑</button>
-                    <button class="btn btn-sm btn-secondary delete-btn" data-id="${p.id}" style="color:var(--danger);">删除</button>
+                    <button class="btn btn-sm btn-secondary edit-btn" data-id="${p.id}" style="margin-right:0.25rem;">${t('settings.edit_btn')}</button>
+                    <button class="btn btn-sm btn-secondary delete-btn" data-id="${p.id}" style="color:var(--danger);">${t('settings.delete_btn')}</button>
                 </td>
             </tr>`).join('');
         });
@@ -199,7 +199,7 @@ document.getElementById('params-form').addEventListener('submit', e => {
     const status = document.getElementById('save-status');
     const btn = document.getElementById('save-btn');
     btn.disabled = true;
-    btn.textContent = '保存中...';
+    btn.textContent = t('settings.saving');
     const formData = new FormData(e.target);
     const data = {};
     for (const [key, val] of formData.entries()) {
@@ -215,9 +215,9 @@ document.getElementById('params-form').addEventListener('submit', e => {
         .then(r => r.json())
         .then(res => {
             btn.disabled = false;
-            btn.textContent = '保存参数';
+            btn.textContent = t('settings.save_params');
             if (res.code === 200) {
-                status.textContent = '保存成功！数据重算中...';
+                status.textContent = t('settings.save_success');
                 status.style.color = 'var(--success)';
                 loadParams();
                 pollRecalcStatus();
@@ -229,8 +229,8 @@ document.getElementById('params-form').addEventListener('submit', e => {
         })
         .catch(() => {
             btn.disabled = false;
-            btn.textContent = '保存参数';
-            status.textContent = '网络错误';
+            btn.textContent = t('settings.save_params');
+            status.textContent = t('settings.network_error');
             status.style.color = 'var(--danger)';
         });
 });
@@ -243,11 +243,11 @@ function pollRecalcStatus() {
             .then(res => {
                 const d = res.data;
                 if (d.running) {
-                    status.textContent = `数据重算中 (${d.done}/${d.total})...`;
+                    status.textContent = t('settings.recalcing') + ` (${d.done}/${d.total})...`;
                     status.style.color = 'var(--primary)';
                     setTimeout(poll, 1000);
                 } else if (d.total > 0 && d.done === d.total) {
-                    status.textContent = `重算完成！已更新 ${d.total} 条活动。`;
+                    status.textContent = t('settings.recalc_done') + ` ${d.total} ` + t('settings.activities_count');
                     status.style.color = 'var(--success)';
                     setTimeout(() => status.textContent = '', 5000);
                 }
@@ -280,13 +280,13 @@ document.getElementById('params-history').addEventListener('click', e => {
     }
 
     if (btn.classList.contains('delete-btn')) {
-        confirmDialog('确定删除这条参数记录？删除后将自动重算受影响的活动。').then(ok => {
+        confirmDialog(t('settings.confirm_delete')).then(ok => {
             if (!ok) return;
             authFetch('/api/params/' + id, { method: 'DELETE' })
                 .then(r => r.json())
                 .then(res => {
                     if (res.code === 200) {
-                        showToast('已删除，数据重算中...', 'success');
+                        showToast(t('settings.deleted_recalc'), 'success');
                         loadParams();
                     } else {
                         showToast(res.message, 'error');
@@ -309,7 +309,7 @@ document.getElementById('edit-form').addEventListener('submit', e => {
     };
     const btn = document.getElementById('edit-save');
     btn.disabled = true;
-    btn.textContent = '保存中...';
+    btn.textContent = t('settings.saving');
     authFetch('/api/params/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -318,10 +318,10 @@ document.getElementById('edit-form').addEventListener('submit', e => {
         .then(r => r.json())
         .then(res => {
             btn.disabled = false;
-            btn.textContent = '保存';
+            btn.textContent = t('settings.save_btn');
             if (res.code === 200) {
                 editOverlay.style.display = 'none';
-                showToast('已更新，数据重算中...', 'success');
+                showToast(t('settings.updated_recalc'), 'success');
                 loadParams();
             } else {
                 showToast(res.message, 'error');
@@ -329,8 +329,8 @@ document.getElementById('edit-form').addEventListener('submit', e => {
         })
         .catch(() => {
             btn.disabled = false;
-            btn.textContent = '保存';
-            showToast('网络错误', 'error');
+            btn.textContent = t('settings.save_btn');
+            showToast(t('settings.network_error'), 'error');
         });
 });
 

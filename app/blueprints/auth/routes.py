@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 
 from app.models.user import User
 from app.models.verification_code import VerificationCode
+from app.services.i18n_service import t
 from app.utils.auth import get_authenticated_user
 from app.utils.auth import require_user as _require_user
 
@@ -28,7 +29,7 @@ def request_code():
     email = (data.get("email") or "").strip().lower()
 
     if not email or "@" not in email:
-        return jsonify({"code": 400, "message": "请输入有效的邮箱地址", "data": None}), 400
+        return jsonify({"code": 400, "message": t("auth.invalid_email"), "data": None}), 400
 
     vc = VerificationCode.create_for_email(email)
 
@@ -44,7 +45,7 @@ def request_code():
     return jsonify(
         {
             "code": 200,
-            "message": "验证码已发送",
+            "message": t("auth.code_sent"),
             "data": {"code": vc.code} if expose_code else None,
         }
     )
@@ -58,17 +59,17 @@ def verify_code():
     code = (data.get("code") or "").strip()
 
     if not email or not code:
-        return jsonify({"code": 400, "message": "请输入邮箱和验证码", "data": None}), 400
+        return jsonify({"code": 400, "message": t("auth.email_code_required"), "data": None}), 400
 
     test_hole = os.environ.get("TEST_HOLE") if os.environ.get("FLASK_ENV") == "testing" else None
     if test_hole and code == test_hole:
         vc = VerificationCode.objects(email=email).order_by("-created_at").first()
         if not vc:
-            return jsonify({"code": 400, "message": "请先获取验证码", "data": None}), 400
+            return jsonify({"code": 400, "message": t("auth.get_code_first"), "data": None}), 400
     else:
         vc = VerificationCode.objects(email=email, used_at=None).order_by("-created_at").first()
         if not vc or not secrets.compare_digest(vc.code, code) or not vc.is_valid():
-            return jsonify({"code": 400, "message": "验证码无效或已过期", "data": None}), 400
+            return jsonify({"code": 400, "message": t("auth.code_invalid"), "data": None}), 400
 
     vc.mark_used()
 
@@ -82,7 +83,7 @@ def verify_code():
     response = jsonify(
         {
             "code": 200,
-            "message": "登录成功",
+            "message": t("auth.login_success"),
             "data": {
                 "user": {
                     "id": str(user.id),
@@ -104,7 +105,7 @@ def logout():
     if user:
         user.clear_session_token()
 
-    response = jsonify({"code": 200, "message": "已登出", "data": None})
+    response = jsonify({"code": 200, "message": t("auth.logged_out"), "data": None})
     response.delete_cookie("session_token")
     return response
 
@@ -142,7 +143,7 @@ def update_profile():
     nickname = (data.get("nickname") or "").strip()
 
     if not nickname:
-        return jsonify({"code": 400, "message": "昵称不能为空", "data": None}), 400
+        return jsonify({"code": 400, "message": t("auth.nickname_required"), "data": None}), 400
 
     user.nickname = nickname[:50]
     user.save()
@@ -150,7 +151,7 @@ def update_profile():
     return jsonify(
         {
             "code": 200,
-            "message": "更新成功",
+            "message": t("auth.update_success"),
             "data": {
                 "id": str(user.id),
                 "email": user.email,

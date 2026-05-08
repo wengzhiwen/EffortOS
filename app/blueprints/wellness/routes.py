@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app.models.activity import Activity
 from app.models.wellness import WellnessEntry
+from app.services.i18n_service import t
 from app.services.metrics_service import calc_daily_tss
 from app.utils.auth import require_user
 
@@ -62,7 +63,7 @@ def create_or_update_wellness():
 
     data = request.get_json()
     if not data or not data.get("date"):
-        return jsonify({"code": 400, "message": "日期为必填项", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.date_required"), "data": None}), 400
 
     date = data["date"]
     entry = WellnessEntry.objects(user=user, date=date).first()
@@ -82,7 +83,7 @@ def create_or_update_wellness():
         entry = WellnessEntry(**kwargs)
         entry.save()
 
-    return jsonify({"code": 200, "message": "保存成功", "data": _serialize_entry(entry)})
+    return jsonify({"code": 200, "message": t("api.save_success"), "data": _serialize_entry(entry)})
 
 
 @wellness_bp.route("/wellness/<entry_id>", methods=["DELETE"])
@@ -93,10 +94,10 @@ def delete_wellness(entry_id):
 
     entry = WellnessEntry.objects(id=entry_id, user=user).first()
     if not entry:
-        return jsonify({"code": 404, "message": "记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.record_not_found"), "data": None}), 404
 
     entry.delete()
-    return jsonify({"code": 200, "message": "已删除", "data": None})
+    return jsonify({"code": 200, "message": t("api.deleted"), "data": None})
 
 
 @wellness_bp.route("/wellness/readiness", methods=["GET"])
@@ -156,19 +157,19 @@ def get_readiness():
     # 准备度等级
     if total >= 80:
         level = "excellent"
-        label = "极佳"
+        label = t("api.readiness_excellent")
     elif total >= 60:
         level = "good"
-        label = "良好"
+        label = t("api.readiness_good")
     elif total >= 40:
         level = "moderate"
-        label = "一般"
+        label = t("api.readiness_moderate")
     elif total >= 20:
         level = "low"
-        label = "较低"
+        label = t("api.readiness_low")
     else:
         level = "rest"
-        label = "需要休息"
+        label = t("api.readiness_rest")
 
     return jsonify(
         {

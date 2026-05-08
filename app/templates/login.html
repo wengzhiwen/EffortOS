@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}登录 - EffortOS{% endblock %}
+{% block title %}{{ t('login.login_btn') }} - EffortOS{% endblock %}
 
 {% block content %}
 <div class="auth-container">
     <div class="card" style="max-width: 400px; margin: 4rem auto;">
-        <h2 style="margin-bottom: 1.5rem; text-align: center;">登录 EffortOS</h2>
+        <h2 style="margin-bottom: 1.5rem; text-align: center;">{{ t('login.title') }}</h2>
 
         <div id="step-email">
             <div class="form-group">
-                <label for="email">邮箱地址</label>
+                <label for="email">{{ t('login.email_label') }}</label>
                 <input type="email" id="email" class="form-input" placeholder="your@email.com" autocomplete="email">
             </div>
-            <button id="btn-send-code" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">发送验证码</button>
+            <button id="btn-send-code" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">{{ t('login.send_code') }}</button>
             <p id="email-error" class="error-text" style="display: none;"></p>
         </div>
 
         <div id="step-code" style="display: none;">
             <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                验证码已发送至 <strong id="sent-email"></strong>（开发环境可在控制台查看）
+                {{ t('login.code_sent_to') }} <strong id="sent-email"></strong>（{{ t('login.dev_console_hint') }}）
             </p>
             <div class="form-group">
-                <label for="code">验证码</label>
-                <input type="text" id="code" class="form-input" placeholder="6 位数字验证码" maxlength="6" inputmode="numeric">
+                <label for="code">{{ t('login.code_label') }}</label>
+                <input type="text" id="code" class="form-input" placeholder="{{ t('login.code_placeholder') }}" maxlength="6" inputmode="numeric">
             </div>
-            <button id="btn-verify" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">登录</button>
+            <button id="btn-verify" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">{{ t('login.login_btn') }}</button>
             <p id="code-error" class="error-text" style="display: none;"></p>
-            <button id="btn-back" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;">返回</button>
+            <button id="btn-back" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;">{{ t('login.back') }}</button>
         </div>
     </div>
 </div>
@@ -60,11 +60,11 @@
         hideError(emailError);
         const email = emailInput.value.trim();
         if (!email || !email.includes('@')) {
-            showError(emailError, '请输入有效的邮箱地址');
+            showError(emailError, t('login.invalid_email'));
             return;
         }
         btnSendCode.disabled = true;
-        btnSendCode.textContent = '发送中...';
+        btnSendCode.textContent = t('login.sending');
 
         try {
             const resp = await fetch('/api/auth/request-code', {
@@ -79,18 +79,17 @@
                 stepEmail.style.display = 'none';
                 stepCode.style.display = 'block';
                 codeInput.focus();
-                // 开发环境自动填入验证码
                 if (data.data && data.data.code) {
                     codeInput.value = data.data.code;
                 }
             } else {
-                showError(emailError, data.message || '发送失败');
+                showError(emailError, data.message || t('login.send_failed'));
             }
         } catch (e) {
-            showError(emailError, '网络错误，请重试');
+            showError(emailError, t('login.network_error'));
         } finally {
             btnSendCode.disabled = false;
-            btnSendCode.textContent = '发送验证码';
+            btnSendCode.textContent = t('login.send_code');
         }
     });
 
@@ -98,11 +97,11 @@
         hideError(codeError);
         const code = codeInput.value.trim();
         if (!code || code.length !== 6) {
-            showError(codeError, '请输入 6 位验证码');
+            showError(codeError, t('login.invalid_code'));
             return;
         }
         btnVerify.disabled = true;
-        btnVerify.textContent = '登录中...';
+        btnVerify.textContent = t('login.logging_in');
 
         try {
             const resp = await fetch('/api/auth/verify', {
@@ -117,13 +116,13 @@
                 const redirect = new URLSearchParams(window.location.search).get('next') || '/';
                 window.location.href = redirect;
             } else {
-                showError(codeError, data.message || '验证失败');
+                showError(codeError, data.message || t('login.verify_failed'));
             }
         } catch (e) {
-            showError(codeError, '网络错误，请重试');
+            showError(codeError, t('login.network_error'));
         } finally {
             btnVerify.disabled = false;
-            btnVerify.textContent = '登录';
+            btnVerify.textContent = t('login.login_btn');
         }
     });
 

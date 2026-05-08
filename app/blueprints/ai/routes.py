@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
 from app.models.user import WeeklyReport
+from app.services.i18n_service import t
 from app.services.llm_service import generate_suggestion, generate_weekly_report
 from app.services.metrics_service import calc_daily_tss, calc_pmc
 from app.utils.auth import require_user
@@ -123,7 +124,7 @@ def weekly_report():
     try:
         latest_pmc, daily_tss, params, pmc_series = _get_current_context(user)
     except Exception as e:
-        return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.get_data_failed", error=str(e)), "data": None}), 500
 
     today = datetime.now(timezone.utc)
     today_str = today.strftime("%Y-%m-%d")
@@ -164,16 +165,16 @@ def weekly_report():
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
-        return jsonify({"code": 500, "message": f"生成失败: {str(e)}", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.generate_failed", error=str(e)), "data": None}), 500
 
     # 从 LLM 返回中提取 JSON
     json_match = re.search(r"\{[\s\S]*\}", raw)
     if not json_match:
-        return jsonify({"code": 500, "message": "LLM 返回格式异常", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.llm_format_error"), "data": None}), 500
     try:
         report_data = json.loads(json_match.group())
     except json.JSONDecodeError:
-        return jsonify({"code": 500, "message": "LLM 返回 JSON 解析失败", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.llm_json_parse_failed"), "data": None}), 500
 
     plan_json = json.dumps(report_data.get("plan", []), ensure_ascii=False)
 
@@ -250,7 +251,7 @@ def suggestion():
     try:
         latest_pmc, daily_tss, params, _ = _get_current_context(user)
     except Exception as e:
-        return jsonify({"code": 500, "message": f"获取数据失败: {str(e)}", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.get_data_failed", error=str(e)), "data": None}), 500
 
     today = datetime.now(timezone.utc)
     recent_tss = []
@@ -286,7 +287,7 @@ def suggestion():
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
-        return jsonify({"code": 500, "message": f"生成失败: {str(e)}", "data": None}), 500
+        return jsonify({"code": 500, "message": t("api.generate_failed", error=str(e)), "data": None}), 500
 
     return jsonify(
         {

@@ -1,52 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}装备管理 - EffortOS{% endblock %}
+{% block title %}{{ t('gear.title') }} - EffortOS{% endblock %}
 
 {% block content %}
 <h2 style="margin-bottom: 1rem;">
-    装备管理
-    <button class="btn btn-primary" style="float: right; font-size: 0.85rem;" onclick="showAddForm()">添加装备</button>
+    {{ t('gear.title') }}
+    <button class="btn btn-primary" style="float: right; font-size: 0.85rem;" onclick="showAddForm()">{{ t('gear.add_gear') }}</button>
 </h2>
 
 <div id="add-form" class="card" style="display: none; margin-bottom: 1rem;">
-    <div class="card-title" id="form-title">添加装备</div>
+    <div class="card-title" id="form-title">{{ t('gear.add_gear') }}</div>
     <div class="grid grid-4" style="align-items: end;">
         <div class="form-group">
-            <label>名称</label>
-            <input type="text" id="gear-name" placeholder="例如: 公路车" required>
+            <label>{{ t('gear.name_label') }}</label>
+            <input type="text" id="gear-name" placeholder="{{ t('gear.name_placeholder') }}" required>
         </div>
         <div class="form-group">
-            <label>类型</label>
+            <label>{{ t('gear.type_label') }}</label>
             <select id="gear-type">
-                <option value="bike">自行车</option>
-                <option value="shoes">跑鞋</option>
-                <option value="wetsuit">防寒服</option>
-                <option value="other">其他</option>
+                <option value="bike">{{ t('gear.type_bike') }}</option>
+                <option value="shoes">{{ t('gear.type_shoes') }}</option>
+                <option value="wetsuit">{{ t('gear.type_wetsuit') }}</option>
+                <option value="other">{{ t('gear.type_other') }}</option>
             </select>
         </div>
         <div class="form-group">
-            <label>寿命里程 (km，可选)</label>
-            <input type="number" id="gear-limit" placeholder="如 5000">
+            <label>{{ t('gear.lifetime_km') }}</label>
+            <input type="number" id="gear-limit" placeholder="{{ t('gear.limit_placeholder') }}">
         </div>
         <div class="form-group">
-            <label>购入日期</label>
+            <label>{{ t('gear.purchase_date') }}</label>
             <input type="date" id="gear-purchase-date">
         </div>
     </div>
     <div class="form-group">
-        <label>备注</label>
-        <input type="text" id="gear-notes" placeholder="品牌、型号等">
+        <label>{{ t('gear.notes_label') }}</label>
+        <input type="text" id="gear-notes" placeholder="{{ t('gear.notes_placeholder') }}">
     </div>
     <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-        <button class="btn btn-primary" onclick="saveGear()">保存</button>
-        <button class="btn btn-secondary" onclick="hideForm()">取消</button>
+        <button class="btn btn-primary" onclick="saveGear()">{{ t('gear.save') }}</button>
+        <button class="btn btn-secondary" onclick="hideForm()">{{ t('gear.cancel') }}</button>
     </div>
 </div>
 
-<div id="gear-list"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+<div id="gear-list"><div class="loading"><div class="spinner"></div>{{ t('gear.loading') }}</div></div>
 
 <div id="retired-section" style="display: none; margin-top: 2rem;">
-    <h3 style="margin-bottom: 0.75rem; color: var(--text-secondary);">已退役</h3>
+    <h3 style="margin-bottom: 0.75rem; color: var(--text-secondary);">{{ t('gear.retired_section') }}</h3>
     <div id="retired-list"></div>
 </div>
 {% endblock %}
@@ -66,7 +66,7 @@ function loadGear() {
 
             const container = document.getElementById('gear-list');
             if (active.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align: center; color: var(--text-secondary); padding: 2rem;">暂无装备记录，点击右上角添加</div>';
+                container.innerHTML = `<div class="card" style="text-align: center; color: var(--text-secondary); padding: 2rem;">${t('gear.no_gear')}</div>`;
             } else {
                 container.innerHTML = active.map(g => gearCard(g)).join('');
             }
@@ -92,20 +92,20 @@ function gearCard(g) {
             <div style="background: var(--border); border-radius: 4px; height: 6px; margin-top: 0.25rem; overflow: hidden;">
                 <div style="height: 100%; width: ${Math.min(g.wear_percent, 100)}%; background: ${g.needs_replacement ? 'var(--danger)' : g.wear_percent > 80 ? '#f59e0b' : 'var(--primary)'}; border-radius: 4px; transition: width 0.3s;"></div>
             </div>
-            ${g.needs_replacement ? '<div style="color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem;">已超过寿命里程，建议更换</div>' : ''}
+            ${g.needs_replacement ? `<div style="color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem;">${t('gear.over_limit')}</div>` : ''}
         </div>
-    ` : `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">累计 ${g.total_distance_km} km</div>`;
+    ` : `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">${t('gear.total_distance')} ${g.total_distance_km} km</div>`;
 
     return `<div class="card" style="margin-bottom: 0.75rem;">
         <div style="display: flex; justify-content: space-between; align-items: start;">
             <div>
                 <div style="font-weight: 600; font-size: 1.05rem;">${typeIcons[g.gear_type] || ''} ${esc(g.name)}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">${g.gear_type_name}${g.purchase_date ? ' · 购于 ' + g.purchase_date : ''}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">${g.gear_type_name}${g.purchase_date ? ' · ' + t('gear.purchased') + ' ' + g.purchase_date : ''}</div>
                 ${g.notes ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">${esc(g.notes)}</div>` : ''}
             </div>
             <div style="display: flex; gap: 0.5rem;">
-                <button class="btn btn-secondary btn-sm" onclick="editGear('${g.id}')">编辑</button>
-                ${g.is_active !== 'retired' ? `<button class="btn btn-secondary btn-sm" onclick="retireGear('${g.id}')">退役</button>` : ''}
+                <button class="btn btn-secondary btn-sm" onclick="editGear('${g.id}')">${t('gear.edit')}</button>
+                ${g.is_active !== 'retired' ? `<button class="btn btn-secondary btn-sm" onclick="retireGear('${g.id}')">${t('gear.retire')}</button>` : ''}
             </div>
         </div>
         ${wearBar}
@@ -114,7 +114,7 @@ function gearCard(g) {
 
 function showAddForm() {
     editingId = null;
-    document.getElementById('form-title').textContent = '添加装备';
+    document.getElementById('form-title').textContent = t('gear.add_gear');
     document.getElementById('gear-name').value = '';
     document.getElementById('gear-type').value = 'bike';
     document.getElementById('gear-limit').value = '';
@@ -135,7 +135,7 @@ function editGear(id) {
             const g = res.data.find(g => g.id === id);
             if (!g) return;
             editingId = id;
-            document.getElementById('form-title').textContent = '编辑装备';
+            document.getElementById('form-title').textContent = t('gear.edit_gear');
             document.getElementById('gear-name').value = g.name;
             document.getElementById('gear-type').value = g.gear_type;
             document.getElementById('gear-limit').value = g.distance_limit_km || '';
@@ -154,7 +154,7 @@ function saveGear() {
         notes: document.getElementById('gear-notes').value,
     };
 
-    if (!data.name) { showToast('请输入名称', 'error'); return; }
+    if (!data.name) { showToast(t('gear.name_required'), 'error'); return; }
 
     const url = editingId ? `/api/gear/${editingId}` : '/api/gear';
     const method = editingId ? 'PUT' : 'POST';
@@ -167,7 +167,7 @@ function saveGear() {
         .then(r => r.json())
         .then(res => {
             if (res.code === 200) {
-                showToast(editingId ? '已更新' : '已添加', 'success');
+                showToast(editingId ? t('gear.updated') : t('gear.added'), 'success');
                 hideForm();
                 loadGear();
             } else {
@@ -177,7 +177,7 @@ function saveGear() {
 }
 
 async function retireGear(id) {
-    if (!await confirmDialog('确定将此装备设为退役？')) return;
+    if (!await confirmDialog(t('gear.confirm_retire'))) return;
     authFetch(`/api/gear/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -185,7 +185,7 @@ async function retireGear(id) {
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) { showToast('已退役', 'success'); loadGear(); }
+            if (res.code === 200) { showToast(t('gear.retired'), 'success'); loadGear(); }
         });
 }
 

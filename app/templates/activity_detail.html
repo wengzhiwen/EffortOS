@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}活动详情 - EffortOS{% endblock %}
+{% block title %}{{ t('activity_detail.title') }} - EffortOS{% endblock %}
 
 {% block content %}
 <div id="activity-detail">
-    <div class="loading"><div class="spinner"></div>加载中...</div>
+    <div class="loading"><div class="spinner"></div>{{ t('activity_detail.loading') }}</div>
 </div>
 {% endblock %}
 
@@ -12,7 +12,7 @@
 <script>
 const activityId = "{{ activity_id }}";
 const typeNames = window.TYPE_NAMES;
-const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const intensityNames = { recovery: t('intensity.recovery'), endurance: t('intensity.endurance'), tempo: t('intensity.tempo'), threshold: t('intensity.threshold'), vo2max: t('intensity.vo2max') };
 const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 Promise.all([
@@ -21,7 +21,7 @@ Promise.all([
     authFetch(`/api/activities/${activityId}/laps?mode=distance&interval=1000`).then(r => r.json()),
     authFetch('/api/activities/power-curve').then(r => r.json()),
 ]).then(([activityRes, tpRes, lapsRes, curveRes]) => {
-    if (!activityRes.data) throw new Error(activityRes.message || '活动不存在');
+    if (!activityRes.data) throw new Error(activityRes.message || t('activity_detail.load_failed'));
     const a = activityRes.data;
     window._activityData = a;
     const s = a.data_summary || {};
@@ -34,60 +34,56 @@ Promise.all([
     const dist = s.total_distance ? (s.total_distance / 1000).toFixed(2) + ' km' : '—';
     const elevGain = s.elevation_gain ? s.elevation_gain.toFixed(0) + ' m' : null;
 
-    // 装备信息（功能已移除，保留字段兼容）
-    const gearInfo = '';
-
     document.getElementById('activity-detail').innerHTML = `
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${esc(a.name || '未命名活动')}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">编辑</button></div>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;"><h2 style="margin-bottom: 0.5rem;">${esc(a.name || t('activity_detail.unnamed'))}</h2><button onclick="editActivity()" class="btn btn-secondary btn-sm">${t('activity_detail.edit')}</button></div>
         ${a.suggested_type ? `
         <div id="type-suggestion" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1rem;margin-bottom:0.75rem;background:var(--primary-light);border:1px solid var(--primary);border-radius:8px;font-size:0.9rem;">
-            <span>当前标记为 <strong>${typeNames[a.activity_type] || a.activity_type}</strong>，但数据特征更像是 <strong>${typeNames[a.suggested_type] || a.suggested_type}</strong></span>
-            <button class="btn btn-primary btn-sm" onclick="applySuggestedType('${a.suggested_type}')">修正为${typeNames[a.suggested_type] || a.suggested_type}</button>
-            <button class="btn btn-secondary btn-sm" onclick="dismissSuggestion()" style="padding:0.25rem 0.5rem;font-size:0.8rem;">忽略</button>
+            <span>${t('activity_detail.current_marked_but')} <strong>${typeNames[a.activity_type] || a.activity_type}</strong>${t('activity_detail.but_data_like')} <strong>${typeNames[a.suggested_type] || a.suggested_type}</strong></span>
+            <button class="btn btn-primary btn-sm" onclick="applySuggestedType('${a.suggested_type}')">${t('activity_detail.fix_to')}${typeNames[a.suggested_type] || a.suggested_type}</button>
+            <button class="btn btn-secondary btn-sm" onclick="dismissSuggestion()" style="padding:0.25rem 0.5rem;font-size:0.8rem;">${t('activity_detail.ignore')}</button>
         </div>` : ''}
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
             ${a.start_time.slice(0, 19).replace('T', ' ')}
             <span class="badge badge-${a.activity_type}" style="margin-left: 0.5rem;">${typeNames[a.activity_type] || a.activity_type}</span>
-            <span id="gear-info">${gearInfo}</span>
         </p>
 
         <div class="grid grid-4" style="margin-bottom: 1rem;">
             <div class="card">
-                <div class="card-title">时长</div>
+                <div class="card-title">${t('activity_detail.duration')}</div>
                 <div class="metric-value">${duration}</div>
             </div>
             <div class="card">
-                <div class="card-title">距离</div>
+                <div class="card-title">${t('activity_detail.distance')}</div>
                 <div class="metric-value">${dist}</div>
             </div>
             <div class="card" id="tss-card">
                 <div class="card-title metric-title">
-                    TSS <span class="metric-help">?<span class="metric-tooltip">训练压力分数，衡量此活动对身体的负荷量。点击数值可手动修改。</span></span>
+                    TSS <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.tss_tooltip')}</span></span>
                 </div>
-                <div class="metric-value" id="tss-display" style="cursor:pointer" title="点击修改 TSS">
+                <div class="metric-value" id="tss-display" style="cursor:pointer" title="${t('activity_detail.click_edit_tss')}">
                     ${m.manual_tss != null ? m.manual_tss.toFixed(1) : m.tss != null ? m.tss.toFixed(1) : '—'}
                 </div>
                 <div class="metric-unit" id="tss-sub">
                     ${m.manual_tss != null
-                        ? `手动设定${m.tss != null ? '（计算值 ' + m.tss.toFixed(1) + '）' : ''}`
-                        : m.tss_method === 'power' ? '基于功率' : ''}
+                        ? `${t('activity_detail.manual_set')}${m.tss != null ? '（${t('activity_detail.calc_value')} ' + m.tss.toFixed(1) + '）' : ''}`
+                        : m.tss_method === 'power' ? t('activity_detail.power_based') : ''}
                 </div>
                 <div id="tss-editor" style="display:none; margin-top:0.5rem;">
                     <div style="display:flex; gap:0.5rem; align-items:center;">
                         <input type="number" step="0.1" id="tss-input" style="width:80px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; background:var(--input-bg); color:var(--text);" value="${m.manual_tss != null ? m.manual_tss : m.tss != null ? m.tss.toFixed(1) : ''}">
-                        <button class="btn btn-sm btn-primary" onclick="saveTss()">保存</button>
-                        <button class="btn btn-sm btn-secondary" onclick="cancelTssEdit()">取消</button>
-                        ${m.manual_tss != null ? `<button class="btn btn-sm btn-secondary" onclick="clearTss()" style="color:var(--danger)">清除手动值</button>` : ''}
+                        <button class="btn btn-sm btn-primary" onclick="saveTss()">${t('activity_detail.save_btn')}</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelTssEdit()">${t('activity_detail.cancel_btn')}</button>
+                        ${m.manual_tss != null ? `<button class="btn btn-sm btn-secondary" onclick="clearTss()" style="color:var(--danger)">${t('activity_detail.clear_manual')}</button>` : ''}
                     </div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-title metric-title">hrTSS <span class="metric-help">?<span class="metric-tooltip">基于心率的训练压力分数 = 时长(h) × (avgHR/LTHR)² × 100</span></span></div>
+                <div class="card-title metric-title">hrTSS <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.hr_tss_tooltip')}</span></span></div>
                 <div class="metric-value">${m.hr_tss != null ? m.hr_tss.toFixed(1) : '—'}</div>
-                <div class="metric-unit">基于心率</div>
+                <div class="metric-unit">${t('activity_detail.hr_based')}</div>
             </div>
             <div class="card">
-                <div class="card-title metric-title">NP / IF <span class="metric-help">?<span class="metric-tooltip">NP: 标准化功率，考虑变速的等效功率。IF: 强度因子 = NP/FTP</span></span></div>
+                <div class="card-title metric-title">${t('activity_detail.np_if')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.np_if_tooltip')}</span></span></div>
                 <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
                 <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
             </div>
@@ -98,40 +94,40 @@ Promise.all([
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <div style="width: 12px; height: 12px; border-radius: 50%; background: ${intensityColors[m.intensity_level] || '#999'}; flex-shrink: 0;"></div>
                 <span style="font-weight: 600; color: ${intensityColors[m.intensity_level] || 'var(--text-primary)'};">${intensityNames[m.intensity_level] || m.intensity_level}</span>
-                <span class="metric-unit">强度等级</span>
-                ${m.intensity_reason && m.intensity_reason.method ? `<span class="metric-unit">（基于${m.intensity_reason.method === 'power' ? '功率' : '心率'}）</span>` : ''}
-                ${m.intensity_reason && m.intensity_reason.strict === false ? `<span class="metric-unit" style="color: var(--text-secondary);">近似</span>` : ''}
+                <span class="metric-unit">${t('activity_detail.intensity_level')}</span>
+                ${m.intensity_reason && m.intensity_reason.method ? `<span class="metric-unit">（${m.intensity_reason.method === 'power' ? t('activity_detail.power_based') : t('activity_detail.hr_based')}）</span>` : ''}
+                ${m.intensity_reason && m.intensity_reason.strict === false ? `<span class="metric-unit" style="color: var(--text-secondary);">${t('activity_detail.approx')}</span>` : ''}
             </div>
             ${m.intensity_reason && m.intensity_reason.matched ? `<div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.4rem; padding-left: 1.5rem;">${m.intensity_reason.matched}</div>` : ''}
             ${m.intensity_reason && m.intensity_reason.zone_times && Object.keys(m.intensity_reason.zone_times).length > 0 ? `
             <div style="margin-top: 0.5rem; padding-left: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.8rem; color: var(--text-secondary);">
-                ${Object.entries(m.intensity_reason.zone_times).filter(([,v]) => v > 0).sort((a,b) => a[0].localeCompare(b[0])).map(([z,t]) =>
-                    `<span>${z}: ${t >= 60 ? Math.round(t/60) + 'min' : Math.round(t) + 's'}</span>`
+                ${Object.entries(m.intensity_reason.zone_times).filter(([,v]) => v > 0).sort((a,b) => a[0].localeCompare(b[0])).map(([z,tv]) =>
+                    `<span>${z}: ${tv >= 60 ? Math.round(tv/60) + t('time.minute') : Math.round(tv) + t('time.second')}</span>`
                 ).join('')}
             </div>` : ''}
         </div>` : ''}
 
         <div class="grid grid-4" style="margin-bottom: 1rem;">
             <div class="card">
-                <div class="card-title">平均/最大心率</div>
+                <div class="card-title">${t('activity_detail.avg_max_hr')}</div>
                 <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
             </div>
             <div class="card">
-                <div class="card-title">平均/最大功率</div>
+                <div class="card-title">${t('activity_detail.avg_max_power')}</div>
                 <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
             </div>
             <div class="card">
-                <div class="card-title metric-title">做功 / VI / EF <span class="metric-help">?<span class="metric-tooltip">做功: 总能量消耗。VI: 变异性指数 = NP/avgPower。EF: 效率因子 = NP/avgHR</span></span></div>
+                <div class="card-title metric-title">${t('activity_detail.work_vi_ef')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.work_vi_ef_tooltip')}</span></span></div>
                 <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
                 <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
             </div>
             <div class="card">
-                <div class="card-title">平均/最大踏频</div>
+                <div class="card-title">${t('activity_detail.avg_max_cadence')}</div>
                 <div class="metric-value">${s.avg_cadence || '—'} <span class="metric-unit">/ ${s.max_cadence || '—'} rpm</span></div>
             </div>
             ${elevGain ? `
             <div class="card">
-                <div class="card-title">爬升 / 下降</div>
+                <div class="card-title">${t('activity_detail.elevation_gain_loss')}</div>
                 <div class="metric-value">${s.elevation_gain.toFixed(0)} <span class="metric-unit">m</span> / ${s.elevation_loss ? s.elevation_loss.toFixed(0) : '—'} <span class="metric-unit">m</span></div>
             </div>` : ''}
         </div>
@@ -141,7 +137,7 @@ Promise.all([
             if (gpsPoints.length < 10) return '';
             return `
         <div class="card" style="margin-bottom: 1rem; padding: 0; overflow: hidden;">
-            <div class="card-title" style="padding: 0.75rem 1.25rem 0;">路线地图</div>
+            <div class="card-title" style="padding: 0.75rem 1.25rem 0;">${t('activity_detail.route_map')}</div>
             <div id="activity-map" style="height: 360px; width: 100%; border-radius: 0 0 8px 8px;"></div>
         </div>`;
         })()}
@@ -149,56 +145,56 @@ Promise.all([
         ${hasTP ? `
         <div class="card" style="margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                <div class="card-title" style="margin-bottom: 0;">运动曲线</div>
+                <div class="card-title" style="margin-bottom: 0;">${t('activity_detail.chart_title')}</div>
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                     <div class="chart-xaxis-toggle">
-                        <button class="btn btn-sm active" id="xaxis-time" onclick="switchXAxis('time')">时间</button>
-                        <button class="btn btn-sm" id="xaxis-distance" onclick="switchXAxis('distance')">距离</button>
+                        <button class="btn btn-sm active" id="xaxis-time" onclick="switchXAxis('time')">${t('activity_detail.xaxis_time')}</button>
+                        <button class="btn btn-sm" id="xaxis-distance" onclick="switchXAxis('distance')">${t('activity_detail.xaxis_distance')}</button>
                     </div>
                 </div>
             </div>
             <div class="chart-tabs" style="margin-top: 0.5rem;">
-                ${tpData.points.some(p => p.hr != null) ? '<button class="chart-tab active" onclick="switchChart(\'hr\')">心率</button>' : ''}
-                ${tpData.points.some(p => p.power != null) ? '<button class="chart-tab" onclick="switchChart(\'power\')">功率</button>' : ''}
-                ${tpData.points.some(p => p.speed != null) ? '<button class="chart-tab" onclick="switchChart(\'speed\')">速度</button>' : ''}
-                ${tpData.points.some(p => p.cadence != null) ? '<button class="chart-tab" onclick="switchChart(\'cadence\')">踏频</button>' : ''}
-                ${tpData.points.some(p => p.altitude != null) ? '<button class="chart-tab" onclick="switchChart(\'altitude\')">海拔</button>' : ''}
+                ${tpData.points.some(p => p.hr != null) ? '<button class="chart-tab active" onclick="switchChart(\'hr\')">' + t('activity_detail.tab_hr') + '</button>' : ''}
+                ${tpData.points.some(p => p.power != null) ? '<button class="chart-tab" onclick="switchChart(\'power\')">' + t('activity_detail.tab_power') + '</button>' : ''}
+                ${tpData.points.some(p => p.speed != null) ? '<button class="chart-tab" onclick="switchChart(\'speed\')">' + t('activity_detail.tab_speed') + '</button>' : ''}
+                ${tpData.points.some(p => p.cadence != null) ? '<button class="chart-tab" onclick="switchChart(\'cadence\')">' + t('activity_detail.tab_cadence') + '</button>' : ''}
+                ${tpData.points.some(p => p.altitude != null) ? '<button class="chart-tab" onclick="switchChart(\'altitude\')">' + t('activity_detail.tab_altitude') + '</button>' : ''}
             </div>
             <canvas id="main-chart" height="200" style="margin-top: 0.5rem;"></canvas>
         </div>
         ` : `
         <div class="card" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-            <p style="font-size: 0.95rem;">此活动暂无时间序列数据（心率、功率、速度等）</p>
-            <p style="font-size: 0.85rem; margin-top: 0.5rem;">上传包含传感器数据的 TCX/GPX 文件可查看详细曲线图</p>
+            <p style="font-size: 0.95rem;">${t('activity_detail.no_timeseries')}</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;">${t('activity_detail.upload_hint')}</p>
         </div>
         `}
 
         <div class="grid grid-2" style="margin-bottom: 1rem;">
             ${m.hr_zones_time && Object.keys(m.hr_zones_time).length > 0 ? `
             <div class="card">
-                <div class="card-title">心率分区时间</div>
+                <div class="card-title">${t('activity_detail.hr_zones_time')}</div>
                 <canvas id="hr-zones-chart" height="150"></canvas>
             </div>` : ''}
             ${m.power_zones_time && Object.keys(m.power_zones_time).length > 0 ? `
             <div class="card">
-                <div class="card-title">功率分区时间</div>
+                <div class="card-title">${t('activity_detail.power_zones_time')}</div>
                 <canvas id="power-zones-chart" height="150"></canvas>
             </div>` : ''}
         </div>
 
         ${m.best_efforts && (m.best_efforts.power || m.best_efforts.heart_rate) ? `
         <div class="card" style="margin-bottom: 1rem;">
-            <div class="card-title">最佳表现（Best Efforts）</div>
+            <div class="card-title">${t('activity_detail.best_efforts')}</div>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                 <thead><tr style="border-bottom: 2px solid var(--border);">
-                    <th style="text-align: left; padding: 0.4rem 0.6rem;">时长</th>
-                    ${m.best_efforts.power ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">峰值功率</th>' : ''}
-                    ${m.best_efforts.heart_rate ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">峰值心率</th>' : ''}
+                    <th style="text-align: left; padding: 0.4rem 0.6rem;">${t('activity_detail.duration_header')}</th>
+                    ${m.best_efforts.power ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">' + t('activity_detail.peak_power') + '</th>' : ''}
+                    ${m.best_efforts.heart_rate ? '<th style="text-align: right; padding: 0.4rem 0.6rem;">' + t('activity_detail.peak_hr') + '</th>' : ''}
                 </tr></thead>
                 <tbody>
                 ${Object.keys(m.best_efforts.power || m.best_efforts.heart_rate).sort((a,b) => parseInt(a)-parseInt(b)).map(w => {
                     const wn = parseInt(w);
-                    const label = wn < 60 ? wn + '秒' : wn < 3600 ? (wn/60) + '分钟' : (wn/3600) + '小时';
+                    const label = wn < 60 ? wn + t('time.second') : wn < 3600 ? (wn/60) + t('time.minute') : (wn/3600) + t('time.hour');
                     const pw = m.best_efforts.power && m.best_efforts.power[w];
                     const hr = m.best_efforts.heart_rate && m.best_efforts.heart_rate[w];
                     const histPw = curveRes.data && curveRes.data.power && curveRes.data.power[w];
@@ -216,29 +212,29 @@ Promise.all([
 
         ${m.best_efforts && m.best_efforts.power && curveRes.data && curveRes.data.power && Object.keys(curveRes.data.power).length > 0 ? `
         <div class="card" style="margin-bottom: 1rem;">
-            <div class="card-title">功率曲线（本次 vs 历史最佳）</div>
+            <div class="card-title">${t('activity_detail.power_curve_title')}</div>
             <canvas id="power-curve-chart" height="200"></canvas>
         </div>` : ''}
 
         ${lapsRes.data && lapsRes.data.length > 0 ? `
         <div class="card" style="margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title">分段分析</div>
+                <div class="card-title">${t('activity_detail.lap_analysis')}</div>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm lap-mode-btn active" data-mode="distance" data-interval="1000" onclick="switchLapMode(this)">每公里</button>
-                    <button class="btn btn-sm lap-mode-btn" data-mode="time" data-interval="300" onclick="switchLapMode(this)">每 5 分钟</button>
+                    <button class="btn btn-sm lap-mode-btn active" data-mode="distance" data-interval="1000" onclick="switchLapMode(this)">${t('activity_detail.per_km')}</button>
+                    <button class="btn btn-sm lap-mode-btn" data-mode="time" data-interval="300" onclick="switchLapMode(this)">${t('activity_detail.per_5min')}</button>
                 </div>
             </div>
             <div style="overflow-x: auto;">
                 <table id="laps-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                     <thead><tr style="border-bottom: 2px solid var(--border);">
-                        <th style="padding: 0.4rem 0.5rem;">#</th>
-                        <th style="padding: 0.4rem 0.5rem;">时长</th>
-                        <th style="padding: 0.4rem 0.5rem;">距离</th>
-                        <th style="padding: 0.4rem 0.5rem;">配速</th>
-                        <th style="padding: 0.4rem 0.5rem;">心率</th>
-                        <th style="padding: 0.4rem 0.5rem;">功率</th>
-                        <th style="padding: 0.4rem 0.5rem;">踏频</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_num')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_duration')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_distance')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_pace')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_hr')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_power')}</th>
+                        <th style="padding: 0.4rem 0.5rem;">${t('activity_detail.lap_cadence')}</th>
                     </tr></thead>
                     <tbody id="laps-body">
                         ${lapsRes.data.map(lap => lapRow(lap)).join('')}
@@ -247,11 +243,11 @@ Promise.all([
             </div>
         </div>` : ''}
 
-        ${a.notes ? `<div class="card" style="margin-bottom: 1rem;"><div class="card-title">训练感受</div><p style="white-space: pre-wrap; line-height: 1.6;">${a.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>` : ''}
+        ${a.notes ? `<div class="card" style="margin-bottom: 1rem;"><div class="card-title">${t('activity_detail.training_feel')}</div><p style="white-space: pre-wrap; line-height: 1.6;">${a.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>` : ''}
 
-        <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">返回列表</a>
+        <a href="/activities" class="btn btn-primary" style="margin-top: 1rem;">${t('activity_detail.back_to_list')}</a>
     `;
-    document.title = (a.name || '未命名活动') + ' - EffortOS';
+    document.title = (a.name || t('activity_detail.unnamed')) + ' - EffortOS';
 
     // 地图辅助函数
     function smoothValues(arr, window) {
@@ -266,20 +262,20 @@ Promise.all([
         }
         return result;
     }
-    function valueToColor(t) {
-        t = Math.max(0, Math.min(1, t));
+    function valueToColor(tv) {
+        tv = Math.max(0, Math.min(1, tv));
         const stops = [
-            [0, 59, 130, 246],   // blue
-            [0.3, 34, 197, 94],   // green
-            [0.6, 250, 204, 21],  // yellow
-            [0.85, 249, 115, 22], // orange
-            [1, 239, 68, 68],     // red
+            [0, 59, 130, 246],
+            [0.3, 34, 197, 94],
+            [0.6, 250, 204, 21],
+            [0.85, 249, 115, 22],
+            [1, 239, 68, 68],
         ];
         let lo = stops[0], hi = stops[stops.length - 1];
         for (let i = 0; i < stops.length - 1; i++) {
-            if (t >= stops[i][0] && t <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
+            if (tv >= stops[i][0] && tv <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
         }
-        const ratio = (t - lo[0]) / (hi[0] - lo[0]);
+        const ratio = (tv - lo[0]) / (hi[0] - lo[0]);
         const r = Math.round(lo[1] + (hi[1] - lo[1]) * ratio);
         const g = Math.round(lo[2] + (hi[2] - lo[2]) * ratio);
         const b = Math.round(lo[3] + (hi[3] - lo[3]) * ratio);
@@ -300,7 +296,6 @@ Promise.all([
         });
         L.tileLayer(tileUrl, { maxZoom: 18 }).addTo(map);
 
-        // 功率/速度颜色渲染
         const hasPower = gpsPoints.some(p => p.power != null);
         const values = gpsPoints.map(p => hasPower ? (p.power || 0) : (p.speed != null ? p.speed * 3.6 : 0));
         const smoothed = smoothValues(values, Math.max(5, Math.floor(gpsPoints.length / 50)));
@@ -308,7 +303,6 @@ Promise.all([
         const valMax = Math.max(...smoothed);
         const colorFn = valMax > valMin ? (v) => valueToColor((v - valMin) / (valMax - valMin)) : () => '#3b82f6';
 
-        // 按颜色分段绘制 polyline
         let allBounds = null;
         for (let i = 0; i < gpsPoints.length - 1; i++) {
             const color = colorFn(smoothed[i]);
@@ -318,17 +312,15 @@ Promise.all([
         }
         if (allBounds) map.fitBounds(allBounds, { padding: [15, 15] });
 
-        // 起点/终点标记
         L.circleMarker(latlngs[0], { radius: 6, color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1, weight: 2 })
-            .addTo(map).bindTooltip('起点', { permanent: false });
+            .addTo(map).bindTooltip(t('activity_detail.start_point'), { permanent: false });
         L.circleMarker(latlngs[latlngs.length - 1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1, weight: 2 })
-            .addTo(map).bindTooltip('终点', { permanent: false });
+            .addTo(map).bindTooltip(t('activity_detail.end_point'), { permanent: false });
 
-        // 图例
         const legend = L.control({ position: 'bottomright' });
         legend.onAdd = function() {
             const div = L.DomUtil.create('div', 'map-legend');
-            const label = hasPower ? '功率 (W)' : '速度 (km/h)';
+            const label = hasPower ? t('activity_detail.power_legend') : t('activity_detail.speed_legend');
             div.innerHTML = `<div class="map-legend-title">${label}</div>
                 <div class="map-legend-bar"></div>
                 <div class="map-legend-labels"><span>${Math.round(valMin)}</span><span>${Math.round(valMax)}</span></div>`;
@@ -337,16 +329,13 @@ Promise.all([
         legend.addTo(map);
     }
 
-    // 时间序列图表（tab 切换 + 时间/距离轴）
+    // 时间序列图表
     if (hasTP) {
         const points = tpData.points;
         const timeLabels = points.map(p => {
             const min = Math.floor(p.elapsed / 60);
             const sec = Math.floor(p.elapsed % 60);
             return min + ':' + (sec < 10 ? '0' : '') + sec;
-        });
-        const distLabels = points.map(p => {
-            return p.distance != null ? (p.distance / 1000).toFixed(1) : '';
         });
 
         const crosshairPlugin = {
@@ -394,15 +383,15 @@ Promise.all([
 
         const chartSeries = {};
         const hrArr = points.map(p => p.hr);
-        if (hrArr.some(v => v != null)) chartSeries.hr = { label: '心率', data: hrArr, color: '#dc2626', unit: 'bpm' };
+        if (hrArr.some(v => v != null)) chartSeries.hr = { label: t('activity_detail.tab_hr'), data: hrArr, color: '#dc2626', unit: 'bpm' };
         const pwArr = points.map(p => p.power);
-        if (pwArr.some(v => v != null)) chartSeries.power = { label: '功率', data: pwArr, color: '#2563eb', unit: 'W' };
+        if (pwArr.some(v => v != null)) chartSeries.power = { label: t('activity_detail.tab_power'), data: pwArr, color: '#2563eb', unit: 'W' };
         const spArr = points.map(p => p.speed ? (p.speed * 3.6) : null);
-        if (spArr.some(v => v != null)) chartSeries.speed = { label: '速度', data: spArr, color: '#16a34a', unit: 'km/h' };
+        if (spArr.some(v => v != null)) chartSeries.speed = { label: t('activity_detail.tab_speed'), data: spArr, color: '#16a34a', unit: 'km/h' };
         const cdArr = points.map(p => p.cadence);
-        if (cdArr.some(v => v != null)) chartSeries.cadence = { label: '踏频', data: cdArr, color: '#8b5cf6', unit: 'rpm' };
+        if (cdArr.some(v => v != null)) chartSeries.cadence = { label: t('activity_detail.tab_cadence'), data: cdArr, color: '#8b5cf6', unit: 'rpm' };
         const alArr = points.map(p => p.altitude);
-        if (alArr.some(v => v != null)) chartSeries.altitude = { label: '海拔', data: alArr, color: '#d97706', unit: 'm' };
+        if (alArr.some(v => v != null)) chartSeries.altitude = { label: t('activity_detail.tab_altitude'), data: alArr, color: '#d97706', unit: 'm' };
 
         let currentChartType = Object.keys(chartSeries)[0] || 'hr';
         let currentXAxis = 'time';
@@ -413,7 +402,7 @@ Promise.all([
             if (!s) return;
             if (mainChart) mainChart.destroy();
             const isDist = currentXAxis === 'distance';
-            const xTitle = isDist ? '距离 (km)' : '时间';
+            const xTitle = isDist ? t('activity_detail.xaxis_distance') + ' (km)' : t('activity_detail.xaxis_time');
             let chartData, xScale;
             if (isDist) {
                 chartData = points.map((p, i) => ({ x: p.distance != null ? p.distance / 1000 : null, y: s.data[i] })).filter(d => d.x != null);
@@ -454,7 +443,7 @@ Promise.all([
             type: 'bar',
             data: {
                 labels: hrLabels,
-                datasets: [{ label: '时间（分钟）', data: hrValues, backgroundColor: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'] }]
+                datasets: [{ label: t('activity_detail.xaxis_time') + '（' + t('time.min') + '）', data: hrValues, backgroundColor: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'] }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
@@ -468,7 +457,7 @@ Promise.all([
             type: 'bar',
             data: {
                 labels: pwLabels,
-                datasets: [{ label: '时间（分钟）', data: pwValues, backgroundColor: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] }]
+                datasets: [{ label: t('activity_detail.xaxis_time') + '（' + t('time.min') + '）', data: pwValues, backgroundColor: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
@@ -490,13 +479,13 @@ Promise.all([
                     data: {
                         labels,
                         datasets: [
-                            { label: '历史最佳', data: histData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, borderWidth: 2, pointRadius: 3 },
-                            { label: '本次活动', data: actData, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', fill: false, borderWidth: 2, pointRadius: 3, borderDash: [5,3] },
+                            { label: t('activity_detail.historical_best'), data: histData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, borderWidth: 2, pointRadius: 3 },
+                            { label: t('activity_detail.this_activity'), data: actData, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', fill: false, borderWidth: 2, pointRadius: 3, borderDash: [5,3] },
                         ]
                     },
                     options: {
                         responsive: true,
-                        scales: { y: { beginAtZero: false, title: { display: true, text: '功率 (W)' } } },
+                        scales: { y: { beginAtZero: false, title: { display: true, text: t('activity_detail.power_legend') } } },
                         plugins: { legend: { position: 'bottom' } },
                         elements: { line: { tension: 0.3 } }
                     }
@@ -508,12 +497,12 @@ Promise.all([
     const errDiv = document.createElement('div');
     errDiv.className = 'card';
     errDiv.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem;';
-    errDiv.textContent = '加载失败: ' + err.message;
+    errDiv.textContent = t('activity_detail.load_failed') + ': ' + err.message;
     const backLink = document.createElement('a');
     backLink.href = '/activities';
     backLink.className = 'btn btn-primary';
     backLink.style.marginTop = '1rem';
-    backLink.textContent = '返回列表';
+    backLink.textContent = t('activity_detail.back_to_list');
     errDiv.appendChild(document.createElement('br'));
     errDiv.appendChild(backLink);
     document.getElementById('activity-detail').innerHTML = '';
@@ -528,13 +517,13 @@ function editActivity() {
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
     const typeOptions = Object.entries(typeNames).map(([k,v]) => `<option value="${k}" ${a.activity_type===k?'selected':''}>${v}</option>`).join('');
     overlay.innerHTML = `<div style="background:var(--card-bg);padding:1.5rem;border-radius:8px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;border:1px solid var(--border);">
-        <h3 style="margin-bottom:1rem;">编辑活动</h3>
-        <div class="form-group"><label>名称</label><input type="text" id="edit-name" value="${(a.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"></div>
-        <div class="form-group"><label>运动类型</label><select id="edit-type" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${typeOptions}</select></div>
-        <div class="form-group"><label>训练感受</label><textarea id="edit-notes" rows="4" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${(a.notes||'').replace(/</g,'&lt;')}</textarea></div>
+        <h3 style="margin-bottom:1rem;">${t('activity_detail.edit')}</h3>
+        <div class="form-group"><label>${t('activity_detail.edit_name_label')}</label><input type="text" id="edit-name" value="${(a.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"></div>
+        <div class="form-group"><label>${t('activity_detail.edit_type_label')}</label><select id="edit-type" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${typeOptions}</select></div>
+        <div class="form-group"><label>${t('activity_detail.edit_feel_label')}</label><textarea id="edit-notes" rows="4" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;">${(a.notes||'').replace(/</g,'&lt;')}</textarea></div>
         <div style="display:flex;gap:0.5rem;margin-top:1rem;">
-            <button class="btn btn-primary" onclick="saveEdit()">保存</button>
-            <button class="btn btn-secondary" onclick="closeEdit()">取消</button>
+            <button class="btn btn-primary" onclick="saveEdit()">${t('activity_detail.save_btn')}</button>
+            <button class="btn btn-secondary" onclick="closeEdit()">${t('activity_detail.cancel_btn')}</button>
         </div>
     </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) closeEdit(); });
@@ -571,7 +560,7 @@ function applySuggestedType(suggestedType) {
         .then(r => r.json())
         .then(res => {
             if (res.code === 200) {
-                showToast('运动类型已修正', 'success');
+                showToast(t('activity_detail.type_fixed'), 'success');
                 location.reload();
             } else {
                 showToast(res.message, 'error');
@@ -620,7 +609,7 @@ function switchLapMode(btn) {
             if (res.data && res.data.length > 0) {
                 body.innerHTML = res.data.map(lap => lapRow(lap)).join('');
             } else {
-                body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">数据不足</td></tr>';
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">' + t('activity_detail.insufficient_data') + '</td></tr>';
             }
         });
 }
@@ -635,13 +624,13 @@ function cancelTssEdit() { tssEditor.style.display = 'none'; tssDisplay.style.cu
 function saveTss() {
     const val = document.getElementById('tss-input').value;
     const num = val !== '' ? parseFloat(val) : null;
-    if (val !== '' && isNaN(num)) { showToast('请输入有效数字', 'error'); return; }
+    if (val !== '' && isNaN(num)) { showToast(t('activity_detail.invalid_number'), 'error'); return; }
     authFetch('/api/activities/' + activityId, {
         method: 'PUT', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({manual_tss: num})
     }).then(r => r.json()).then(res => {
         if (res.code === 200) {
-            showToast('TSS 已更新', 'success');
+            showToast(t('activity_detail.tss_updated'), 'success');
             tssEditor.style.display = 'none';
             location.reload();
         } else { showToast(res.message, 'error'); }

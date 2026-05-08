@@ -9,6 +9,7 @@ import uuid
 from flask import Blueprint, Response, current_app, jsonify, request
 
 from app.models.activity import Activity, DataSummary, Trackpoint
+from app.services.i18n_service import t
 from app.services.parse_service import parse_activity_file
 from app.services.validate_service import compute_file_checksum, validate_activity_file
 from app.utils.auth import get_authenticated_user, require_user, user_filter
@@ -459,15 +460,15 @@ def analyze_activity():
         return err
 
     if "file" not in request.files:
-        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.no_file"), "data": None}), 400
 
     file = request.files["file"]
     if not file.filename:
-        return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.empty_filename"), "data": None}), 400
 
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ("tcx", "gpx"):
-        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.unsupported_format", ext=ext), "data": None}), 400
 
     # 临时保存文件用于解析
     upload_dir = current_app.config["UPLOAD_FOLDER"]
@@ -481,7 +482,7 @@ def analyze_activity():
             return jsonify({"code": 400, "message": error_msg, "data": None}), 400
         parsed = parse_activity_file(tmp_path)
     except ValueError as e:
-        return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
+        return jsonify({"code": 422, "message": t("api.parse_failed", error=str(e)), "data": None}), 422
 
     trackpoints = parsed["trackpoints"]
     sport = parsed.get("sport", "other")
@@ -510,21 +511,23 @@ def upload_activity():
         return err
 
     if "file" not in request.files:
-        return jsonify({"code": 400, "message": "未找到上传文件", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.no_upload_file"), "data": None}), 400
 
     file = request.files["file"]
     if not file.filename:
-        return jsonify({"code": 400, "message": "文件名为空", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.empty_filename"), "data": None}), 400
 
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ("tcx", "gpx"):
-        return jsonify({"code": 400, "message": f"不支持的文件格式: .{ext}", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.unsupported_format", ext=ext), "data": None}), 400
 
     activity_type = request.form.get("activity_type", "").strip()
     if not activity_type:
-        return jsonify({"code": 400, "message": "缺少 activity_type 参数", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_activity_type"), "data": None}), 400
     if activity_type not in VALID_ACTIVITY_TYPES:
-        return jsonify({"code": 400, "message": f"不支持的运动类型: {activity_type}", "data": None}), 400
+        return jsonify(
+            {"code": 400, "message": t("api.unsupported_activity_type", type=activity_type), "data": None}
+        ), 400
 
     # 保存文件到 upload 目录
     upload_dir = current_app.config["UPLOAD_FOLDER"]
@@ -543,13 +546,13 @@ def upload_activity():
         parsed = parse_activity_file(file_path)
     except ValueError as e:
         os.remove(file_path)
-        return jsonify({"code": 422, "message": f"文件解析失败: {str(e)}", "data": None}), 422
+        return jsonify({"code": 422, "message": t("api.parse_failed", error=str(e)), "data": None}), 422
 
     # 文件校验和去重
     checksum = compute_file_checksum(file_path)
     if Activity.objects(user=user, file_checksum=checksum).first():
         os.remove(file_path)
-        return jsonify({"code": 409, "message": "该文件已上传过", "data": None}), 409
+        return jsonify({"code": 409, "message": t("api.file_already_uploaded"), "data": None}), 409
 
     trackpoints = parsed["trackpoints"]
     data_summary = _build_data_summary(parsed["laps"], trackpoints)
@@ -590,7 +593,7 @@ def upload_activity():
     return jsonify(
         {
             "code": 200,
-            "message": "上传成功",
+            "message": t("api.upload_success"),
             "data": {
                 "id": str(activity.id),
                 "activity_type": activity.activity_type,
@@ -613,9 +616,9 @@ def batch_analyze():
 
     files = request.files.getlist("files")
     if not files:
-        return jsonify({"code": 400, "message": "未找到文件", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.no_file"), "data": None}), 400
     if len(files) > 30:
-        return jsonify({"code": 400, "message": "单次最多 30 个文件", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.batch_max_files"), "data": None}), 400
 
     upload_dir = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_dir, exist_ok=True)
@@ -634,7 +637,7 @@ def batch_analyze():
             continue
         ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
         if ext not in ("tcx", "gpx"):
-            results.append({"filename": file.filename, "error": f"不支持的格式: .{ext}"})
+            results.append({"filename": file.filename, "error": t("api.unsupported_format_batch", ext=ext)})
             continue
 
         safe_name = f"{uuid.uuid4().hex}.{ext}"
@@ -669,7 +672,7 @@ def batch_analyze():
                 }
             )
         except ValueError as e:
-            results.append({"filename": file.filename, "error": f"解析失败: {str(e)}"})
+            results.append({"filename": file.filename, "error": t("api.parse_failed_batch", error=str(e))})
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
@@ -692,16 +695,16 @@ def batch_upload():
     session_id = data.get("session_id", "")
     items = data.get("items", [])
     if not session_id or not items:
-        return jsonify({"code": 400, "message": "缺少参数", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_params"), "data": None}), 400
     if len(items) > 30:
-        return jsonify({"code": 400, "message": "单次最多 30 个文件", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.batch_max_files"), "data": None}), 400
     if not re.match(r"^[a-f0-9]{32}$", session_id):
-        return jsonify({"code": 400, "message": "无效的会话 ID", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.invalid_session_id"), "data": None}), 400
 
     upload_dir = current_app.config["UPLOAD_FOLDER"]
     session_dir = os.path.join(upload_dir, "_batch", session_id)
     if not os.path.isdir(session_dir):
-        return jsonify({"code": 400, "message": "会话已过期，请重新分析", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.session_expired"), "data": None}), 400
 
     created = []
     errors = []
@@ -709,14 +712,14 @@ def batch_upload():
     for item in items:
         temp_id = item.get("temp_id", "")
         if not re.match(r"^[a-f0-9]+\.(tcx|gpx)$", temp_id):
-            errors.append({"filename": item.get("filename"), "error": "无效的文件标识"})
+            errors.append({"filename": item.get("filename"), "error": t("api.invalid_file_id")})
             continue
         src_path = os.path.join(session_dir, temp_id)
         if not os.path.realpath(src_path).startswith(os.path.realpath(session_dir) + os.sep):
-            errors.append({"filename": item.get("filename"), "error": "非法路径"})
+            errors.append({"filename": item.get("filename"), "error": t("api.invalid_path")})
             continue
         if not os.path.exists(src_path):
-            errors.append({"filename": item.get("filename"), "error": "文件未找到"})
+            errors.append({"filename": item.get("filename"), "error": t("api.file_not_found")})
             continue
 
         try:
@@ -730,13 +733,13 @@ def batch_upload():
 
             # 二次去重检查
             if Activity.objects(user=user, file_checksum=checksum).first():
-                errors.append({"filename": item.get("filename"), "error": "重复文件，已跳过"})
+                errors.append({"filename": item.get("filename"), "error": t("api.duplicate_file_skipped")})
                 continue
 
             activity_type = item.get("activity_type", parsed.get("sport", "other"))
             if activity_type not in VALID_ACTIVITY_TYPES:
                 activity_type = "other"
-            name = item.get("name") or item.get("filename", "未命名")
+            name = item.get("name") or item.get("filename", t("api.unnamed"))
 
             # 移动文件到永久位置
             ext = temp_id.rsplit(".", 1)[-1]
@@ -785,9 +788,11 @@ def batch_upload():
     # 清理会话目录
     shutil.rmtree(session_dir, ignore_errors=True)
 
-    msg = f"成功上传 {len(created)} 条活动"
-    if errors:
-        msg += f"，{len(errors)} 条失败或跳过"
+    msg = (
+        t("api.batch_upload_result", count=len(created), errors=len(errors))
+        if errors
+        else t("api.batch_upload_success", count=len(created))
+    )
 
     return jsonify(
         {
@@ -886,9 +891,9 @@ def get_activity(activity_id):
     user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).exclude("trackpoints", "raw_data_path").first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
     if user and activity.user and str(activity.user.id) != str(user.id):
-        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
+        return jsonify({"code": 403, "message": t("api.access_denied"), "data": None}), 403
 
     data = _serialize_activity(activity)
 
@@ -905,9 +910,9 @@ def get_trackpoints(activity_id):
     user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
     if user and activity.user and str(activity.user.id) != str(user.id):
-        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
+        return jsonify({"code": 403, "message": t("api.access_denied"), "data": None}), 403
 
     max_points = min(request.args.get("max_points", 500, type=int), 5000)
     data = activity.get_trackpoints_downsampled(max_points)
@@ -931,9 +936,9 @@ def get_lap_splits(activity_id):
     user = get_authenticated_user()
     activity = Activity.objects(id=activity_id).first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
     if user and activity.user and str(activity.user.id) != str(user.id):
-        return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
+        return jsonify({"code": 403, "message": t("api.access_denied"), "data": None}), 403
 
     tps = activity.trackpoints
     if not tps or len(tps) < 2:
@@ -974,16 +979,16 @@ def compare_activities():
     id_a = request.args.get("a")
     id_b = request.args.get("b")
     if not id_a or not id_b:
-        return jsonify({"code": 400, "message": "请提供两个活动 ID (a, b)", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.provide_two_ids"), "data": None}), 400
 
     a = Activity.objects(id=id_a).first()
     b = Activity.objects(id=id_b).first()
     if not a or not b:
-        return jsonify({"code": 404, "message": "活动不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_exist"), "data": None}), 404
     if user:
         for act in (a, b):
             if act.user and str(act.user.id) != str(user.id):
-                return jsonify({"code": 403, "message": "无权访问", "data": None}), 403
+                return jsonify({"code": 403, "message": t("api.access_denied"), "data": None}), 403
 
     def _tp_data(activity):
         tps = activity.get_trackpoints_downsampled(300)
@@ -1025,10 +1030,10 @@ def recalculate_activity(activity_id):
 
     activity = Activity.objects(id=activity_id, user=user).first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
 
     if not activity.trackpoints:
-        return jsonify({"code": 400, "message": "活动无轨迹数据", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.no_trackpoints"), "data": None}), 400
 
     from datetime import datetime, timedelta
 
@@ -1047,7 +1052,7 @@ def recalculate_activity(activity_id):
     ]
     _compute_metrics(activity, raw_tps)
     activity.save()
-    return jsonify({"code": 200, "message": "已重新计算", "data": _serialize_activity(activity)})
+    return jsonify({"code": 200, "message": t("api.recalculated"), "data": _serialize_activity(activity)})
 
 
 @activities_bp.route("/activities/recalculate-all", methods=["POST"])
@@ -1081,7 +1086,7 @@ def recalculate_all_activities():
         activity.save()
         count += 1
 
-    return jsonify({"code": 200, "message": f"已重新计算 {count} 条活动", "data": {"count": count}})
+    return jsonify({"code": 200, "message": t("api.recalculated_all", count=count), "data": {"count": count}})
 
 
 @activities_bp.route("/activities/<activity_id>", methods=["PUT"])
@@ -1093,18 +1098,20 @@ def update_activity(activity_id):
 
     activity = Activity.objects(id=activity_id, user=user).first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({"code": 400, "message": "缺少请求体", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_request_body"), "data": None}), 400
 
     if "name" in data:
         activity.name = data["name"][:200] if data["name"] else None
 
     if "activity_type" in data:
         if data["activity_type"] not in VALID_ACTIVITY_TYPES:
-            return jsonify({"code": 400, "message": f"不支持的运动类型: {data['activity_type']}", "data": None}), 400
+            return jsonify(
+                {"code": 400, "message": t("api.unsupported_activity_type", type=data["activity_type"]), "data": None}
+            ), 400
         old_type = activity.activity_type
         activity.activity_type = data["activity_type"]
         # 运动类型变更时重新计算指标（心率区间等可能不同）
@@ -1139,7 +1146,7 @@ def update_activity(activity_id):
         )
 
     activity.save()
-    return jsonify({"code": 200, "message": "已更新", "data": _serialize_activity(activity)})
+    return jsonify({"code": 200, "message": t("api.updated"), "data": _serialize_activity(activity)})
 
 
 @activities_bp.route("/activities/<activity_id>", methods=["DELETE"])
@@ -1151,13 +1158,13 @@ def delete_activity(activity_id):
 
     activity = Activity.objects(id=activity_id, user=user).first()
     if not activity:
-        return jsonify({"code": 404, "message": "运动记录不存在", "data": None}), 404
+        return jsonify({"code": 404, "message": t("api.activity_not_found"), "data": None}), 404
 
     if activity.raw_data_path and os.path.exists(activity.raw_data_path):
         os.remove(activity.raw_data_path)
 
     activity.delete()
-    return jsonify({"code": 200, "message": "已删除", "data": None})
+    return jsonify({"code": 200, "message": t("api.deleted"), "data": None})
 
 
 @activities_bp.route("/activities/batch-delete", methods=["POST"])
@@ -1169,13 +1176,13 @@ def batch_delete_activities():
 
     data = request.get_json()
     if not data or "ids" not in data:
-        return jsonify({"code": 400, "message": "缺少 ids 参数", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.missing_ids"), "data": None}), 400
 
     ids = data["ids"]
     if not isinstance(ids, list) or len(ids) == 0:
-        return jsonify({"code": 400, "message": "ids 必须是非空数组", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.ids_must_be_array"), "data": None}), 400
     if len(ids) > 50:
-        return jsonify({"code": 400, "message": "单次最多删除 50 条", "data": None}), 400
+        return jsonify({"code": 400, "message": t("api.batch_delete_limit"), "data": None}), 400
 
     deleted = 0
     for aid in ids:
@@ -1186,7 +1193,7 @@ def batch_delete_activities():
             activity.delete()
             deleted += 1
 
-    return jsonify({"code": 200, "message": f"已删除 {deleted} 条记录", "data": {"deleted": deleted}})
+    return jsonify({"code": 200, "message": t("api.batch_deleted", count=deleted), "data": {"deleted": deleted}})
 
 
 @activities_bp.route("/activities/power-curve", methods=["GET"])

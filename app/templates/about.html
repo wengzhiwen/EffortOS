@@ -1,79 +1,73 @@
 {% extends "base.html" %}
 
-{% block title %}关于 - EffortOS{% endblock %}
-{% block meta_description %}关于 EffortOS — 一款 AI 驱动的运动数据追踪与分析工具，帮助你科学管理训练。{% endblock %}
-{% block og_title %}关于 - EffortOS{% endblock %}
-{% block og_description %}关于 EffortOS 运动数据分析平台{% endblock %}
+{% block title %}{{ t('about.title') }} - EffortOS{% endblock %}
+{% block meta_description %}{{ t('about.desc1') }}{% endblock %}
+{% block og_title %}{{ t('about.title') }} - EffortOS{% endblock %}
+{% block og_description %}{{ t('about.desc1') }}{% endblock %}
 
 {% block content %}
 <div style="max-width: 700px;">
-    <h1 style="margin-bottom: 0.5rem;">关于 EffortOS</h1>
-    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1.5rem;">科学训练，数据驱动，AI 赋能</p>
+    <h1 style="margin-bottom: 0.5rem;">{{ t('about.title') }}</h1>
+    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1.5rem;">{{ t('about.subtitle') }}</p>
 
     <div class="card">
-        <div class="card-title">项目介绍</div>
-        <p style="margin-bottom: 0.75rem;">
-            EffortOS 是一款面向业余和半专业运动员的<strong>运动数据追踪与分析工具</strong>，类似 intervals.icu。
-            上传 TCX/GPX 运动数据文件，系统自动计算 TSS、CTL、ATL、TSB 等核心训练指标，
-            并通过 AI 教练提供个性化训练建议。
-        </p>
+        <div class="card-title">{{ t('about.project_intro') }}</div>
+        <p style="margin-bottom: 0.75rem;">{{ t('about.desc1') }}</p>
         <p style="color: var(--text-secondary); font-size: 0.9rem;">
-            核心理念：用科学方法量化训练负荷，让你更聪明地训练，而不是更努力地训练。
+            {{ t('about.core_philosophy') }}
         </p>
     </div>
 
     <div class="card">
-        <div class="card-title">核心功能</div>
+        <div class="card-title">{{ t('about.core_features') }}</div>
         <div class="grid grid-2" style="gap: 1rem;">
             <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">训练指标计算</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ t('about.feature_metrics') }}</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                    TSS、CTL/ATL/TSB、NP、IF、EF、功率曲线、Best Efforts 等核心指标自动计算
+                    {{ t('about.feature_metrics_desc') }}
                 </p>
             </div>
             <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">数据可视化</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ t('about.feature_charts') }}</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                    PMC 趋势图、训练日历热力图、体能趋势、心率/功率分区图、活动对比
+                    {{ t('about.feature_charts_desc') }}
                 </p>
             </div>
             <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">AI 教练</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ t('about.feature_ai') }}</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                    基于 OpenAI GPT 生成训练周报和个性化建议，回答你的训练问题
+                    {{ t('about.feature_ai_desc') }}
                 </p>
             </div>
             <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">Wellness 追踪</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ t('about.feature_wellness') }}</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                    日常主观感受 + HRV/静息心率记录，自动计算 Readiness 准备度分数
+                    {{ t('about.feature_wellness_desc') }}
                 </p>
             </div>
             <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">数据导出</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ t('about.feature_export') }}</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                    支持 CSV/JSON 格式导出活动数据，支持多维度筛选
+                    {{ t('about.feature_export_desc') }}
                 </p>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">技术栈</div>
+        <div class="card-title">{{ t('about.tech_stack') }}</div>
         <div style="display: flex; gap: 2rem; flex-wrap: wrap; color: var(--text-secondary); font-size: 0.9rem;">
-            <div><strong style="color: var(--text);">后端</strong> Python + Flask</div>
-            <div><strong style="color: var(--text);">数据库</strong> MongoDB</div>
-            <div><strong style="color: var(--text);">AI</strong> OpenAI GPT</div>
-            <div><strong style="color: var(--text);">前端</strong> Chart.js + Vanilla JS</div>
+            <div><strong style="color: var(--text);">{{ t('about.backend') }}</strong> Python + Flask</div>
+            <div><strong style="color: var(--text);">{{ t('about.database') }}</strong> MongoDB</div>
+            <div><strong style="color: var(--text);">{{ t('about.ai') }}</strong> OpenAI GPT</div>
+            <div><strong style="color: var(--text);">{{ t('about.frontend') }}</strong> Chart.js + Vanilla JS</div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">开源说明</div>
+        <div class="card-title">{{ t('about.open_source') }}</div>
         <p style="color: var(--text-secondary); font-size: 0.9rem;">
-            EffortOS 同时是一个 <strong>AI 自驱动实验项目</strong>：以 Claude Code 为核心，
-            持续执行「规划 → 选取任务 → 实施 → 评估 → 再规划」的循环，
-            在只有明确目标而无详细设计的基础上不断自我进化。
+            {{ t('about.open_source_desc') }}
         </p>
     </div>
 </div>

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}活动记录 - EffortOS{% endblock %}
+{% block title %}{{ t('activities.title') }} - EffortOS{% endblock %}
 
 {% block content %}
 <h2 class="page-header" style="margin-bottom: 1rem;">
-    <span>活动记录</span>
+    <span>{{ t('activities.title') }}</span>
     <div class="page-header-actions">
-        <button class="btn btn-primary" style="font-size: 0.85rem;" onclick="openUploadModal()">上传文件</button>
-        <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">对比</a>
-        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('csv')">导出</button>
+        <button class="btn btn-primary" style="font-size: 0.85rem;" onclick="openUploadModal()">{{ t('activities.upload_file') }}</button>
+        <a href="/compare" class="btn btn-secondary" style="font-size: 0.85rem;">{{ t('activities.compare') }}</a>
+        <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="exportData('csv')">{{ t('activities.export') }}</button>
     </div>
 </h2>
 
 <div class="confirm-overlay" id="upload-modal" style="display: none;">
     <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; max-width: 860px; width: 95%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="margin: 0; font-size: 1.1rem;" id="upload-title">上传运动数据</h3>
+            <h3 style="margin: 0; font-size: 1.1rem;" id="upload-title">{{ t('activities.upload_title') }}</h3>
             <button onclick="closeUploadModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); line-height: 1;">&times;</button>
         </div>
 
@@ -24,12 +24,12 @@
             <input type="file" accept=".tcx,.gpx" multiple id="upload-file" style="display: none;">
             <div id="upload-dropzone" onclick="document.getElementById('upload-file').click()" style="border: 2px dashed var(--border); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;">
                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-                <div style="font-weight: 600; margin-bottom: 0.25rem;">点击或拖拽文件到这里（支持多选）</div>
-                <div style="color: var(--text-secondary); font-size: 0.85rem;">支持 TCX / GPX 格式</div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">{{ t('activities.dropzone_text') }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('activities.supported_formats') }}</div>
             </div>
             <div id="upload-loading" style="display: none; text-align: center; padding: 2rem;">
                 <div class="spinner" style="margin: 0 auto 0.75rem;"></div>
-                <div id="upload-loading-text" style="color: var(--text-secondary);">正在分析文件...</div>
+                <div id="upload-loading-text" style="color: var(--text-secondary);">{{ t('activities.analyzing_files') }}</div>
             </div>
         </div>
 
@@ -41,21 +41,21 @@
                     <thead>
                         <tr>
                             <th style="width:30px;"><input type="checkbox" id="batch-select-all" checked></th>
-                            <th>文件名</th>
-                            <th>时间</th>
-                            <th>类型</th>
-                            <th>名称</th>
-                            <th>时长</th>
-                            <th>距离</th>
-                            <th>状态</th>
+                            <th>{{ t('activities.col_filename') }}</th>
+                            <th>{{ t('activities.col_time') }}</th>
+                            <th>{{ t('activities.col_type') }}</th>
+                            <th>{{ t('activities.col_name') }}</th>
+                            <th>{{ t('activities.col_duration') }}</th>
+                            <th>{{ t('activities.col_distance') }}</th>
+                            <th>{{ t('activities.col_status') }}</th>
                         </tr>
                     </thead>
                     <tbody id="batch-tbody"></tbody>
                 </table>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
-                <button class="btn btn-primary" id="batch-save-btn">保存</button>
-                <button class="btn btn-secondary" onclick="resetUploadStep()">重新选择</button>
+                <button class="btn btn-primary" id="batch-save-btn">{{ t('activities.save_btn') }}</button>
+                <button class="btn btn-secondary" onclick="resetUploadStep()">{{ t('activities.reselect') }}</button>
                 <span id="upload-status" style="font-size: 0.85rem;"></span>
             </div>
         </div>
@@ -65,58 +65,58 @@
 <div class="card filter-card">
     <div class="filter-bar">
         <div class="filter-search-wrap">
-            <input type="text" id="filter-search" placeholder="搜索活动名称..." onkeydown="if(event.key==='Enter')loadActivities(0)">
+            <input type="text" id="filter-search" placeholder="{{ t('activities.search_placeholder') }}" onkeydown="if(event.key==='Enter')loadActivities(0)">
         </div>
         <div class="filter-sort-wrap">
             <select id="filter-sort" onchange="loadActivities(0)">
-                <option value="-start_time">最新优先</option>
-                <option value="start_time">最早优先</option>
-                <option value="-created_at">最近上传</option>
-                <option value="name">名称 A-Z</option>
+                <option value="-start_time">{{ t('activities.sort_newest') }}</option>
+                <option value="start_time">{{ t('activities.sort_oldest') }}</option>
+                <option value="-created_at">{{ t('activities.sort_recent_upload') }}</option>
+                <option value="name">{{ t('activities.sort_name_az') }}</option>
             </select>
         </div>
         <button class="btn btn-secondary btn-sm filter-toggle-btn" onclick="toggleFilterPanel()">
-            <span class="filter-toggle-icon" id="filter-toggle-icon">&#9660;</span> 筛选
+            <span class="filter-toggle-icon" id="filter-toggle-icon">&#9660;</span> {{ t('activities.filter') }}
             <span class="filter-count" id="filter-count" style="display:none"></span>
         </button>
     </div>
     <div class="filter-panel" id="filter-panel">
         <div class="grid grid-4" style="align-items: end;">
             <div class="form-group" style="margin-bottom: 0;">
-                <label>运动类型</label>
+                <label>{{ t('activities.filter_type') }}</label>
                 <select id="filter-type">
-                    <option value="">全部</option>
-                    <option value="cycling">骑行</option>
-                    <option value="indoor_cycling">室内骑行</option>
-                    <option value="commute_cycling">通勤骑行</option>
-                    <option value="running">跑步</option>
-                    <option value="indoor_running">室内跑步</option>
-                    <option value="walking">步行</option>
+                    <option value="">{{ t('activities.all') }}</option>
+                    <option value="cycling">{{ t('types.cycling') }}</option>
+                    <option value="indoor_cycling">{{ t('types.indoor_cycling') }}</option>
+                    <option value="commute_cycling">{{ t('types.commute_cycling') }}</option>
+                    <option value="running">{{ t('types.running') }}</option>
+                    <option value="indoor_running">{{ t('types.indoor_running') }}</option>
+                    <option value="walking">{{ t('types.walking') }}</option>
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>起始日期</label>
+                <label>{{ t('activities.filter_start_date') }}</label>
                 <input type="date" id="filter-start">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>结束日期</label>
+                <label>{{ t('activities.filter_end_date') }}</label>
                 <input type="date" id="filter-end">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>强度等级</label>
+                <label>{{ t('activities.filter_intensity') }}</label>
                 <select id="filter-intensity">
-                    <option value="">全部</option>
-                    <option value="recovery">恢复</option>
-                    <option value="endurance">有氧耐力</option>
-                    <option value="tempo">节奏</option>
-                    <option value="threshold">阈值</option>
-                    <option value="vo2max">VO2max</option>
+                    <option value="">{{ t('activities.all') }}</option>
+                    <option value="recovery">{{ t('intensity.recovery') }}</option>
+                    <option value="endurance">{{ t('intensity.endurance') }}</option>
+                    <option value="tempo">{{ t('intensity.tempo') }}</option>
+                    <option value="threshold">{{ t('intensity.threshold') }}</option>
+                    <option value="vo2max">{{ t('intensity.vo2max') }}</option>
                 </select>
             </div>
         </div>
         <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-            <button class="btn btn-primary btn-sm" onclick="loadActivities(0)">应用</button>
-            <button class="btn btn-secondary btn-sm" onclick="clearFilters()">重置</button>
+            <button class="btn btn-primary btn-sm" onclick="loadActivities(0)">{{ t('activities.apply') }}</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearFilters()">{{ t('activities.reset') }}</button>
         </div>
     </div>
 </div>
@@ -125,11 +125,11 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <div>
             <label style="font-size: 0.85rem; cursor: pointer;">
-                <input type="checkbox" id="select-all"> 全选
+                <input type="checkbox" id="select-all"> {{ t('activities.select_all') }}
             </label>
         </div>
         <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary btn-sm" id="batch-delete-btn" style="display: none;" onclick="batchDelete()">删除选中</button>
+            <button class="btn btn-secondary btn-sm" id="batch-delete-btn" style="display: none;" onclick="batchDelete()">{{ t('activities.delete_selected') }}</button>
         </div>
     </div>
     <div style="overflow-x: auto;">
@@ -137,14 +137,14 @@
         <thead>
             <tr>
                 <th style="width:30px;"></th>
-                <th style="white-space:nowrap;">日期</th>
-                <th>类型</th>
-                <th>名称</th>
-                <th style="white-space:nowrap;">时长</th>
-                <th style="white-space:nowrap;">距离</th>
-                <th>TSS</th>
-                <th>hrTSS</th>
-                <th>强度</th>
+                <th style="white-space:nowrap;">{{ t('activities.col_date') }}</th>
+                <th>{{ t('activities.col_type') }}</th>
+                <th>{{ t('activities.col_name') }}</th>
+                <th style="white-space:nowrap;">{{ t('activities.col_duration') }}</th>
+                <th style="white-space:nowrap;">{{ t('activities.col_distance') }}</th>
+                <th>{{ t('activities.col_tss') }}</th>
+                <th>{{ t('activities.col_hr_tss') }}</th>
+                <th>{{ t('activities.col_intensity') }}</th>
                 <th style="width:40px;"></th>
             </tr>
         </thead>
@@ -166,7 +166,7 @@
 let currentOffset = 0;
 const limit = 20;
 const typeNames = window.TYPE_NAMES;
-const intensityNames = { recovery: '恢复', endurance: '有氧耐力', tempo: '节奏', threshold: '阈值', vo2max: 'VO2max' };
+const intensityNames = { recovery: t('intensity.recovery'), endurance: t('intensity.endurance'), tempo: t('intensity.tempo'), threshold: t('intensity.threshold'), vo2max: t('intensity.vo2max') };
 const intensityColors = { recovery: '#60a5fa', endurance: '#34d399', tempo: '#fbbf24', threshold: '#f97316', vo2max: '#ef4444' };
 
 function formatWindow(w) {
@@ -197,7 +197,7 @@ fileInput.addEventListener('change', function() {
     if (!files || files.length === 0) return;
     document.getElementById('upload-step1').style.display = 'none';
     document.getElementById('upload-loading').style.display = 'block';
-    document.getElementById('upload-loading-text').textContent = `正在分析 ${files.length} 个文件...`;
+    document.getElementById('upload-loading-text').textContent = t('activities.analyzing_files').replace('...', '') + ' ' + files.length + ' ' + t('activities.analyzing_n_files') + '...';
 
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
@@ -210,7 +210,7 @@ fileInput.addEventListener('change', function() {
             if (res.code !== 200) {
                 document.getElementById('upload-loading').style.display = 'none';
                 document.getElementById('upload-step1').style.display = 'block';
-                showToast(res.message || '分析失败', 'error');
+                showToast(res.message || t('activities.analyze_failed'), 'error');
                 return;
             }
             batchData = res.data;
@@ -218,13 +218,13 @@ fileInput.addEventListener('change', function() {
             renderBatchTable(res.data.items);
             document.getElementById('upload-loading').style.display = 'none';
             document.getElementById('upload-step2').style.display = 'block';
-            document.getElementById('upload-title').textContent = `分析完成（${res.data.items.length} 个文件）`;
+            document.getElementById('upload-title').textContent = t('activities.analysis_complete') + '（' + res.data.items.length + ' ' + t('activities.analyzing_n_files') + '）';
             updateBatchSaveBtn();
         })
         .catch(() => {
             document.getElementById('upload-loading').style.display = 'none';
             document.getElementById('upload-step1').style.display = 'block';
-            showToast('分析失败，请重试', 'error');
+            showToast(t('activities.analyze_failed_retry'), 'error');
         });
 });
 
@@ -240,8 +240,8 @@ function renderBatchTable(items) {
         const isDup = !!item.is_duplicate;
         const rowStyle = (hasError || isDup) ? 'style="opacity:0.5"' : '';
         const statusText = hasError ? `<span style="color:var(--danger)">${esc(item.error)}</span>`
-                         : isDup ? '<span style="color:var(--warning)">重复</span>'
-                         : '正常';
+                         : isDup ? '<span style="color:var(--warning)">' + t('activities.duplicate') + '</span>'
+                         : t('activities.normal');
         const checkAttr = (hasError || isDup) ? 'disabled' : 'checked';
         const timeStr = item.start_time ? item.start_time.slice(0, 16).replace('T', ' ') : '—';
         const durationStr = item.duration_seconds ? fmtDur(item.duration_seconds) : '—';
@@ -269,7 +269,7 @@ function renderBatchTable(items) {
 function updateBatchSaveBtn() {
     const checked = document.querySelectorAll('.batch-check:checked');
     const btn = document.getElementById('batch-save-btn');
-    btn.textContent = checked.length > 0 ? `保存 ${checked.length} 条活动` : '保存';
+    btn.textContent = checked.length > 0 ? t('activities.save_btn') + ' ' + checked.length + ' ' + t('activities.save_n_activities') : t('activities.save_btn');
 }
 
 document.getElementById('batch-select-all').addEventListener('change', function() {
@@ -279,7 +279,7 @@ document.getElementById('batch-select-all').addEventListener('change', function(
 
 document.getElementById('batch-save-btn').addEventListener('click', function() {
     const checked = document.querySelectorAll('.batch-check:checked');
-    if (checked.length === 0) { showToast('请至少选择一个文件', 'error'); return; }
+    if (checked.length === 0) { showToast(t('activities.select_one_file'), 'error'); return; }
 
     const items = [];
     checked.forEach(cb => {
@@ -296,7 +296,7 @@ document.getElementById('batch-save-btn').addEventListener('click', function() {
     const btn = this;
     const status = document.getElementById('upload-status');
     btn.disabled = true;
-    btn.textContent = '保存中...';
+    btn.textContent = t('activities.saving');
     status.textContent = '';
 
     authFetch('/api/activities/batch-upload', {
@@ -321,14 +321,14 @@ document.getElementById('batch-save-btn').addEventListener('click', function() {
         .catch(() => {
             btn.disabled = false;
             updateBatchSaveBtn();
-            showToast('保存失败，请重试', 'error');
+            showToast(t('activities.save_failed_retry'), 'error');
         });
 });
 
 function resetUploadStep() {
     document.getElementById('upload-step2').style.display = 'none';
     document.getElementById('upload-step1').style.display = 'block';
-    document.getElementById('upload-title').textContent = '上传运动数据';
+    document.getElementById('upload-title').textContent = t('activities.upload_title');
     fileInput.value = '';
     document.getElementById('upload-status').textContent = '';
     batchData = null;
@@ -409,9 +409,10 @@ function loadActivities(offset = 0) {
             const tbody = document.getElementById('activity-list');
             const items = res.data.items;
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10">暂无活动记录</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10">' + t('activities.no_activities') + '</td></tr>';
                 return;
             }
+            const weekdayChars = t('activities.weekday_chars');
             tbody.innerHTML = items.map(a => {
                 const s = a.data_summary || {};
                 const m = a.computed_metrics || {};
@@ -419,7 +420,7 @@ function loadActivities(offset = 0) {
                 const dist = s.total_distance ? (s.total_distance / 1000).toFixed(1) + ' km' : '—';
                 const displayTss = m.manual_tss != null ? m.manual_tss : m.tss;
                 const tss = displayTss != null ? displayTss.toFixed(1) : '—';
-                const tssTag = m.manual_tss != null ? ' <span style="font-size:0.7rem;color:var(--text-secondary)">手动</span>' : '';
+                const tssTag = m.manual_tss != null ? ' <span style="font-size:0.7rem;color:var(--text-secondary)">' + t('activities.manual_tag') + '</span>' : '';
                 const hrTss = m.hr_tss != null ? m.hr_tss.toFixed(1) : '—';
                 const il = m.intensity_level;
                 const intensityBadge = il ? `<span style="color: ${intensityColors[il] || '#999'}; font-weight: 600;">${intensityNames[il] || il}</span>` : '—';
@@ -427,7 +428,7 @@ function loadActivities(offset = 0) {
                 const pbBadge = pbWindows.length > 0 ? ` <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.7rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; vertical-align: middle;" title="刷新 PB: ${pbWindows.map(w => formatWindow(w)).join(', ')}">PB</span>` : '';
                 return `<tr>
                     <td><input type="checkbox" class="activity-check" data-id="${a.id}"></td>
-                    <td><span title="${a.start_time}">${a.start_time.slice(0, 10)}</span><span style="color: var(--text-secondary); font-size: 0.75rem; margin-left: 4px;">${'日一二三四五六'[new Date(a.start_time).getDay()]}</span></td>
+                    <td><span title="${a.start_time}">${a.start_time.slice(0, 10)}</span><span style="color: var(--text-secondary); font-size: 0.75rem; margin-left: 4px;">${weekdayChars[new Date(a.start_time).getDay()]}</span></td>
                     <td><span class="badge badge-${a.activity_type}">${typeNames[a.activity_type] || a.activity_type}</span></td>
                     <td><a href="/activities/${a.id}">${esc(a.name || '—')}</a>${pbBadge}</td>
                     <td>${duration}</td>
@@ -435,13 +436,15 @@ function loadActivities(offset = 0) {
                     <td>${tss}${tssTag}</td>
                     <td>${hrTss}</td>
                     <td>${intensityBadge}</td>
-                    <td><button onclick="deleteActivity('${a.id}')" style="color: var(--danger); background: none; border: none; cursor: pointer;">删除</button></td>
+                    <td><button onclick="deleteActivity('${a.id}')" style="color: var(--danger); background: none; border: none; cursor: pointer;">${t('activities.col_delete')}</button></td>
                 </tr>`;
             }).join('');
 
             const total = res.data.total;
             const pag = document.getElementById('pagination');
-            let html = `<span style="color: var(--text-secondary); font-size: 0.85rem; margin-right: 1rem;">共 ${total} 条</span>`;
+            let html = `<span style="color: var(--text-secondary); font-size: 0.85rem; margin-right: 1rem;">` + t('activities.total_count', {n: total}).replace('{n}', total) + '</span>';
+            // Use simple interpolation: "共 {n} 条" -> "共 X 条"
+            html = `<span style="color: var(--text-secondary); font-size: 0.85rem; margin-right: 1rem;">` + t('activities.total_count', {n: total}) + '</span>';
             if (total > limit) {
                 const pages = Math.ceil(total / limit);
                 const current = Math.floor(offset / limit);
@@ -476,7 +479,7 @@ function exportData(format) {
                 a.href = URL.createObjectURL(blob);
                 a.download = 'activities.json';
                 a.click();
-                showToast('JSON 导出成功', 'success');
+                showToast(t('activities.json_export_ok'), 'success');
             });
     } else {
         authFetch(url)
@@ -486,17 +489,17 @@ function exportData(format) {
                 a.href = URL.createObjectURL(blob);
                 a.download = 'activities.csv';
                 a.click();
-                showToast('CSV 导出成功', 'success');
+                showToast(t('activities.csv_export_ok'), 'success');
             });
     }
 }
 
 async function deleteActivity(id) {
-    if (!await confirmDialog('确定删除此活动？')) return;
+    if (!await confirmDialog(t('activities.confirm_delete'))) return;
     authFetch(`/api/activities/${id}`, { method: 'DELETE' })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) showToast('已删除', 'success');
+            if (res.code === 200) showToast(t('activities.deleted'), 'success');
             loadActivities(currentOffset);
         });
 }
@@ -514,13 +517,13 @@ function updateBatchBtn() {
     const checked = document.querySelectorAll('.activity-check:checked');
     const show = checked.length > 0;
     document.getElementById('batch-delete-btn').style.display = show ? 'inline-block' : 'none';
-    document.getElementById('batch-delete-btn').textContent = `删除选中 (${checked.length})`;
+    document.getElementById('batch-delete-btn').textContent = t('activities.delete_selected') + ' (' + checked.length + ')';
 }
 
 async function batchDelete() {
     const ids = Array.from(document.querySelectorAll('.activity-check:checked')).map(cb => cb.dataset.id);
     if (ids.length === 0) return;
-    if (!await confirmDialog(`确定删除 ${ids.length} 条活动？`)) return;
+    if (!await confirmDialog(t('activities.confirm_delete_n', {n: ids.length}))) return;
     authFetch('/api/activities/batch-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -528,7 +531,7 @@ async function batchDelete() {
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) { showToast(`已删除 ${ids.length} 条`, 'success'); loadActivities(0); }
+            if (res.code === 200) { showToast(t('activities.deleted_n', {n: ids.length}), 'success'); loadActivities(0); }
             else showToast(res.message, 'error');
         });
 }

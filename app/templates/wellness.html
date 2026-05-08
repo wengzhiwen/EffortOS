@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Wellness - EffortOS{% endblock %}
+{% block title %}{{ t('wellness.title') }} - EffortOS{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 1rem;">Wellness 日常追踪</h2>
+<h2 style="margin-bottom: 1rem;">{{ t('wellness.title') }}</h2>
 
 <div class="card" style="margin-bottom: 1rem;">
-    <div class="card-title">今日记录 <span id="today-date" style="color: var(--text-secondary); font-weight: normal;"></span></div>
+    <div class="card-title">{{ t('wellness.today_record') }} <span id="today-date" style="color: var(--text-secondary); font-weight: normal;"></span></div>
     <form id="wellness-form">
         <div class="grid grid-3" style="gap: 1rem;">
             <div class="form-group">
-                <label>睡眠质量</label>
+                <label>{{ t('wellness.sleep_quality') }}</label>
                 <div class="rating-group" data-field="sleep_quality">
                     <button type="button" data-val="1">1</button>
                     <button type="button" data-val="2">2</button>
@@ -18,10 +18,10 @@
                     <button type="button" data-val="4">4</button>
                     <button type="button" data-val="5">5</button>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>很差</span><span>极好</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>{{ t('wellness.sleep_range_low') }}</span><span>{{ t('wellness.sleep_range_high') }}</span></div>
             </div>
             <div class="form-group">
-                <label>疲劳度</label>
+                <label>{{ t('wellness.fatigue') }}</label>
                 <div class="rating-group" data-field="fatigue">
                     <button type="button" data-val="1">1</button>
                     <button type="button" data-val="2">2</button>
@@ -29,10 +29,10 @@
                     <button type="button" data-val="4">4</button>
                     <button type="button" data-val="5">5</button>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>精力充沛</span><span>极度疲劳</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>{{ t('wellness.fatigue_range_low') }}</span><span>{{ t('wellness.fatigue_range_high') }}</span></div>
             </div>
             <div class="form-group">
-                <label>压力</label>
+                <label>{{ t('wellness.stress') }}</label>
                 <div class="rating-group" data-field="stress">
                     <button type="button" data-val="1">1</button>
                     <button type="button" data-val="2">2</button>
@@ -40,10 +40,10 @@
                     <button type="button" data-val="4">4</button>
                     <button type="button" data-val="5">5</button>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>很放松</span><span>压力山大</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>{{ t('wellness.stress_range_low') }}</span><span>{{ t('wellness.stress_range_high') }}</span></div>
             </div>
             <div class="form-group">
-                <label>肌肉酸痛</label>
+                <label>{{ t('wellness.soreness') }}</label>
                 <div class="rating-group" data-field="soreness">
                     <button type="button" data-val="1">1</button>
                     <button type="button" data-val="2">2</button>
@@ -51,10 +51,10 @@
                     <button type="button" data-val="4">4</button>
                     <button type="button" data-val="5">5</button>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>无感</span><span>非常酸痛</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>{{ t('wellness.soreness_range_low') }}</span><span>{{ t('wellness.soreness_range_high') }}</span></div>
             </div>
             <div class="form-group">
-                <label>心情</label>
+                <label>{{ t('wellness.mood') }}</label>
                 <div class="rating-group" data-field="mood">
                     <button type="button" data-val="1">1</button>
                     <button type="button" data-val="2">2</button>
@@ -62,47 +62,47 @@
                     <button type="button" data-val="4">4</button>
                     <button type="button" data-val="5">5</button>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>低落</span><span>极佳</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"><span>{{ t('wellness.mood_range_low') }}</span><span>{{ t('wellness.mood_range_high') }}</span></div>
             </div>
             <div class="form-group">
-                <label>HRV (ms)</label>
-                <input type="number" id="wellness-hrv" step="0.1" placeholder="如 55.3">
+                <label>{{ t('wellness.hrv') }}</label>
+                <input type="number" id="wellness-hrv" step="0.1" placeholder="55.3">
             </div>
         </div>
         <div class="grid grid-3" style="gap: 1rem; margin-top: 0.5rem;">
             <div class="form-group">
-                <label>静息心率 (bpm)</label>
-                <input type="number" id="wellness-resting-hr" placeholder="如 58">
+                <label>{{ t('wellness.resting_hr') }}</label>
+                <input type="number" id="wellness-resting-hr" placeholder="58">
             </div>
             <div class="form-group">
-                <label>体重 (kg)</label>
-                <input type="number" id="wellness-weight" step="0.1" placeholder="如 68.5">
+                <label>{{ t('wellness.weight') }}</label>
+                <input type="number" id="wellness-weight" step="0.1" placeholder="68.5">
             </div>
             <div class="form-group">
-                <label>备注</label>
-                <input type="text" id="wellness-notes" placeholder="昨晚睡得不错">
+                <label>{{ t('wellness.notes') }}</label>
+                <input type="text" id="wellness-notes" placeholder="">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;" id="save-btn">保存</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;" id="save-btn">{{ t('wellness.save') }}</button>
     </form>
 </div>
 
 <div class="grid grid-2">
     <div class="card">
-        <div class="card-title">主观感受趋势（近 30 天）</div>
+        <div class="card-title">{{ t('wellness.subjective_trend') }}</div>
         <canvas id="wellness-chart" height="250"></canvas>
     </div>
     <div class="card">
-        <div class="card-title">HRV / 静息心率趋势</div>
+        <div class="card-title">{{ t('wellness.hrv_resting_trend') }}</div>
         <canvas id="hrv-chart" height="250"></canvas>
     </div>
 </div>
 
 <div class="card" style="margin-top: 1rem;">
-    <div class="card-title">历史记录</div>
+    <div class="card-title">{{ t('wellness.history') }}</div>
     <table>
         <thead><tr>
-            <th>日期</th><th>睡眠</th><th>疲劳</th><th>压力</th><th>酸痛</th><th>心情</th><th>HRV</th><th>静息心率</th><th>体重</th><th>备注</th>
+            <th>{{ t('wellness.col_date') }}</th><th>{{ t('wellness.col_sleep') }}</th><th>{{ t('wellness.col_fatigue') }}</th><th>{{ t('wellness.col_stress') }}</th><th>{{ t('wellness.col_soreness') }}</th><th>{{ t('wellness.col_mood') }}</th><th>{{ t('wellness.col_hrv') }}</th><th>{{ t('wellness.col_resting_hr') }}</th><th>{{ t('wellness.col_weight') }}</th><th>{{ t('wellness.col_notes') }}</th>
         </tr></thead>
         <tbody id="wellness-history"></tbody>
     </table>
@@ -124,7 +124,6 @@
 <script>
 const formData = {};
 
-// 评分按钮交互
 document.querySelectorAll('.rating-group').forEach(group => {
     const field = group.dataset.field;
     group.querySelectorAll('button').forEach(btn => {
@@ -136,7 +135,6 @@ document.querySelectorAll('.rating-group').forEach(group => {
     });
 });
 
-// 加载今日数据
 const today = new Date().toISOString().slice(0, 10);
 document.getElementById('today-date').textContent = today;
 
@@ -160,11 +158,10 @@ authFetch('/api/wellness/today')
             if (d.resting_hr) document.getElementById('wellness-resting-hr').value = d.resting_hr;
             if (d.weight) document.getElementById('wellness-weight').value = d.weight;
             if (d.notes) document.getElementById('wellness-notes').value = d.notes;
-            document.getElementById('save-btn').textContent = '更新';
+            document.getElementById('save-btn').textContent = t('wellness.update');
         }
     });
 
-// 保存
 document.getElementById('wellness-form').addEventListener('submit', e => {
     e.preventDefault();
     const btn = document.getElementById('save-btn');
@@ -184,13 +181,12 @@ document.getElementById('wellness-form').addEventListener('submit', e => {
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) { showToast('已保存', 'success'); loadHistory(); }
+            if (res.code === 200) { showToast(t('wellness.saved'), 'success'); loadHistory(); }
             else showToast(res.message, 'error');
         })
         .finally(() => { btn.disabled = false; });
 });
 
-// 趋势图 + 历史记录
 let _wellnessCharts = [];
 function loadHistory() {
     _wellnessCharts.forEach(c => c.destroy());
@@ -200,7 +196,6 @@ function loadHistory() {
         .then(res => {
             const entries = res.data || [];
 
-            // 趋势图
             if (entries.length > 0) {
                 const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
                 const labels = sorted.map(e => e.date.slice(5));
@@ -210,10 +205,10 @@ function loadHistory() {
                     data: {
                         labels,
                         datasets: [
-                            { label: '睡眠', data: sorted.map(e => e.sleep_quality), borderColor: '#2563eb', tension: 0.3, pointRadius: 3 },
-                            { label: '疲劳', data: sorted.map(e => e.fatigue), borderColor: '#dc2626', tension: 0.3, pointRadius: 3 },
-                            { label: '压力', data: sorted.map(e => e.stress), borderColor: '#f59e0b', tension: 0.3, pointRadius: 3 },
-                            { label: '心情', data: sorted.map(e => e.mood), borderColor: '#16a34a', tension: 0.3, pointRadius: 3 },
+                            { label: t('wellness.col_sleep'), data: sorted.map(e => e.sleep_quality), borderColor: '#2563eb', tension: 0.3, pointRadius: 3 },
+                            { label: t('wellness.col_fatigue'), data: sorted.map(e => e.fatigue), borderColor: '#dc2626', tension: 0.3, pointRadius: 3 },
+                            { label: t('wellness.col_stress'), data: sorted.map(e => e.stress), borderColor: '#f59e0b', tension: 0.3, pointRadius: 3 },
+                            { label: t('wellness.col_mood'), data: sorted.map(e => e.mood), borderColor: '#16a34a', tension: 0.3, pointRadius: 3 },
                         ]
                     },
                     options: {
@@ -221,9 +216,8 @@ function loadHistory() {
                         scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } },
                         plugins: { legend: { position: 'bottom' } }
                     }
-                });
+                }));
 
-                // HRV / 静息心率趋势
                 const hrvData = sorted.filter(e => e.hrv || e.resting_hr);
                 if (hrvData.length > 0) {
                     _wellnessCharts.push(new Chart(document.getElementById('hrv-chart'), {
@@ -232,7 +226,7 @@ function loadHistory() {
                             labels: hrvData.map(e => e.date.slice(5)),
                             datasets: [
                                 { label: 'HRV (ms)', data: hrvData.map(e => e.hrv), borderColor: '#8b5cf6', tension: 0.3, yAxisID: 'y' },
-                                { label: '静息心率', data: hrvData.map(e => e.resting_hr), borderColor: '#dc2626', tension: 0.3, yAxisID: 'y1' },
+                                { label: t('wellness.col_resting_hr'), data: hrvData.map(e => e.resting_hr), borderColor: '#dc2626', tension: 0.3, yAxisID: 'y1' },
                             ]
                         },
                         options: {
@@ -243,14 +237,13 @@ function loadHistory() {
                             },
                             plugins: { legend: { position: 'bottom' } }
                         }
-                    });
+                    }));
                 }
             }
 
-            // 历史表格
             const tbody = document.getElementById('wellness-history');
             if (entries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-secondary);">暂无记录</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-secondary);">${t('wellness.no_records')}</td></tr>`;
                 return;
             }
             tbody.innerHTML = entries.map(e => `<tr>
