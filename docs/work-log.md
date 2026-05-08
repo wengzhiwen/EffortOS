@@ -4,6 +4,15 @@
 
 ---
 
+## Sprint 87 完成 — 2026-05-08
+
+距离 X 轴 Bug 修复（GitHub Issue #12）：
+- 切换距离轴时从 category 轴改为 scatter + linear 轴
+- 数据点按实际距离值分布，不再是等间距
+- 时间轴保持 line + category 类型不变
+
+---
+
 ## Sprint 86 完成 — 2026-05-08
 
 代码安全审查（GitHub Issue #10）：
