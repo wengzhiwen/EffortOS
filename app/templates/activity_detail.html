@@ -148,33 +148,24 @@ Promise.all([
 
         ${hasTP ? `
         <div class="card" style="margin-bottom: 1rem;">
-            <div class="card-title">心率曲线</div>
-            <canvas id="hr-chart" height="180"></canvas>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div class="card-title" style="margin-bottom: 0;">运动曲线</div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <div class="chart-xaxis-toggle">
+                        <button class="btn btn-sm active" id="xaxis-time" onclick="switchXAxis('time')">时间</button>
+                        <button class="btn btn-sm" id="xaxis-distance" onclick="switchXAxis('distance')">距离</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-tabs" style="margin-top: 0.5rem;">
+                ${tpData.points.some(p => p.hr != null) ? '<button class="chart-tab active" onclick="switchChart(\'hr\')">心率</button>' : ''}
+                ${tpData.points.some(p => p.power != null) ? '<button class="chart-tab" onclick="switchChart(\'power\')">功率</button>' : ''}
+                ${tpData.points.some(p => p.speed != null) ? '<button class="chart-tab" onclick="switchChart(\'speed\')">速度</button>' : ''}
+                ${tpData.points.some(p => p.cadence != null) ? '<button class="chart-tab" onclick="switchChart(\'cadence\')">踏频</button>' : ''}
+                ${tpData.points.some(p => p.altitude != null) ? '<button class="chart-tab" onclick="switchChart(\'altitude\')">海拔</button>' : ''}
+            </div>
+            <canvas id="main-chart" height="200" style="margin-top: 0.5rem;"></canvas>
         </div>
-
-        <div class="grid grid-2" style="margin-bottom: 1rem;">
-            ${tpData.points.some(p => p.power != null) ? `
-            <div class="card">
-                <div class="card-title">功率曲线</div>
-                <canvas id="power-chart" height="180"></canvas>
-            </div>` : ''}
-            ${tpData.points.some(p => p.speed != null) ? `
-            <div class="card">
-                <div class="card-title">速度曲线</div>
-                <canvas id="speed-chart" height="180"></canvas>
-            </div>` : ''}
-            ${tpData.points.some(p => p.cadence != null) ? `
-            <div class="card">
-                <div class="card-title">踏频曲线</div>
-                <canvas id="cadence-chart" height="180"></canvas>
-            </div>` : ''}
-        </div>
-
-        ${tpData.points.some(p => p.altitude != null) ? `
-        <div class="card" style="margin-bottom: 1rem;">
-            <div class="card-title">海拔曲线</div>
-            <canvas id="altitude-chart" height="150"></canvas>
-        </div>` : ''}
         ` : `
         <div class="card" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
             <p style="font-size: 0.95rem;">此活动暂无时间序列数据（心率、功率、速度等）</p>
@@ -346,16 +337,18 @@ Promise.all([
         legend.addTo(map);
     }
 
-    // 时间序列图表
+    // 时间序列图表（tab 切换 + 时间/距离轴）
     if (hasTP) {
         const points = tpData.points;
-        const labels = points.map(p => {
+        const timeLabels = points.map(p => {
             const min = Math.floor(p.elapsed / 60);
             const sec = Math.floor(p.elapsed % 60);
             return min + ':' + (sec < 10 ? '0' : '') + sec;
         });
+        const distLabels = points.map(p => {
+            return p.distance != null ? (p.distance / 1000).toFixed(1) : '';
+        });
 
-        // 垂直十字准线插件
         const crosshairPlugin = {
             id: 'crosshair',
             afterDraw(chart) {
@@ -378,6 +371,7 @@ Promise.all([
 
         const chartOpts = {
             responsive: true,
+            animation: false,
             interaction: { mode: 'index', intersect: false },
             scales: { x: { display: true, ticks: { maxTicksLimit: 10 } }, y: { beginAtZero: false } },
             plugins: {
@@ -390,7 +384,7 @@ Promise.all([
                     padding: 8,
                     displayColors: false,
                     callbacks: {
-                        title: function(items) { return '时间: ' + items[0].label; },
+                        title: function(items) { return items[0].label; },
                         label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) : '—'); }
                     }
                 }
@@ -398,72 +392,48 @@ Promise.all([
             elements: { point: { radius: 0 }, line: { borderWidth: 1.5 } },
         };
 
-        // 心率
-        const hrData = points.map(p => p.hr);
-        if (hrData.some(v => v != null)) {
-            new Chart(document.getElementById('hr-chart'), {
+        const chartSeries = {};
+        const hrArr = points.map(p => p.hr);
+        if (hrArr.some(v => v != null)) chartSeries.hr = { label: '心率', data: hrArr, color: '#dc2626', unit: 'bpm' };
+        const pwArr = points.map(p => p.power);
+        if (pwArr.some(v => v != null)) chartSeries.power = { label: '功率', data: pwArr, color: '#2563eb', unit: 'W' };
+        const spArr = points.map(p => p.speed ? (p.speed * 3.6) : null);
+        if (spArr.some(v => v != null)) chartSeries.speed = { label: '速度', data: spArr, color: '#16a34a', unit: 'km/h' };
+        const cdArr = points.map(p => p.cadence);
+        if (cdArr.some(v => v != null)) chartSeries.cadence = { label: '踏频', data: cdArr, color: '#8b5cf6', unit: 'rpm' };
+        const alArr = points.map(p => p.altitude);
+        if (alArr.some(v => v != null)) chartSeries.altitude = { label: '海拔', data: alArr, color: '#d97706', unit: 'm' };
+
+        let currentChartType = Object.keys(chartSeries)[0] || 'hr';
+        let currentXAxis = 'time';
+        let mainChart = null;
+
+        function renderChart() {
+            const s = chartSeries[currentChartType];
+            if (!s) return;
+            const labels = currentXAxis === 'distance' ? distLabels : timeLabels;
+            const xTitle = currentXAxis === 'distance' ? '距离 (km)' : '时间';
+            if (mainChart) mainChart.destroy();
+            mainChart = new Chart(document.getElementById('main-chart'), {
                 type: 'line',
                 plugins: [crosshairPlugin],
-                data: { labels, datasets: [{ label: '心率', data: hrData, borderColor: '#dc2626', fill: true, backgroundColor: 'rgba(220,38,38,0.1)' }] },
-                options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'bpm' } } } },
+                data: { labels, datasets: [{ label: s.label, data: s.data, borderColor: s.color, fill: true, backgroundColor: s.color + '1a' }] },
+                options: { ...chartOpts, scales: { ...chartOpts.scales, x: { ...chartOpts.scales.x, title: { display: true, text: xTitle } }, y: { ...chartOpts.scales.y, title: { display: true, text: s.unit } } } },
             });
         }
-
-        // 功率
-        const powerData = points.map(p => p.power);
-        if (powerData.some(v => v != null)) {
-            const el = document.getElementById('power-chart');
-            if (el) {
-                new Chart(el, {
-                    type: 'line',
-                    plugins: [crosshairPlugin],
-                    data: { labels, datasets: [{ label: '功率', data: powerData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37,99,235,0.1)' }] },
-                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'W' } } } },
-                });
-            }
-        }
-
-        // 速度
-        const speedData = points.map(p => p.speed ? (p.speed * 3.6) : null);
-        if (speedData.some(v => v != null)) {
-            const el = document.getElementById('speed-chart');
-            if (el) {
-                new Chart(el, {
-                    type: 'line',
-                    plugins: [crosshairPlugin],
-                    data: { labels, datasets: [{ label: '速度', data: speedData, borderColor: '#16a34a', fill: true, backgroundColor: 'rgba(22,163,74,0.1)' }] },
-                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'km/h' } } } },
-                });
-            }
-        }
-
-        // 踏频
-        const cadenceData = points.map(p => p.cadence);
-        if (cadenceData.some(v => v != null)) {
-            const el = document.getElementById('cadence-chart');
-            if (el) {
-                new Chart(el, {
-                    type: 'line',
-                    plugins: [crosshairPlugin],
-                    data: { labels, datasets: [{ label: '踏频', data: cadenceData, borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139,92,246,0.1)' }] },
-                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'rpm' } } } },
-                });
-            }
-        }
-
-        // 海拔
-        const altData = points.map(p => p.altitude);
-        if (altData.some(v => v != null)) {
-            const el = document.getElementById('altitude-chart');
-            if (el) {
-                new Chart(el, {
-                    type: 'line',
-                    plugins: [crosshairPlugin],
-                    data: { labels, datasets: [{ label: '海拔', data: altData, borderColor: '#d97706', fill: true, backgroundColor: 'rgba(217,119,6,0.1)' }] },
-                    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'm' } } } },
-                });
-            }
-        }
+        window.switchChart = function(type) {
+            currentChartType = type;
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.chart-tab[onclick*="' + type + '"]')?.classList.add('active');
+            renderChart();
+        };
+        window.switchXAxis = function(axis) {
+            currentXAxis = axis;
+            document.getElementById('xaxis-time').classList.toggle('active', axis === 'time');
+            document.getElementById('xaxis-distance').classList.toggle('active', axis === 'distance');
+            renderChart();
+        };
+        renderChart();
     }
 
     // 心率分区图
