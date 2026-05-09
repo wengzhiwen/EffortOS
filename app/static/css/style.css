@@ -371,6 +371,7 @@ body {
 }
 .chart-tab:hover { background: var(--primary-light); color: var(--text); }
 .chart-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+.chart-tab.active-secondary { background: var(--primary-light); color: var(--text); border-color: var(--primary); }
 .chart-xaxis-toggle .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
 .chart-xaxis-toggle .btn-sm.active { background: var(--primary); color: white; }
 
