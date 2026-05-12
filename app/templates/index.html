@@ -182,8 +182,9 @@ authFetch('/api/dashboard')
                 },
                 options: {
                     responsive: true,
+                    interaction: { mode: 'index', intersect: false },
                     scales: { y: { beginAtZero: false } },
-                    plugins: { legend: { position: 'bottom' } }
+                    plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } }
                 }
             });
         } else {
