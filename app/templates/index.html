@@ -197,7 +197,11 @@ authFetch('/api/dashboard')
             const ftEl = document.getElementById('fitness-trend-chart');
             const npData = d.fitness_trend.map(f => f.np);
             const efData = d.fitness_trend.map(f => f.ef);
-            if (npData.some(v => v != null)) {
+            const tssData = d.fitness_trend.map(f => f.tss);
+            const ifData = d.fitness_trend.map(f => f.if);
+            const hasPowerData = npData.some(v => v != null);
+
+            if (hasPowerData) {
                 new Chart(ftEl, {
                     type: 'line',
                     data: {
@@ -213,6 +217,28 @@ authFetch('/api/dashboard')
                         scales: {
                             y: { beginAtZero: false, position: 'left', title: { display: true, text: 'NP (W)' } },
                             y1: { beginAtZero: false, position: 'right', title: { display: true, text: 'EF' }, grid: { drawOnChartArea: false } }
+                        },
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            } else {
+                // 跑步模式：TSS + HR IF / Running EF
+                new Chart(ftEl, {
+                    type: 'line',
+                    data: {
+                        labels: ftLabels,
+                        datasets: [
+                            { label: 'TSS', data: tssData, borderColor: '#2563eb', fill: false, tension: 0.3, yAxisID: 'y' },
+                            { label: 'HR IF', data: ifData, borderColor: '#f97316', fill: false, tension: 0.3, yAxisID: 'y1' },
+                            { label: 'EF', data: efData, borderColor: '#16a34a', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [4,2] },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { beginAtZero: true, position: 'left', title: { display: true, text: 'TSS' } },
+                            y1: { beginAtZero: false, position: 'right', title: { display: true, text: 'HR IF / EF' }, grid: { drawOnChartArea: false } }
                         },
                         plugins: { legend: { position: 'bottom' } }
                     }

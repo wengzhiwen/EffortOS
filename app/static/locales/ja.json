@@ -357,7 +357,15 @@
     "clear_manual": "手動値をクリア",
     "type_fixed": "タイプを修正しました",
     "invalid_number": "有効な数値を入力してください",
-    "tss_updated": "TSSを更新しました"
+    "tss_updated": "TSSを更新しました",
+    "avg_pace_hrif": "平均ペース / HR IF",
+    "avg_pace_hrif_tooltip": "平均ペース：総距離÷総時間（分:秒/km）。HR IF：心拍強度因子 = 平均心拍数÷LTHR",
+    "running_ef": "ランニング効率因子 (EF)",
+    "running_ef_tooltip": "ランニングEF = 平均速度(m/s) ÷ 平均心拍数(bpm)、一定の心拍数でのランニング速度効率を測定",
+    "speed_per_hr_unit": "m/s per bpm",
+    "pace_best_efforts": "ペースベストエフォート",
+    "distance_header": "距離",
+    "best_pace": "ベストペース"
   },
   "settings": {
     "title": "パラメータ設定",

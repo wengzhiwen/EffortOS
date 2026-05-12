@@ -215,6 +215,7 @@ def _serialize_metrics(metrics):
         "hr_zones_time": metrics.hr_zones_time,
         "power_zones_time": metrics.power_zones_time,
         "best_efforts": metrics.best_efforts,
+        "pace_best_efforts": metrics.pace_best_efforts,
     }
 
 

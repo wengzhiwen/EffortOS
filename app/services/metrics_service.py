@@ -103,7 +103,10 @@ def calc_hr_tss(trackpoints: list[dict], lthr: int) -> Optional[float]:
 
 
 def calc_hr_efficiency_factor(avg_speed: float, avg_hr: int) -> Optional[float]:
-    """计算心率效率因子 HR_EF = 平均速度 / 平均心率。"""
+    """计算心率效率因子 HR_EF = 平均速度 / 平均心率。
+
+    骑行：使用 NP / avg_hr；跑步：使用 avg_speed / avg_hr。
+    """
     if not avg_speed or not avg_hr:
         return None
     return round(avg_speed / avg_hr, 4)
@@ -340,6 +343,16 @@ def _classify_smoothed(smoothed, zones, high_threshold):
     return None, _reason(False, "未满足任何分类标准")
 
 
+_LEVEL_ORDER = {"recovery": 0, "endurance": 1, "tempo": 2, "threshold": 3, "vo2max": 4}
+
+# Coggan 经典 IF 区间 → 最低强度等级
+_IF_FLOOR = [
+    (0.95, "threshold"),
+    (0.85, "tempo"),
+    (0.75, "endurance"),
+]
+
+
 def _calc_intensity_level(
     trackpoints: list,
     activity_type: str,
@@ -347,10 +360,13 @@ def _calc_intensity_level(
     hr_zones: list[dict],
     ftp: Optional[int] = None,
     lthr: Optional[int] = None,
+    intensity_factor: Optional[float] = None,
+    hr_intensity_factor: Optional[float] = None,
 ):
     """基于 10 秒平滑功率/心率的区间停留时长判断强度等级。
 
     优先功率（骑行），无可靠功率时心率兜底。
+    当区间分析结果低于 IF/HRIF 所暗示的强度时，以 IF 为下限上调。
     返回 (level, reason_dict)。
     """
     if not trackpoints or len(trackpoints) < 2:
@@ -363,6 +379,8 @@ def _calc_intensity_level(
     power_series = [((tp["time"] - start_time).total_seconds(), tp.get("power")) for tp in trackpoints]
     hr_series = [((tp["time"] - start_time).total_seconds(), tp.get("heart_rate")) for tp in trackpoints]
 
+    result, reason = None, {}
+
     # 功率路径（骑行 + 有功率区 + 有 FTP）
     if is_cycling and power_zones and ftp:
         smoothed = _rolling_average(power_series, 10)
@@ -371,17 +389,27 @@ def _calc_intensity_level(
             result, reason = _classify_smoothed(smoothed, power_zones, ftp * 0.90)
             if result is not None:
                 reason["method"] = "power"
-                return result, reason
 
-    # 心率路径
-    if hr_zones and lthr:
+    # 心率路径（功率路径未命中时兜底）
+    if result is None and hr_zones and lthr:
         smoothed = _rolling_average(hr_series, 10)
         if len(smoothed) >= 600:
             result, reason = _classify_smoothed(smoothed, hr_zones, lthr * 0.94)
             reason["method"] = "hr"
-            return result, reason
 
-    return None, {}
+    # IF 下限校正：高强度间歇等场景下区间分析可能低估，用 IF 兜底
+    if result is not None:
+        if_val = intensity_factor if reason.get("method") == "power" else hr_intensity_factor
+        if if_val is not None:
+            for threshold, floor_level in _IF_FLOOR:
+                if if_val >= threshold:
+                    if _LEVEL_ORDER.get(floor_level, 0) > _LEVEL_ORDER.get(result, 0):
+                        prev = result
+                        result = floor_level
+                        reason["matched"] += f"；IF={if_val:.3f} ≥ {threshold}，由 {prev} 上调至 {floor_level}"
+                    break
+
+    return result, reason
 
 
 def calc_zone_times(
@@ -503,7 +531,83 @@ def calc_best_efforts(trackpoints: list[dict]) -> dict:
 
 
 # ============================================================
-# 活跃时段与暂停检测
+# 跑步配速最佳表现
+# ============================================================
+
+PACE_BEST_EFFORT_DISTANCES = [400, 1000, 3000, 5000, 10000, 15000, 21100, 42200]  # 米
+
+
+def calc_pace_best_efforts(trackpoints: list[dict]) -> dict:
+    """基于距离滑动窗口计算各标准距离的最佳配速（秒/公里）。
+
+    对每个目标距离，在 trackpoints 中找到恰好覆盖该距离的最短时间窗口，
+    计算平均配速。使用双指针滑动窗口算法。
+
+    返回: {"400": pace_sec_per_km, "1000": pace_sec_per_km, ...}
+    """
+    if not trackpoints or len(trackpoints) < 2:
+        return {}
+
+    # 过滤有效打点（有 distance 和 time）
+    valid = []
+    for tp in trackpoints:
+        d = tp.get("distance")
+        if d is not None and d >= 0:
+            valid.append((tp["time"], d))
+
+    if len(valid) < 2:
+        return {}
+
+    total_dist = valid[-1][1] - valid[0][1]
+    result = {}
+
+    for target_dist in PACE_BEST_EFFORT_DISTANCES:
+        if total_dist < target_dist * 0.9:
+            continue
+
+        best_pace = None  # 秒/公里
+        j = 0  # 尾指针
+
+        for i in range(len(valid)):
+            # 前进尾指针直到窗口不超过目标距离
+            while j < i and (valid[i][1] - valid[j][1]) > target_dist * 1.02:
+                j += 1
+
+            # 从尾指针向头指针搜索最接近 target_dist 的窗口
+            for k in range(j, i + 1):
+                dist_covered = valid[i][1] - valid[k][1]
+                if dist_covered < target_dist * 0.95:
+                    break
+                time_covered = (valid[i][0] - valid[k][0]).total_seconds()
+                if time_covered <= 0:
+                    continue
+                pace_sec_per_km = (time_covered / dist_covered) * 1000
+                if best_pace is None or pace_sec_per_km < best_pace:
+                    best_pace = pace_sec_per_km
+
+        if best_pace is not None:
+            result[str(target_dist)] = round(best_pace, 1)
+
+    return result
+
+
+def calc_grade_adjusted_pace(speed_mps: float, grade_pct: float) -> Optional[float]:
+    """计算坡度调整配速(GAP)对应速度。
+
+    GAP_speed = speed / (1 + grade_pct * 0.04)
+    上坡 grade_pct > 0 → GAP_speed < speed（等效更慢）
+    下坡 grade_pct < 0 → GAP_speed > speed（等效更快）
+
+    返回调整后的速度 (m/s)，可用于计算等效配速。
+    """
+    if not speed_mps or speed_mps <= 0:
+        return None
+    factor = 1 + grade_pct * 0.04
+    if factor <= 0:
+        return None
+    return speed_mps / factor
+
+
 # ============================================================
 
 
@@ -642,6 +746,7 @@ def compute_activity_metrics(
     has_power = len(power_values) > 0
     has_hr = len(hr_values) > 0
     is_cycling = activity_type in ("cycling", "indoor_cycling", "commute_cycling")
+    is_running = activity_type in ("running", "indoor_running", "walking")
     is_commute = activity_type == "commute_cycling"
 
     # 判断功率数据质量：覆盖率低于 50% 视为不可靠
@@ -674,6 +779,13 @@ def compute_activity_metrics(
             metrics.tss = round(metrics.hr_tss * 0.75, 1)
             metrics.tss_method = "hr_commute"
 
+    # 跑步效率因子: avg_speed / avg_hr（骑行 EF = NP/avgHR 在功率块中已计算）
+    if is_running and has_hr:
+        speed_values = [tp.get("speed") for tp in trackpoints if tp.get("speed") is not None]
+        if speed_values:
+            avg_speed = sum(speed_values) / len(speed_values)
+            metrics.efficiency_factor = calc_hr_efficiency_factor(avg_speed, avg_hr)
+
     # 分区时间统计（使用实际时间间隔）
     if has_hr and hr_zones:
         metrics.hr_zones_time = _calc_zone_times_time_aware(trackpoints, "heart_rate", hr_zones)
@@ -686,6 +798,12 @@ def compute_activity_metrics(
     if best_efforts:
         metrics.best_efforts = best_efforts
 
+    # 跑步配速最佳表现：标准距离的最佳配速
+    if is_running:
+        pace_efforts = calc_pace_best_efforts(trackpoints)
+        if pace_efforts:
+            metrics.pace_best_efforts = pace_efforts
+
     # 强度评级：基于有效训练时间的区间占比
     metrics.intensity_level, metrics.intensity_reason = _calc_intensity_level(
         trackpoints=trackpoints,
@@ -694,6 +812,8 @@ def compute_activity_metrics(
         hr_zones=hr_zones,
         ftp=ftp,
         lthr=lthr,
+        intensity_factor=metrics.intensity_factor,
+        hr_intensity_factor=metrics.hr_intensity_factor,
     )
 
     return metrics

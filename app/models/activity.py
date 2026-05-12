@@ -52,6 +52,7 @@ class ComputedMetrics(EmbeddedDocument):
     hr_zones_time = DictField()  # 心率区间时间分布 {"Z1": 秒数, ...}
     power_zones_time = DictField()  # 功率区间时间分布 {"Z1": 秒数, ...}
     best_efforts = DictField()  # 最佳表现 {"power": {5: 450, ...}, "heart_rate": {5: 178, ...}}
+    pace_best_efforts = DictField()  # 跑步配速最佳表现 {"400": 秒/公里, "1000": 秒/公里, ...}
 
 
 class Trackpoint(EmbeddedDocument):

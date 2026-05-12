@@ -28,6 +28,17 @@ Promise.all([
     const m = a.computed_metrics || {};
     const tpData = tpRes.data || {};
     const hasTP = tpData.points && tpData.points.length > 0;
+    const isRunning = ['running', 'indoor_running', 'walking'].includes(a.activity_type);
+    const hasPowerData = s.avg_power != null && s.avg_power > 0;
+
+    function fmtPace(speedMps) {
+        if (!speedMps || speedMps <= 0) return '—';
+        const paceSecPerKm = 1000 / speedMps;
+        const min = Math.floor(paceSecPerKm / 60);
+        const sec = Math.floor(paceSecPerKm % 60);
+        return min + ':' + String(sec).padStart(2, '0') + ' /km';
+    }
+
     const firstChartType = hasTP ? (
         tpData.points.some(p => p.hr != null) ? 'hr'
         : tpData.points.some(p => p.power != null) ? 'power'
@@ -88,11 +99,19 @@ Promise.all([
                 <div class="metric-value">${m.hr_tss != null ? m.hr_tss.toFixed(1) : '—'}</div>
                 <div class="metric-unit">${t('activity_detail.hr_based')}</div>
             </div>
+            ${isRunning ? `
+            <div class="card">
+                <div class="card-title metric-title">${t('activity_detail.avg_pace_hrif')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.avg_pace_hrif_tooltip')}</span></span></div>
+                <div class="metric-value">${s.avg_speed ? fmtPace(s.avg_speed) : '—'}</div>
+                <div class="metric-unit">${m.hr_intensity_factor ? 'HR IF ' + m.hr_intensity_factor.toFixed(2) : ''}</div>
+            </div>
+            ` : `
             <div class="card">
                 <div class="card-title metric-title">${t('activity_detail.np_if')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.np_if_tooltip')}</span></span></div>
                 <div class="metric-value">${m.normalized_power ? m.normalized_power.toFixed(0) + 'W' : '—'}</div>
                 <div class="metric-unit">${m.intensity_factor ? 'IF ' + m.intensity_factor.toFixed(2) : ''}</div>
             </div>
+            `}
         </div>
 
         ${m.intensity_level ? `
@@ -118,18 +137,25 @@ Promise.all([
                 <div class="card-title">${t('activity_detail.avg_max_hr')}</div>
                 <div class="metric-value">${s.avg_heart_rate || '—'} <span class="metric-unit">/ ${s.max_heart_rate || '—'} bpm</span></div>
             </div>
+            ${!isRunning || hasPowerData ? `
             <div class="card">
                 <div class="card-title">${t('activity_detail.avg_max_power')}</div>
                 <div class="metric-value">${s.avg_power ? s.avg_power.toFixed(0) : '—'} <span class="metric-unit">/ ${s.max_power || '—'} W</span></div>
-            </div>
+            </div>` : ''}
+            ${isRunning ? `
+            <div class="card">
+                <div class="card-title metric-title">${t('activity_detail.running_ef')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.running_ef_tooltip')}</span></span></div>
+                <div class="metric-value">${m.efficiency_factor ? m.efficiency_factor.toFixed(4) : '—'}</div>
+                <div class="metric-unit">${t('activity_detail.speed_per_hr_unit')}</div>
+            </div>` : `
             <div class="card">
                 <div class="card-title metric-title">${t('activity_detail.work_vi_ef')} <span class="metric-help">?<span class="metric-tooltip">${t('activity_detail.work_vi_ef_tooltip')}</span></span></div>
                 <div class="metric-value" style="font-size: 1.25rem;">${m.work_kj ? m.work_kj.toFixed(0) + ' kJ' : '—'}</div>
                 <div class="metric-unit">VI ${m.variability_index ? m.variability_index.toFixed(2) : '—'} / EF ${m.efficiency_factor ? m.efficiency_factor.toFixed(3) : '—'}</div>
-            </div>
+            </div>`}
             <div class="card">
                 <div class="card-title">${t('activity_detail.avg_max_cadence')}</div>
-                <div class="metric-value">${s.avg_cadence || '—'} <span class="metric-unit">/ ${s.max_cadence || '—'} rpm</span></div>
+                <div class="metric-value">${s.avg_cadence || '—'} <span class="metric-unit">/ ${s.max_cadence || '—'} ${isRunning ? 'spm' : 'rpm'}</span></div>
             </div>
             ${elevGain ? `
             <div class="card">
@@ -210,6 +236,30 @@ Promise.all([
                         <td style="padding: 0.4rem 0.6rem;">${label}</td>
                         ${m.best_efforts.power ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #2563eb;">${pw ? pw + ' W' : '—'}${pbBadge}</td>` : ''}
                         ${m.best_efforts.heart_rate ? `<td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #dc2626;">${hr ? hr + ' bpm' : '—'}</td>` : ''}
+                    </tr>`;
+                }).join('')}
+                </tbody>
+            </table>
+        </div>` : ''}
+
+        ${isRunning && m.pace_best_efforts && Object.keys(m.pace_best_efforts).length > 0 ? `
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-title">${t('activity_detail.pace_best_efforts')}</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead><tr style="border-bottom: 2px solid var(--border);">
+                    <th style="text-align: left; padding: 0.4rem 0.6rem;">${t('activity_detail.distance_header')}</th>
+                    <th style="text-align: right; padding: 0.4rem 0.6rem;">${t('activity_detail.best_pace')}</th>
+                </tr></thead>
+                <tbody>
+                ${Object.entries(m.pace_best_efforts).sort((a,b) => parseInt(a[0])-parseInt(b[0])).map(([dist, pace]) => {
+                    const d = parseInt(dist);
+                    const distLabel = d >= 1000 ? (d === 21100 ? '21.1' : d === 42200 ? '42.2' : (d/1000).toFixed(0)) + ' km' : d + ' m';
+                    const paceMin = Math.floor(pace / 60);
+                    const paceSec = Math.floor(pace % 60);
+                    const paceStr = paceMin + ':' + String(paceSec).padStart(2, '0') + ' /km';
+                    return `<tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.4rem 0.6rem;">${distLabel}</td>
+                        <td style="text-align: right; padding: 0.4rem 0.6rem; font-weight: 600; color: #16a34a;">${paceStr}</td>
                     </tr>`;
                 }).join('')}
                 </tbody>
@@ -401,7 +451,7 @@ Promise.all([
         const spArr = points.map(p => p.speed ? (p.speed * 3.6) : null);
         if (spArr.some(v => v != null)) chartSeries.speed = { label: t('activity_detail.tab_speed'), data: spArr, color: '#16a34a', unit: 'km/h' };
         const cdArr = points.map(p => p.cadence);
-        if (cdArr.some(v => v != null)) chartSeries.cadence = { label: t('activity_detail.tab_cadence'), data: cdArr, color: '#8b5cf6', unit: 'rpm' };
+        if (cdArr.some(v => v != null)) chartSeries.cadence = { label: t('activity_detail.tab_cadence'), data: cdArr, color: '#8b5cf6', unit: isRunning ? 'spm' : 'rpm' };
         const alArr = points.map(p => p.altitude);
         if (alArr.some(v => v != null)) chartSeries.altitude = { label: t('activity_detail.tab_altitude'), data: alArr, color: '#d97706', unit: 'm' };
 
@@ -656,7 +706,7 @@ function lapRow(lap) {
     const pace = lap.avg_speed_kmh ? (60 / lap.avg_speed_kmh).toFixed(0) + ':' + String(Math.floor((60 / lap.avg_speed_kmh % 1) * 60)).padStart(2,'0') + ' /km' : '—';
     const hr = lap.avg_hr ? lap.avg_hr + (lap.max_hr ? ' / ' + lap.max_hr : '') + ' bpm' : '—';
     const pw = lap.avg_power ? lap.avg_power + (lap.max_power ? ' / ' + lap.max_power : '') + ' W' : '—';
-    const cad = lap.avg_cadence ? lap.avg_cadence + ' rpm' : '—';
+    const cad = lap.avg_cadence ? lap.avg_cadence + (isRunning ? ' spm' : ' rpm') : '—';
     return `<tr style="border-bottom: 1px solid var(--border);">
         <td style="padding: 0.4rem 0.5rem; font-weight: 600;">${lap.lap}</td>
         <td style="padding: 0.4rem 0.5rem;">${durStr}</td>

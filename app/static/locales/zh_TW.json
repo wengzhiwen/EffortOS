@@ -357,7 +357,15 @@
     "clear_manual": "清除手動值",
     "type_fixed": "運動類型已修正",
     "invalid_number": "請輸入有效數字",
-    "tss_updated": "TSS 已更新"
+    "tss_updated": "TSS 已更新",
+    "avg_pace_hrif": "平均配速 / HR IF",
+    "avg_pace_hrif_tooltip": "平均配速：總距離÷總時間（分鐘:秒/公里）。HR IF：心率強度因子 = 平均心率÷閾值心率(LTHR)",
+    "running_ef": "跑步效率因子 (EF)",
+    "running_ef_tooltip": "跑步效率因子 = 平均速度(m/s) ÷ 平均心率(bpm)，衡量給定心率下的跑步速度效率。數值越高表示跑步效率越好。",
+    "speed_per_hr_unit": "m/s per bpm",
+    "pace_best_efforts": "配速最佳表現",
+    "distance_header": "距離",
+    "best_pace": "最佳配速"
   },
   "settings": {
     "title": "參數設定",

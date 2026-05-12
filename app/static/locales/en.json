@@ -392,7 +392,15 @@
     "clear_manual": "Clear manual value",
     "type_fixed": "Activity type updated",
     "invalid_number": "Please enter a valid number",
-    "tss_updated": "TSS updated"
+    "tss_updated": "TSS updated",
+    "avg_pace_hrif": "Avg Pace / HR IF",
+    "avg_pace_hrif_tooltip": "Average pace: total distance / total time (min:sec/km). HR IF: Heart Rate Intensity Factor = avg HR / LTHR",
+    "running_ef": "Running Efficiency Factor (EF)",
+    "running_ef_tooltip": "Running EF = avg speed (m/s) / avg HR (bpm), measures running speed efficiency at a given heart rate. Higher is better.",
+    "speed_per_hr_unit": "m/s per bpm",
+    "pace_best_efforts": "Pace Best Efforts",
+    "distance_header": "Distance",
+    "best_pace": "Best Pace"
   },
   "settings": {
     "title": "Settings",

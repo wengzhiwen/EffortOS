@@ -97,7 +97,11 @@ def get_dashboard():
     week_activities = [a for a in month_activities if a.start_time.strftime("%Y-%m-%d") >= rolling_7d]
 
     def _calc_stats(activities):
-        total_tss = sum(a.computed_metrics.tss for a in activities if a.computed_metrics and a.computed_metrics.tss)
+        def _get_tss(a):
+            m = a.computed_metrics
+            return (m.manual_tss or m.tss or m.hr_tss or 0) if m else 0
+
+        total_tss = sum(_get_tss(a) for a in activities)
         total_duration = sum(
             a.data_summary.duration_seconds for a in activities if a.data_summary and a.data_summary.duration_seconds
         )
@@ -131,20 +135,24 @@ def get_dashboard():
         _filter_user(Activity.objects(start_time__lte=end_dt, computed_metrics__ne=None))
         .order_by("-start_time")
         .limit(30)
-        .only("start_time", "computed_metrics")
+        .only("start_time", "activity_type", "computed_metrics")
     )
     fitness_trend = []
     for a in reversed(trend_activities):
         cm = a.computed_metrics
-        if not cm or cm.tss is None:
+        if not cm:
+            continue
+        tss = cm.manual_tss or cm.tss or cm.hr_tss
+        if tss is None:
             continue
         fitness_trend.append(
             {
                 "date": a.start_time.strftime("%Y-%m-%d"),
-                "tss": cm.tss,
+                "tss": tss,
                 "np": cm.normalized_power,
-                "if": cm.intensity_factor,
+                "if": cm.intensity_factor or cm.hr_intensity_factor,
                 "ef": cm.efficiency_factor,
+                "activity_type": a.activity_type,
             }
         )
 
