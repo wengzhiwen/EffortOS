@@ -74,12 +74,29 @@
                 if (resp.status === 401) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
+                    updateAuthUI();
                     window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
                     return Promise.reject(new Error(t('auth.not_logged_in')));
                 }
                 return resp;
             });
         };
+
+        function updateAuthUI() {
+            const user = getUser();
+            const token = getToken();
+            const userInfo = document.getElementById('user-info');
+            const userNickname = document.getElementById('user-nickname');
+            const btnLogin = document.getElementById('btn-login');
+            if (user && token) {
+                if (userInfo) userInfo.style.display = 'inline-flex';
+                if (userNickname) userNickname.textContent = user.nickname || user.email;
+                if (btnLogin) btnLogin.style.display = 'none';
+            } else {
+                if (userInfo) userInfo.style.display = 'none';
+                if (btnLogin) btnLogin.style.display = 'inline-block';
+            }
+        }
         // 页面加载后更新导航栏
         document.addEventListener('DOMContentLoaded', function() {
             var user = getUser();
