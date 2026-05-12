@@ -246,8 +246,6 @@ authFetch('/api/dashboard')
             }
             // 训练强度分布
             const itEl = document.getElementById('intensity-trend-chart');
-            const ifData = d.fitness_trend.map(f => f.if);
-            const tssData = d.fitness_trend.map(f => f.tss);
             new Chart(itEl, {
                 type: 'bar',
                 data: {
