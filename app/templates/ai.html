@@ -5,21 +5,11 @@
 {% block content %}
 <h2 style="margin-bottom: 1rem;">{{ t('ai.title') }}</h2>
 
-<div class="grid grid-2">
-    <div class="card">
-        <div class="card-title">{{ t('ai.training_report') }}</div>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
-            {{ t('ai.report_desc') }}
-        </p>
-        <button class="btn btn-primary" onclick="generateReport()">{{ t('ai.generate_report') }}</button>
-    </div>
-    <div class="card">
-        <div class="card-title">{{ t('ai.training_suggestion') }}</div>
-        <div class="form-group">
-            <textarea id="question" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;" placeholder="{{ t('ai.question_placeholder') }}"></textarea>
-        </div>
-        <button class="btn btn-primary" onclick="getSuggestion()">{{ t('ai.get_suggestion') }}</button>
-    </div>
+<div class="card" style="margin-bottom: 1rem;">
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+        {{ t('ai.report_desc') }}
+    </p>
+    <button class="btn btn-primary" onclick="generateReport()">{{ t('ai.generate_report') }}</button>
 </div>
 
 <div class="card" id="report-card" style="display: none;">
@@ -29,12 +19,15 @@
     <div id="report-plan"></div>
     <div id="report-outlook" class="md-content" style="margin-top: 1rem;"></div>
     <div id="report-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
-</div>
 
-<div class="card" id="suggestion-card" style="display: none;">
-    <div class="card-title">{{ t('ai.training_suggestion') }}</div>
-    <div id="suggestion-content" class="md-content"></div>
-    <div id="suggestion-meta" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.8rem;"></div>
+    <div id="ask-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">{{ t('ai.ask_hint') }}</div>
+        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+            <textarea id="question" rows="2" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; resize: vertical;" placeholder="{{ t('ai.question_placeholder') }}"></textarea>
+            <button class="btn btn-primary" onclick="getSuggestion()" style="white-space: nowrap;">{{ t('ai.ask_about_report') }}</button>
+        </div>
+        <div id="suggestion-content" class="md-content" style="margin-top: 0.75rem;"></div>
+    </div>
 </div>
 {% endblock %}
 
@@ -82,9 +75,11 @@ function _renderReport(res) {
     const planEl = document.getElementById('report-plan');
     const outlookEl = document.getElementById('report-outlook');
     const metaEl = document.getElementById('report-meta');
+    const askSection = document.getElementById('ask-section');
     const d = res.data;
 
     card.style.display = 'block';
+    askSection.style.display = 'block';
     if (d.generated_at) {
         const dt = new Date(d.generated_at);
         dateEl.textContent = t('dashboard.generated_at') + ' ' + dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
@@ -109,8 +104,10 @@ function generateReport() {
     const planEl = document.getElementById('report-plan');
     const outlookEl = document.getElementById('report-outlook');
     const metaEl = document.getElementById('report-meta');
+    const askSection = document.getElementById('ask-section');
 
     card.style.display = 'block';
+    askSection.style.display = 'none';
     dateEl.textContent = '';
     summaryEl.innerHTML = '';
     planEl.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('ai.generating') + '</div>';
@@ -128,13 +125,9 @@ function generateReport() {
 
 function getSuggestion() {
     const question = document.getElementById('question').value;
-    const card = document.getElementById('suggestion-card');
     const content = document.getElementById('suggestion-content');
-    const meta = document.getElementById('suggestion-meta');
 
-    card.style.display = 'block';
     content.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('ai.generating') + '</div>';
-    meta.textContent = '';
 
     authFetch('/api/ai/suggestion', {
         method: 'POST',
@@ -145,7 +138,6 @@ function getSuggestion() {
         .then(res => {
             if (res.code !== 200) { content.textContent = res.message; return; }
             content.innerHTML = DOMPurify.sanitize(marked.parse(res.data.suggestion || ''));
-            meta.textContent = `CTL: ${res.data.ctl.toFixed(1)} | ATL: ${res.data.atl.toFixed(1)} | TSB: ${res.data.tsb.toFixed(1)}`;
         })
         .catch(e => content.textContent = t('dashboard.request_failed') + ': ' + e.message);
 }

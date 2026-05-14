@@ -255,7 +255,9 @@
     "plan_type": "Training Type",
     "plan_intensity": "Intensity",
     "plan_duration": "Duration",
-    "question_placeholder": "Enter your question (optional), e.g.: Should I do a recovery ride or intervals this week?"
+    "question_placeholder": "Any questions about this report?",
+    "ask_about_report": "Ask",
+    "ask_hint": "Ask about this report"
   },
   "activities": {
     "title": "Activities",

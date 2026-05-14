@@ -220,7 +220,9 @@
     "plan_type": "トレーニングタイプ",
     "plan_intensity": "強度",
     "plan_duration": "時間",
-    "question_placeholder": "質問を入力（任意）、例: 今週はリカバリー走とインターバルのどちらにすべき？"
+    "question_placeholder": "このレポートについて質問がありますか？",
+    "ask_about_report": "質問する",
+    "ask_hint": "レポートについて質問"
   },
   "activities": {
     "title": "アクティビティ記録",

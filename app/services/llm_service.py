@@ -406,6 +406,19 @@ def generate_weekly_report(
     )
 
 
+def _plan_brief(plan: list) -> str:
+    """将计划数组转为简短文字摘要。"""
+    if not plan:
+        return "无计划"
+    items = []
+    for p in plan:
+        if p.get("intensity") == "rest":
+            items.append(f"{p['date']} 休息")
+        else:
+            items.append(f"{p['date']} {p.get('type', '')} TSS={p.get('tss', 0)}")
+    return "；".join(items)
+
+
 def generate_suggestion(
     pmc_data: dict,
     recent_tss: list,
@@ -414,6 +427,7 @@ def generate_suggestion(
     best_efforts_list=None,
     intensity_counts=None,
     lang: str = "zh_CN",
+    report_context: dict = None,
 ) -> str:
     """生成个性化训练建议。
 
@@ -487,8 +501,17 @@ def generate_suggestion(
         intensity_section = f"\n## 近期训练强度分布\n- {'、'.join(parts)}"
 
     # Step 2: 交给 LLM 组织语言
-    user_prompt = f"""请根据以下分析结论给出训练建议。直接使用这些结论，不要重新分析。
+    report_section = ""
+    if report_context:
+        report_section = f"""
+## 当前训练报告（用户正在查看此报告并基于此提问）
+- 报告总结：{report_context.get("summary", "")}
+- 报告展望：{report_context.get("outlook", "")}
+- 计划摘要：{_plan_brief(report_context.get("plan", []))}
+"""
 
+    user_prompt = f"""请根据以下分析结论给出训练建议。直接使用这些结论，不要重新分析。
+{report_section}
 ## 训练负荷状态
 - CTL (Fitness): {pmc_data.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
 - ATL (Fatigue): {pmc_data.get("atl", 0):.1f}
@@ -515,7 +538,12 @@ def generate_suggestion(
         [
             {
                 "role": "system",
-                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成个性化的训练建议。不要质疑或修改分析结论，只需以专业教练的语气呈现给用户。如果用户有提问，结合分析结论回答。使用 markdown 格式。",
+                "content": (
+                    "你是 EffortOS 运动分析平台的专业教练。用户正在查看自己的训练报告，基于报告内容和训练数据向你提问。"
+                    "你只能回答与用户当前训练状态、训练计划、运动表现、恢复策略相关的问题。"
+                    "如果用户的问题与训练无关（如闲聊、编程、烹饪、政治、天气等），你必须礼貌拒绝，"
+                    "并引导用户回到训练话题。使用 markdown 格式。"
+                ),
             },
             {"role": "user", "content": user_prompt + lang_instruction},
         ]

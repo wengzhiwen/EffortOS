@@ -255,7 +255,9 @@
     "plan_type": "训练类型",
     "plan_intensity": "强度分类",
     "plan_duration": "时长",
-    "question_placeholder": "输入你的问题（可选），例如：本周应该做恢复骑行还是间歇训练？"
+    "question_placeholder": "关于这份报告，你有什么疑问？",
+    "ask_about_report": "提问",
+    "ask_hint": "基于报告追问"
   },
   "activities": {
     "title": "活动记录",

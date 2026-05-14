@@ -220,7 +220,9 @@
     "plan_type": "訓練類型",
     "plan_intensity": "強度分類",
     "plan_duration": "時長",
-    "question_placeholder": "輸入你的問題（可選），例如：本週應該做恢復騎行還是間歇訓練？"
+    "question_placeholder": "關於這份報告，你有什麼疑問？",
+    "ask_about_report": "提問",
+    "ask_hint": "基於報告追問"
   },
   "activities": {
     "title": "活動記錄",

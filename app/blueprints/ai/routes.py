@@ -161,7 +161,9 @@ def weekly_report():
     history = _recent_history_list(user)
 
     try:
-        raw = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str, history, lang=g.lang)
+        raw = generate_weekly_report(
+            recent_data, recent_pmc, latest_pmc, params, future_days, today_str, history, lang=g.lang
+        )
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
@@ -283,7 +285,25 @@ def suggestion():
             intensity_counts[cm.intensity_level] = intensity_counts.get(cm.intensity_level, 0) + 1
 
     try:
-        advice = generate_suggestion(latest_pmc, recent_tss, params, question, best_efforts_list, intensity_counts, lang=g.lang)
+        # 构建当前报告上下文
+        report_context = None
+        wr = user.weekly_report
+        if wr and wr.plan_json:
+            report_context = {
+                "summary": wr.summary or "",
+                "plan": json.loads(wr.plan_json),
+                "outlook": wr.outlook or "",
+            }
+        advice = generate_suggestion(
+            latest_pmc,
+            recent_tss,
+            params,
+            question,
+            best_efforts_list,
+            intensity_counts,
+            lang=g.lang,
+            report_context=report_context,
+        )
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
