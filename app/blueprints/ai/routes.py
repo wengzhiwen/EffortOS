@@ -2,7 +2,7 @@ import json
 import re
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 from app.models.activity import Activity
 from app.models.athlete_settings import AthleteParams
@@ -161,7 +161,7 @@ def weekly_report():
     history = _recent_history_list(user)
 
     try:
-        raw = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str, history)
+        raw = generate_weekly_report(recent_data, recent_pmc, latest_pmc, params, future_days, today_str, history, lang=g.lang)
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
@@ -283,7 +283,7 @@ def suggestion():
             intensity_counts[cm.intensity_level] = intensity_counts.get(cm.intensity_level, 0) + 1
 
     try:
-        advice = generate_suggestion(latest_pmc, recent_tss, params, question, best_efforts_list, intensity_counts)
+        advice = generate_suggestion(latest_pmc, recent_tss, params, question, best_efforts_list, intensity_counts, lang=g.lang)
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:

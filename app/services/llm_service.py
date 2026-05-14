@@ -230,6 +230,14 @@ def analyze_activity_distribution(activities: list[dict]) -> dict:
     }
 
 
+_LANG_INSTRUCTION = {
+    "zh_CN": "\n\n【语言要求 — 最高优先级】你必须使用简体中文撰写所有输出内容。summary、plan 中的 type 描述、outlook 全部用简体中文。JSON 的 key 保持英文不变。",
+    "zh_TW": "\n\n【語言要求 — 最高優先級】你必須使用繁體中文撰寫所有輸出內容。summary、plan 中的 type 描述、outlook 全部用繁體中文。JSON 的 key 保持英文不變。",
+    "en": "\n\n【LANGUAGE REQUIREMENT — HIGHEST PRIORITY】You MUST write ALL output content in English. This includes summary, plan type descriptions, outlook, and ALL text values. Do NOT use Chinese under any circumstances. JSON keys stay as specified (English), but ALL text values must be in English.",
+    "ja": "\n\n【言語要件 — 最優先】すべての出力内容を日本語で記述してください。summary、plan の type 記述、outlook はすべて日本語で書いてください。いかなる場合でも中国語を使用しないでください。JSON の key は英文のまま変更しないでください。",
+}
+
+
 def generate_weekly_report(
     recent_activities: list,
     recent_pmc: list,
@@ -238,6 +246,7 @@ def generate_weekly_report(
     future_days: list,
     today_str: str,
     recent_history: list = None,
+    lang: str = "zh_CN",
 ) -> str:
     """生成训练报告。
 
@@ -380,6 +389,7 @@ def generate_weekly_report(
 - outlook: markdown 格式，总结计划执行后的 CTL、ATL/CTL、TSB 变化
 - 安排训练时参考「最近训练记录」中的历史课程，尽量复用用户已完成过的类似训练"""
 
+    lang_instruction = _LANG_INSTRUCTION.get(lang, _LANG_INSTRUCTION["zh_CN"])
     return chat(
         [
             {
@@ -390,7 +400,7 @@ def generate_weekly_report(
                     "并使用 PMC 递推公式逐日预测 CTL/ATL/TSB。你只输出 JSON，不输出其他内容。"
                 ),
             },
-            {"role": "user", "content": user_prompt},
+            {"role": "user", "content": user_prompt + lang_instruction},
         ],
         max_completion_tokens=3000,
     )
@@ -403,6 +413,7 @@ def generate_suggestion(
     question: str = "",
     best_efforts_list=None,
     intensity_counts=None,
+    lang: str = "zh_CN",
 ) -> str:
     """生成个性化训练建议。
 
@@ -499,12 +510,13 @@ def generate_suggestion(
 
 {"用户提问：" + question if question else "请给出综合训练建议。如果最佳表现数据中有突出的峰值表现，可以提及并给出突破建议。"}"""
 
+    lang_instruction = _LANG_INSTRUCTION.get(lang, _LANG_INSTRUCTION["zh_CN"])
     return chat(
         [
             {
                 "role": "system",
-                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成个性化的中文训练建议。不要质疑或修改分析结论，只需以专业教练的语气呈现给用户。如果用户有提问，结合分析结论回答。使用 markdown 格式。",
+                "content": "你是 EffortOS 运动分析平台的文案编辑。你接收运动科学分析引擎已经计算好的结论，将其组织成个性化的训练建议。不要质疑或修改分析结论，只需以专业教练的语气呈现给用户。如果用户有提问，结合分析结论回答。使用 markdown 格式。",
             },
-            {"role": "user", "content": user_prompt},
+            {"role": "user", "content": user_prompt + lang_instruction},
         ]
     )
