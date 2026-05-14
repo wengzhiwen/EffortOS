@@ -235,6 +235,8 @@ def get_weekly_report():
                 "atl": wr.atl,
                 "tsb": wr.tsb,
                 "generated_at": wr.generated_at.isoformat() if wr.generated_at else None,
+                "ask_question": wr.ask_question or "",
+                "ask_answer": wr.ask_answer or "",
             },
         }
     )
@@ -324,6 +326,12 @@ def suggestion():
         return jsonify({"code": 400, "message": str(e), "data": None}), 400
     except Exception as e:
         return jsonify({"code": 500, "message": t("api.generate_failed", error=str(e)), "data": None}), 500
+
+    # 持久化追问记录（覆盖）
+    if user.weekly_report:
+        user.weekly_report.ask_question = question
+        user.weekly_report.ask_answer = advice
+        user.save()
 
     return jsonify(
         {

@@ -26,6 +26,10 @@ class WeeklyReport(EmbeddedDocument):
     week_activities = IntField()
     generated_at = DateTimeField()
 
+    # 追问记录（覆盖式保存，重新生成报告时清除）
+    ask_question = StringField()
+    ask_answer = StringField()
+
     meta = {"strict": False}
 
 

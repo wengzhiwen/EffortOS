@@ -90,6 +90,20 @@ function _renderReport(res) {
     planEl.innerHTML = _renderPlanTable(d.plan);
     outlookEl.innerHTML = DOMPurify.sanitize(marked.parse(d.outlook || ''));
     metaEl.textContent = `CTL: ${d.ctl.toFixed(1)} | ATL: ${d.atl.toFixed(1)} | TSB: ${d.tsb.toFixed(1)} | ${t('dashboard.week_activities')}: ${d.week_activities}`;
+
+    // 恢复保存的追问记录
+    const questionEl = document.getElementById('question');
+    const suggestionEl = document.getElementById('suggestion-content');
+    if (d.ask_question) {
+        questionEl.value = d.ask_question;
+    } else {
+        questionEl.value = '';
+    }
+    if (d.ask_answer) {
+        suggestionEl.innerHTML = DOMPurify.sanitize(marked.parse(d.ask_answer));
+    } else {
+        suggestionEl.innerHTML = '';
+    }
 }
 
 authFetch('/api/ai/weekly-report')
@@ -113,6 +127,8 @@ function generateReport() {
     planEl.innerHTML = '<div class="loading"><div class="spinner"></div>' + t('ai.generating') + '</div>';
     outlookEl.innerHTML = '';
     metaEl.textContent = '';
+    document.getElementById('question').value = '';
+    document.getElementById('suggestion-content').innerHTML = '';
 
     authFetch('/api/ai/weekly-report', { method: 'POST' })
         .then(r => r.json())
