@@ -294,6 +294,21 @@ def suggestion():
                 "plan": json.loads(wr.plan_json),
                 "outlook": wr.outlook or "",
             }
+
+        # 构建用户区间设定
+        zones_info = {}
+        athlete_params = AthleteParams.objects(user=user).order_by("-effective_date").first()
+        if athlete_params:
+            cycling_hr = athlete_params.get_hr_zones("cycling")
+            running_hr = athlete_params.get_hr_zones("running")
+            power = athlete_params.get_power_zones()
+            if cycling_hr:
+                zones_info["cycling_hr_zones"] = cycling_hr
+            if running_hr:
+                zones_info["running_hr_zones"] = running_hr
+            if power:
+                zones_info["power_zones"] = power
+
         advice = generate_suggestion(
             latest_pmc,
             recent_tss,
@@ -303,6 +318,7 @@ def suggestion():
             intensity_counts,
             lang=g.lang,
             report_context=report_context,
+            zones_info=zones_info,
         )
     except ValueError as e:
         return jsonify({"code": 400, "message": str(e), "data": None}), 400

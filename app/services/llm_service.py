@@ -428,6 +428,7 @@ def generate_suggestion(
     intensity_counts=None,
     lang: str = "zh_CN",
     report_context: dict = None,
+    zones_info: dict = None,
 ) -> str:
     """生成个性化训练建议。
 
@@ -503,15 +504,42 @@ def generate_suggestion(
     # Step 2: 交给 LLM 组织语言
     report_section = ""
     if report_context:
+        plan_detail = ""
+        plan = report_context.get("plan", [])
+        if plan:
+            rows = []
+            for p in plan:
+                if p.get("intensity") == "rest":
+                    rows.append(f"  - {p['date']}: 休息")
+                else:
+                    rows.append(
+                        f"  - {p['date']}: {p.get('type', '')} | 强度 {p.get('intensity', '')} | {p.get('duration_min', 0)}min | TSS {p.get('tss', 0)} | CTL {p.get('ctl', 0):.1f} ATL {p.get('atl', 0):.1f} TSB {p.get('tsb', 0):.1f}"
+                    )
+            plan_detail = "\n".join(rows)
         report_section = f"""
 ## 当前训练报告（用户正在查看此报告并基于此提问）
 - 报告总结：{report_context.get("summary", "")}
 - 报告展望：{report_context.get("outlook", "")}
-- 计划摘要：{_plan_brief(report_context.get("plan", []))}
+- 未来 7 天计划：
+{plan_detail}
 """
 
+    # 用户区间设定
+    zones_section = ""
+    if zones_info:
+        parts = []
+        for key, zones in zones_info.items():
+            zone_strs = [f"  {z['name']}: {z['min']}-{z['max']}" for z in zones]
+            label = {
+                "cycling_hr_zones": "骑行心率区间 (bpm)",
+                "running_hr_zones": "跑步心率区间 (bpm)",
+                "power_zones": "骑行功率区间 (W)",
+            }
+            parts.append(f"### {label.get(key, key)}\n" + "\n".join(zone_strs))
+        zones_section = "\n## 用户训练区间设定\n" + "\n".join(parts)
+
     user_prompt = f"""请根据以下分析结论给出训练建议。直接使用这些结论，不要重新分析。
-{report_section}
+{report_section}{zones_section}
 ## 训练负荷状态
 - CTL (Fitness): {pmc_data.get("ctl", 0):.1f} — {load_analysis["ctl_level"]}
 - ATL (Fatigue): {pmc_data.get("atl", 0):.1f}
@@ -542,7 +570,12 @@ def generate_suggestion(
                     "你是 EffortOS 运动分析平台的专业教练。用户正在查看自己的训练报告，基于报告内容和训练数据向你提问。"
                     "你只能回答与用户当前训练状态、训练计划、运动表现、恢复策略相关的问题。"
                     "如果用户的问题与训练无关（如闲聊、编程、烹饪、政治、天气等），你必须礼貌拒绝，"
-                    "并引导用户回到训练话题。使用 markdown 格式。"
+                    "并引导用户回到训练话题。"
+                    "\n\n"
+                    "当用户询问某一天应该练什么、或要求针对某个计划日设计课时，你必须设计 2-3 个具体课程方案，"
+                    "每个方案包含：热身、主课表（每组时长×组数、目标功率或心率区间）、放松。"
+                    "必须使用用户的实际区间设定（功率 W / 心率 bpm），不要用百分比或模糊描述。"
+                    "使用 markdown 格式。"
                 ),
             },
             {"role": "user", "content": user_prompt + lang_instruction},
